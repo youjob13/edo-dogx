@@ -1,0 +1,4 @@
+packages:
+  - 'apps/frontend'
+  - 'apps/gateway'
+  - 'shared/ts-types'

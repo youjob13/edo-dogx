@@ -1,0 +1,44 @@
+openapi: "3.1.0"
+info:
+  title: EDO API Gateway
+  version: "0.1.0"
+  description: |
+    BFF (Backend For Frontend) Gateway for the Electronic Document Management System.
+    Handles session management, Keycloak auth, and proxies requests to microservices via gRPC.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: health
+    description: Service health checks
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+
+  securitySchemes:
+    keycloak:
+      type: openIdConnect
+      openIdConnectUrl: http://localhost:8080/realms/edo/.well-known/openid-configuration

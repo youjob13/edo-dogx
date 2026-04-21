@@ -1,0 +1,23 @@
+**/node_modules/
+**/.angular/
+**/dist/
+**/*.tsbuildinfo
+**/.pnpm-debug.log
+
+# Go build output
+services/**/vendor/
+services/**/*.exe
+services/**/*.out
+services/**/*.test
+
+# Environment secrets
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.git/
+.idea/
+.vscode/
+**/.DS_Store
+**/Thumbs.db

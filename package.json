@@ -1,0 +1,20 @@
+{
+  "name": "edo",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Электронный документооборот — monorepo",
+  "engines": {
+    "node": ">=24.15.0",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:gateway": "pnpm --filter gateway dev",
+    "build:all": "pnpm -r build",
+    "lint:all": "pnpm -r lint",
+    "test:all": "pnpm -r test",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
+  }
+}

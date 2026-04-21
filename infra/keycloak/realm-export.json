@@ -1,0 +1,36 @@
+{
+  "realm": "edo",
+  "enabled": true,
+  "displayName": "ЭДО",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "clients": [
+    {
+      "clientId": "edo-gateway",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:4000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:4000"
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "user", "description": "Regular authenticated user" },
+      { "name": "admin", "description": "System administrator" }
+    ]
+  }
+}

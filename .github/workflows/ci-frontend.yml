@@ -1,0 +1,41 @@
+name: CI — Frontend
+
+on:
+  push:
+    paths:
+      - 'apps/frontend/**'
+      - 'shared/ts-types/**'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    paths:
+      - 'apps/frontend/**'
+      - 'shared/ts-types/**'
+      - 'pnpm-lock.yaml'
+
+jobs:
+  ci:
+    name: Lint · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter frontend lint
+
+      - name: Test
+        run: pnpm --filter frontend test
+
+      - name: Build (SSR)
+        run: pnpm --filter frontend build:ssr

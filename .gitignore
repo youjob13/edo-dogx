@@ -1,2 +1,41 @@
-dist
-node_modules
+# ── Node ─────────────────────────────────────────────────────────────
+node_modules/
+dist/
+.output/
+*.tsbuildinfo
+
+# pnpm
+.pnpm-debug.log
+pnpm-debug.log
+
+# Angular
+.angular/
+apps/frontend/.angular/
+
+# ── Go ───────────────────────────────────────────────────────────────
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# ── Environment ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── IDE ──────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Proto generated ──────────────────────────────────────────────────
+shared/proto/gen/
