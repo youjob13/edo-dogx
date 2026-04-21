@@ -31,9 +31,24 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@taiga-ui/icons/src",
+                "output": "assets/taiga-ui/icons"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@taiga-ui/icons/src",
+                "output": "assets/taiga-ui/icons"
               }
             ],
-            "styles": ["src/styles.scss"],
+            "styles": [
+              "@taiga-ui/styles/taiga-ui-theme.less",
+              "@taiga-ui/styles/taiga-ui-fonts.less",
+              "src/styles.scss",
+              "@taiga-ui/addon-mobile/styles/taiga-ui-mobile.less" 
+            ],
             "scripts": []
           },
           "configurations": {
