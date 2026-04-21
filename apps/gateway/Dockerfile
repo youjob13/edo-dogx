@@ -10,7 +10,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/gateway/package.json ./apps/gateway/
 COPY shared/ts-types/package.json ./shared/ts-types/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY apps/gateway ./apps/gateway
 COPY shared/ts-types ./shared/ts-types
