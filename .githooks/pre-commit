@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+echo "Running pre-commit checks..."
+
+# Lint
+echo "[1/4] Linting frontend..."
+pnpm --filter frontend lint
+
+echo "[2/4] Linting gateway..."
+pnpm --filter gateway lint
+
+# Build
+echo "[3/4] Building frontend..."
+pnpm --filter frontend build
+
+echo "[4/4] Building gateway..."
+pnpm --filter gateway build
+
+echo "All pre-commit checks passed."

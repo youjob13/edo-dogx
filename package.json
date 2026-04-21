@@ -8,6 +8,7 @@
     "pnpm": ">=9"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/commit-msg",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:gateway": "pnpm --filter gateway dev",
     "build:all": "pnpm -r build",
@@ -16,5 +17,9 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-angular": "^19.0.0"
   }
 }
