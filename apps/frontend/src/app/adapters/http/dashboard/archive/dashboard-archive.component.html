@@ -1,0 +1,16 @@
+<edo-dogx-page-section title="Архив" subtitle="Заглушка для проверки маршрута /dashboard/archive">
+  <edo-dogx-card title="Раздел архива" subtitle="Маршрут работает корректно">
+    <p class="dashboard-page__text">Здесь будет реализована архивная выдача и фильтры.</p>
+
+    <edo-dogx-button
+      label="Выполнить тестовое действие"
+      appearance="secondary"
+      size="m"
+      (pressed)="onActionPressed()"
+    />
+
+    @if (message()) {
+      <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+    }
+  </edo-dogx-card>
+</edo-dogx-page-section>

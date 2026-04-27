@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-page-section {
+  display: grid;
+  gap: var(--edo-ui-space-2);
+}
+
+header h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  color: var(--edo-ui-ink);
+}
+
+header p {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.8125rem;
+}

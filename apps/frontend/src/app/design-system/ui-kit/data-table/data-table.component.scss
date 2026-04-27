@@ -1,0 +1,102 @@
+:host {
+  display: block;
+  font-family: var(--edo-ui-font-family);
+}
+
+.edo-ui-kit-table-shell {
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-lg);
+  background: var(--edo-ui-panel);
+}
+
+header {
+  padding: var(--edo-ui-space-3) var(--edo-ui-space-3) var(--edo-ui-space-2);
+  border-bottom: 1px solid var(--edo-ui-outline);
+}
+
+header h3 {
+  margin: 0;
+  color: var(--edo-ui-ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.edo-ui-kit-table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 16px;
+}
+
+th,
+td {
+  height: 32px;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--edo-ui-outline);
+}
+
+thead th {
+  color: var(--edo-ui-ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--edo-ui-surface-low);
+}
+
+.edo-ui-kit-table__head--sortable {
+  padding: 0;
+}
+
+.edo-ui-kit-table__sort-trigger {
+  width: 100%;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 8px 12px;
+  text-align: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--edo-ui-space-1);
+  cursor: pointer;
+}
+
+.edo-ui-kit-table__sort-trigger:disabled {
+  cursor: default;
+}
+
+tbody tr:hover {
+  background: var(--edo-ui-surface-low);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.edo-ui-kit-table__cell--right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.edo-ui-kit-table__cell--center {
+  text-align: center;
+}
+
+.edo-ui-kit-table__action-head,
+.edo-ui-kit-table__action {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.edo-ui-kit-table__empty {
+  margin: var(--edo-ui-space-2) 0;
+  color: var(--edo-ui-ink-muted);
+  text-align: center;
+}

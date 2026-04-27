@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  font-family: var(--edo-ui-font-family);
+}
+
+.edo-ui-kit-input {
+  display: grid;
+  gap: var(--edo-ui-space-1);
+}
+
+.edo-ui-kit-input--compact .edo-ui-kit-input__label {
+  font-size: 11px;
+}
+
+.edo-ui-kit-input tui-textfield {
+  display: block;
+  width: 100%;
+}
+
+.edo-ui-kit-input input {
+  width: 100%;
+}
+
+.edo-ui-kit-input--compact input {
+  min-height: 30px;
+}
+
+.edo-ui-kit-input__label {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.edo-ui-kit-input__hint,
+.edo-ui-kit-input__error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.edo-ui-kit-input__hint {
+  color: var(--edo-ui-ink-muted);
+}
+
+.edo-ui-kit-input__error {
+  color: var(--edo-ui-error);
+}

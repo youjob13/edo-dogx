@@ -1,0 +1,11 @@
+:host {
+  display: block;
+  block-size: 100%;
+}
+
+.edo-ui-kit-sidebar {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  padding: var(--edo-ui-space-3) 0;
+}

@@ -75,6 +75,9 @@ adapters/
 
 ## Conventions
 
+### Global policy
+- **NEVER write tests.** Do not create, modify, or run unit tests, integration tests, E2E tests, or test snapshots in this repository.
+
 ### TypeScript (frontend & gateway)
 - `@edo/types` path alias is defined in each `tsconfig.json` → `../../shared/ts-types/src/index.ts`
 - Do not import from `shared/ts-types` by relative path; always use `@edo/types`
@@ -85,6 +88,8 @@ adapters/
 - Component selector prefix: `edo-dogx` (kebab-case elements, camelCase attributes)
 - Standalone components only — do **not** use `NgModule`
 - Standalone by default, no need to manually specify `standalone: true` option
+- **CRITICAL — Localization policy**: all user-facing page content must be in Russian by default
+- For multilingual support, use Angular built-in internationalization (`@angular/localize` + Angular i18n workflow) instead of ad-hoc custom translation solutions
 - SSR is enabled; avoid browser-only APIs without `isPlatformBrowser` guards
 - Styles: SCSS for component styles, Less for Taiga UI theme imports
 - Taiga UI is used for UX components

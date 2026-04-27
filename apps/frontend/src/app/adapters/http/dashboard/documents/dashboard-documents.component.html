@@ -1,0 +1,107 @@
+<edo-dogx-page-section
+  title="Документы"
+  subtitle="Фильтрация, сортировка и действия с мок-данными"
+>
+  <edo-dogx-card title="Список документов" subtitle="Все элементы страницы кликабельны и обрабатываются">
+    <div class="dashboard-documents__filters">
+      <edo-dogx-toolbar-search [control]="searchControl" placeholder="Поиск по имени файла" />
+
+      <label>
+        <span>Статус</span>
+        <select [formControl]="statusFilterControl">
+          @for (option of statusOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Тип</span>
+        <select [formControl]="typeFilterControl">
+          @for (option of typeOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <edo-dogx-data-table
+      [columns]="columns"
+      [rows]="rowView()"
+      [sort]="sortState()"
+      rowActionLabel="Действия"
+      (sortChanged)="onSortChanged($event)"
+      (rowAction)="onRowAction($event)"
+    />
+
+    <edo-dogx-table-toolbar
+      [sort]="sortState()"
+      [pagination]="pagination()"
+      (sortPressed)="onToolbarSortPressed()"
+      (previousPagePressed)="onPreviousPage()"
+      (nextPagePressed)="onNextPage()"
+    />
+
+    @if (loading()) {
+      <p class="dashboard-page__message">Обновляем список...</p>
+    }
+
+    @if (selectedDocument()) {
+      <div class="dashboard-documents__menu">
+        <edo-dogx-dropdown-menu [items]="menuItems" (itemPressed)="onMenuAction($event)" />
+      </div>
+    }
+
+    <edo-dogx-drawer
+      [open]="previewOpen()"
+      [title]="'Предпросмотр: ' + (selectedDocument()?.filename ?? '')"
+      ariaLabel="Панель предпросмотра документа"
+      (closed)="closePreview()"
+    >
+      @if (previewDocument(); as preview) {
+        <div class="dashboard-documents__preview">
+          <p><strong>{{ preview.title }}</strong></p>
+          <p>{{ preview.body }}</p>
+          @if (selectedDocument(); as doc) {
+            <p><strong>Статус:</strong></p>
+            <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
+            <p><strong>Изменен:</strong> {{ doc.modifiedAtLabel }}</p>
+          }
+        </div>
+      }
+    </edo-dogx-drawer>
+
+    <edo-dogx-modal
+      [open]="editOpen()"
+      title="Редактирование документа"
+      ariaLabel="Редактирование документа"
+      (closed)="closeEdit()"
+    >
+      @if (selectedDocument()) {
+        <form class="dashboard-documents__edit" (submit)="$event.preventDefault(); saveEdit()">
+          <label>
+            <span>Имя файла</span>
+            <input type="text" [formControl]="editFilenameControl" />
+          </label>
+
+          <label>
+            <span>Статус</span>
+            <select [formControl]="editStatusControl">
+              @for (option of statusOptions; track option.value) {
+                @if (option.value !== 'all') {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              }
+            </select>
+          </label>
+
+          <edo-dogx-button label="Сохранить" appearance="primary" size="m" (pressed)="saveEdit()" />
+        </form>
+      }
+    </edo-dogx-modal>
+
+    @if (message()) {
+      <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+    }
+  </edo-dogx-card>
+</edo-dogx-page-section>

@@ -1,0 +1,58 @@
+:host {
+  display: contents;
+}
+
+.edo-ui-kit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.edo-ui-kit-modal {
+  position: fixed;
+  z-index: 31;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100% - 2rem, 36rem);
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-lg);
+  background: var(--edo-ui-panel);
+  box-shadow: var(--edo-ui-shadow-floating);
+  overflow: hidden;
+  outline: none;
+}
+
+header {
+  min-height: 3rem;
+  border-bottom: 1px solid var(--edo-ui-outline);
+  padding: 0 var(--edo-ui-space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--edo-ui-ink);
+}
+
+button {
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-md);
+  background: var(--edo-ui-panel);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+button:focus-visible,
+.edo-ui-kit-modal:focus-visible {
+  outline: 2px solid var(--edo-ui-focus);
+  outline-offset: 2px;
+}
+
+.edo-ui-kit-modal__body {
+  padding: var(--edo-ui-space-3);
+}

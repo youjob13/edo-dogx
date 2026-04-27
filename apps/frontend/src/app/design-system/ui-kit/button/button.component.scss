@@ -1,0 +1,22 @@
+:host {
+  display: inline-block;
+  font-family: var(--edo-ui-font-family);
+}
+
+button {
+  min-height: 32px;
+  border-radius: var(--edo-ui-radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  gap: var(--edo-ui-space-1);
+}
+
+.edo-ui-kit-button--block {
+  width: 100%;
+}
+
+.edo-ui-kit-button--icon-only {
+  inline-size: 2rem;
+  min-height: 2rem;
+  padding-inline: 0;
+}

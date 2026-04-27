@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-topbar {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--edo-ui-space-3);
+  padding: 0 var(--edo-ui-space-3);
+}

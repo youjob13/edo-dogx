@@ -1,0 +1,47 @@
+<section class="auth-shell">
+  <div class="auth-grid">
+    <header class="auth-header">
+      <edo-dogx-status-chip
+        class="auth-kicker"
+        i18n-label="@@auth.layout.platformLabel"
+        label="ЭДО Платформа"
+        tone="draft"
+      />
+      <h1>DogX</h1>
+      <p class="auth-subtitle" i18n="@@auth.layout.subtitle">
+        Компактный и безопасный вход и регистрация для пользователей рабочего пространства документов.
+      </p>
+    </header>
+
+    <edo-dogx-card
+      class="auth-card"
+      i18n-title="@@auth.layout.cardTitle"
+      title="Аутентификация"
+      i18n-subtitle="@@auth.layout.cardSubtitle"
+      subtitle="Выберите страницу входа или регистрации"
+    >
+      <nav class="auth-tabs" i18n-aria-label="@@auth.layout.tabsAria" aria-label="Страницы аутентификации">
+        <a
+          routerLink="/auth/sign-in"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          i18n="@@auth.layout.signInTab"
+        >
+          Войти
+        </a>
+        <a
+          routerLink="/auth/sign-up"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          i18n="@@auth.layout.signUpTab"
+        >
+          Завести аккаунт
+        </a>
+      </nav>
+
+      <div class="auth-body">
+        <router-outlet />
+      </div>
+    </edo-dogx-card>
+  </div>
+</section>

@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-progress-meter {
+  display: grid;
+  gap: var(--edo-ui-space-1);
+}
+
+.edo-ui-kit-progress-meter__track {
+  block-size: 0.375rem;
+  border-radius: var(--edo-ui-radius-pill);
+  background: var(--edo-ui-surface-low);
+  overflow: hidden;
+}
+
+.edo-ui-kit-progress-meter__value {
+  block-size: 100%;
+  background: var(--edo-ui-primary);
+}
+
+.edo-ui-kit-progress-meter p {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}

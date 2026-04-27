@@ -1,0 +1,59 @@
+:host {
+  display: contents;
+}
+
+.edo-ui-kit-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.edo-ui-kit-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 20;
+  width: min(100%, 25rem);
+  height: 100dvh;
+  border-inline-start: 1px solid var(--edo-ui-outline);
+  background: var(--edo-ui-panel);
+  box-shadow: var(--edo-ui-shadow-floating);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  outline: none;
+}
+
+header {
+  min-height: 3rem;
+  border-bottom: 1px solid var(--edo-ui-outline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--edo-ui-space-3);
+}
+
+h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--edo-ui-ink);
+}
+
+button {
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-md);
+  background: var(--edo-ui-panel);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+button:focus-visible,
+.edo-ui-kit-drawer:focus-visible {
+  outline: 2px solid var(--edo-ui-focus);
+  outline-offset: 2px;
+}
+
+.edo-ui-kit-drawer__body {
+  padding: var(--edo-ui-space-3);
+  overflow: auto;
+}

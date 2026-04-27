@@ -14,6 +14,12 @@
       "root": "",
       "sourceRoot": "src",
       "prefix": "edo-dogx",
+      "i18n": {
+        "sourceLocale": "ru",
+        "locales": {
+          "en": "src/locale/messages.en.xlf"
+        }
+      },
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -21,7 +27,10 @@
             "outputPath": "dist/frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js",
+              "@angular/localize/init"
+            ],
             "tsConfig": "tsconfig.app.json",
             "server": "src/main.server.ts",
             "ssr": {
@@ -66,6 +75,18 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "ru": {
+              "outputPath": "dist/frontend/ru",
+              "localize": [
+                "ru"
+              ]
+            },
+            "en": {
+              "outputPath": "dist/frontend/en",
+              "localize": [
+                "en"
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -78,6 +99,12 @@
             },
             "development": {
               "buildTarget": "frontend:build:development"
+            },
+            "ru": {
+              "buildTarget": "frontend:build:ru"
+            },
+            "en": {
+              "buildTarget": "frontend:build:en"
             }
           },
           "defaultConfiguration": "development"

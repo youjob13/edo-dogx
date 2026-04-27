@@ -1,0 +1,37 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-bar-chart {
+  height: 4.5rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+  align-items: end;
+}
+
+.edo-ui-kit-bar-chart__bar {
+  border: 0;
+  border-radius: var(--edo-ui-radius-sm) var(--edo-ui-radius-sm) 0 0;
+  background: var(--edo-ui-surface-low);
+  cursor: pointer;
+}
+
+.edo-ui-kit-bar-chart__bar:hover,
+.edo-ui-kit-bar-chart__bar--active {
+  background: var(--edo-ui-primary);
+}
+
+.edo-ui-kit-bar-chart__labels {
+  margin-top: var(--edo-ui-space-1);
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.edo-ui-kit-bar-chart__labels span {
+  text-align: center;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+}

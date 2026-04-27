@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+.dashboard-page__text {
+  margin: 0 0 0.75rem;
+  color: var(--edo-ui-ink-muted);
+}
+
+.dashboard-page__message {
+  margin: 0.75rem 0 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}

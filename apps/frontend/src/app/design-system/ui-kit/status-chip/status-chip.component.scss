@@ -1,0 +1,56 @@
+:host {
+  display: inline-block;
+  font-family: var(--edo-ui-font-family);
+}
+
+.edo-ui-kit-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 var(--edo-ui-space-2);
+  border-radius: var(--edo-ui-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.edo-ui-kit-chip--success {
+  color: var(--edo-ui-success);
+  background: var(--edo-ui-success-soft);
+}
+
+.edo-ui-kit-chip--warning {
+  color: var(--edo-ui-warning);
+  background: var(--edo-ui-warning-soft);
+}
+
+.edo-ui-kit-chip--draft {
+  color: var(--edo-ui-draft);
+  background: var(--edo-ui-draft-soft);
+}
+
+.edo-ui-kit-chip--error {
+  color: var(--edo-ui-error);
+  background: var(--edo-ui-error-soft);
+}
+
+.edo-ui-kit-chip--finalized {
+  color: var(--edo-ui-success);
+  background: var(--edo-ui-success-soft);
+}
+
+.edo-ui-kit-chip--review {
+  color: var(--edo-ui-warning);
+  background: var(--edo-ui-warning-soft);
+}
+
+.edo-ui-kit-chip--archived {
+  color: var(--edo-ui-draft);
+  background: var(--edo-ui-draft-soft);
+}
+
+.edo-ui-kit-chip--pending {
+  color: var(--edo-ui-info);
+  background: var(--edo-ui-info-soft);
+}

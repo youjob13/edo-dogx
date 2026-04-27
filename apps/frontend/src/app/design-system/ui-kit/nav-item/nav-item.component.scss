@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--edo-ui-space-2);
+  min-height: 2.25rem;
+  padding: 0 var(--edo-ui-space-3);
+  color: var(--edo-ui-ink-muted);
+  text-decoration: none;
+  border-inline-end: 2px solid transparent;
+}
+
+.edo-ui-kit-nav-item:hover {
+  background: var(--edo-ui-surface-low);
+  color: var(--edo-ui-ink);
+}
+
+.edo-ui-kit-nav-item--active {
+  color: var(--edo-ui-ink);
+  border-inline-end-color: var(--edo-ui-primary);
+  background: var(--edo-ui-surface-low);
+}
+
+.edo-ui-kit-nav-item span {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+}

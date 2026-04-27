@@ -1,0 +1,13 @@
+:host {
+  display: inline-flex;
+}
+
+.edo-ui-kit-icon {
+  color: var(--edo-ui-ink-muted);
+  line-height: 1;
+  user-select: none;
+}
+
+.edo-ui-kit-icon--clickable {
+  cursor: pointer;
+}

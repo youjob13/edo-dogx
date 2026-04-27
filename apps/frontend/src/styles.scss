@@ -1,1 +1,62 @@
-/* Global styles */
+@use './app/design-system/ui-kit/ui-kit.tokens';
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL,GRAD,opsz@400,0,0,24');
+
+.material-symbols-outlined {
+	font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+	display: inline-block;
+	line-height: 1;
+}
+
+:root {
+	--edo-auth-surface: #f8fafb;
+	--edo-auth-panel: #ffffff;
+	--edo-auth-ink: #101214;
+	--edo-auth-muted: #5d6570;
+	--edo-auth-border: #d8dde3;
+	--edo-auth-accent: #0a84ff;
+	--edo-auth-accent-ink: #ffffff;
+	--edo-auth-error: #cc0f35;
+	--edo-auth-shadow: 0 18px 40px -24px rgba(16, 18, 20, 0.35);
+}
+
+html,
+body {
+	min-height: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: var(--edo-ui-font-family);
+	color: var(--edo-auth-ink);
+	background:
+		radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.09), transparent 34%),
+		radial-gradient(circle at 80% 8%, rgba(16, 18, 20, 0.06), transparent 28%),
+		linear-gradient(180deg, #fbfdff 0%, var(--edo-ui-surface) 100%);
+}
+
+.theme-dark body,
+body.theme-dark {
+	background: linear-gradient(180deg, #121619 0%, var(--edo-ui-surface) 100%);
+}
+
+@keyframes edoFadeUp {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

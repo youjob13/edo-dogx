@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="ru" trgLang="en">
+  <file id="ngi18n" original="ng.template">
+    <unit id="auth.layout.platformLabel">
+      <segment>
+        <source>ЭДО Платформа</source>
+        <target>EDO Platform</target>
+      </segment>
+    </unit>
+    <unit id="auth.layout.subtitle">
+      <segment>
+        <source> Компактный и безопасный вход и регистрация для пользователей рабочего пространства документов. </source>
+        <target> Compact and secure sign-in and registration for document workspace users. </target>
+      </segment>
+    </unit>
+    <unit id="auth.layout.cardTitle">
+      <segment>
+        <source>Аутентификация</source>
+        <target>Authentication</target>
+      </segment>
+    </unit>
+    <unit id="auth.layout.cardSubtitle">
+      <segment>
+        <source>Выберите страницу входа или регистрации</source>
+        <target>Choose sign-in or registration page</target>
+      </segment>
+    </unit>
+    <unit id="auth.layout.tabsAria">
+      <segment>
+        <source>Страницы аутентификации</source>
+        <target>Authentication pages</target>
+      </segment>
+    </unit>
+    <unit id="auth.layout.signInTab">
+      <segment>
+        <source> Войти </source>
+        <target> Sign in </target>
+      </segment>
+    </unit>
+    <unit id="auth.layout.signUpTab">
+      <segment>
+        <source> Завести аккаунт </source>
+        <target> Create account </target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.title">
+      <segment>
+        <source>Вход</source>
+        <target>Sign in</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.subtitle">
+      <segment>
+        <source>Используйте рабочую почту и пароль.</source>
+        <target>Use your workspace email and password.</target>
+      </segment>
+    </unit>
+    <unit id="auth.common.emailLabel">
+      <segment>
+        <source>Эл. почта</source>
+        <target>Email</target>
+      </segment>
+    </unit>
+    <unit id="auth.common.emailError">
+      <segment>
+        <source>Введите корректный адрес электронной почты.</source>
+        <target>Enter a valid email address.</target>
+      </segment>
+    </unit>
+    <unit id="auth.common.passwordMinError">
+      <segment>
+        <source> Пароль должен быть не короче 8 символов. </source>
+        <target> Password must be at least 8 characters. </target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.submitLabel">
+      <segment>
+        <source>Войти</source>
+        <target>Sign in</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.loadingLabel">
+      <segment>
+        <source>Входим...</source>
+        <target>Signing in...</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.socialAria">
+      <segment>
+        <source>Провайдеры социального входа</source>
+        <target>Social sign-in providers</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.socialText">
+      <segment>
+        <source>Или продолжить через</source>
+        <target>Or continue with</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.noAccount">
+      <segment>
+        <source>Ещё нет аккаунта?</source>
+        <target>No account yet?</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.createAccountLink">
+      <segment>
+        <source>Создать</source>
+        <target>Create one</target>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.submitError">
+      <segment>
+        <source>Не удалось войти прямо сейчас. Попробуйте ещё раз.</source>
+        <target>Unable to sign in right now. Please try again.</target>
+      </segment>
+    </unit>
+    <unit id="auth.social.loginNotReady">
+      <segment>
+        <source>Вход через <ph id="0" equiv="provider" disp="provider"/> пока не подключён.</source>
+        <target><ph id="0" equiv="provider" disp="provider"/> login is not wired yet.</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.title">
+      <segment>
+        <source>Создать аккаунт</source>
+        <target>Create account</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.subtitle">
+      <segment>
+        <source>Настройте безопасный доступ с компактной формой регистрации.</source>
+        <target>Set up secure access with a compact registration form.</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.confirmPasswordLabel">
+      <segment>
+        <source>Подтвердите пароль</source>
+        <target>Confirm password</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.confirmPasswordError">
+      <segment>
+        <source>Подтвердите пароль.</source>
+        <target>Please confirm your password.</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.passwordMismatch">
+      <segment>
+        <source> Пароли не совпадают. </source>
+        <target> Passwords do not match. </target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.termsAccept">
+      <segment>
+        <source>Я принимаю условия использования и политику конфиденциальности.</source>
+        <target>I agree to the terms and privacy policy.</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.termsError">
+      <segment>
+        <source> Чтобы продолжить, нужно принять условия. </source>
+        <target> You need to accept the terms to continue. </target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.submitLabel">
+      <segment>
+        <source>Создать аккаунт</source>
+        <target>Create account</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.loadingLabel">
+      <segment>
+        <source>Создаём аккаунт...</source>
+        <target>Creating account...</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.socialAria">
+      <segment>
+        <source>Провайдеры социальной регистрации</source>
+        <target>Social registration providers</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.socialText">
+      <segment>
+        <source>Или зарегистрироваться через</source>
+        <target>Or register with</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.hasAccount">
+      <segment>
+        <source>Уже есть аккаунт?</source>
+        <target>Already have an account?</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.signInLink">
+      <segment>
+        <source>Войти</source>
+        <target>Sign in</target>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.submitError">
+      <segment>
+        <source>Не удалось создать аккаунт прямо сейчас. Попробуйте ещё раз.</source>
+        <target>Unable to create account right now. Please try again.</target>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.hide">
+      <segment>
+        <source>Скрыть</source>
+        <target>Hide</target>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.show">
+      <segment>
+        <source>Показать</source>
+        <target>Show</target>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.showAria">
+      <segment>
+        <source>Показать пароль</source>
+        <target>Show password</target>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.hideAria">
+      <segment>
+        <source>Скрыть пароль</source>
+        <target>Hide password</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>

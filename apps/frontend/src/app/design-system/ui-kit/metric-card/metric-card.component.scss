@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-metric-card {
+  width: 100%;
+  display: grid;
+  gap: var(--edo-ui-space-2);
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-lg);
+  background: var(--edo-ui-panel);
+  text-align: left;
+  padding: var(--edo-ui-space-3);
+  cursor: pointer;
+}
+
+.edo-ui-kit-metric-card:hover {
+  border-color: var(--edo-ui-outline-strong);
+}
+
+.edo-ui-kit-metric-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.edo-ui-kit-metric-card strong {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--edo-ui-ink);
+}
+
+.edo-ui-kit-metric-card p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--edo-ui-ink-muted);
+}

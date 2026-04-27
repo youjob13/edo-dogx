@@ -1,0 +1,68 @@
+:host {
+  display: block;
+}
+
+.dashboard-documents__filters {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-documents__filters label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dashboard-documents__filters span {
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}
+
+.dashboard-documents__filters select,
+.dashboard-documents__edit input,
+.dashboard-documents__edit select {
+  border-radius: var(--edo-ui-radius-m);
+  border: 1px solid var(--edo-ui-border-subtle);
+  background: var(--edo-ui-surface-primary);
+  color: var(--edo-ui-ink-primary);
+  font: inherit;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.65rem;
+}
+
+.dashboard-documents__menu {
+  margin-top: 0.75rem;
+}
+
+.dashboard-documents__preview {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.dashboard-documents__preview p {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+}
+
+.dashboard-documents__edit {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-documents__edit label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dashboard-page__message {
+  margin: 0.75rem 0 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}
+
+@media (min-width: 900px) {
+  .dashboard-documents__filters {
+    grid-template-columns: 1.75fr repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+}

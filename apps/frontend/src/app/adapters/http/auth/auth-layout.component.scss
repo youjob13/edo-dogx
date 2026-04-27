@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.auth-shell {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.auth-grid {
+  width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 430px);
+  gap: 1rem;
+  align-items: start;
+  animation: edoFadeUp 280ms ease-out;
+}
+
+.auth-header {
+  padding: 1rem 1.25rem;
+}
+
+.auth-kicker {
+  margin: 0;
+}
+
+.auth-header h1 {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  line-height: 1.05;
+}
+
+.auth-subtitle {
+  margin: 0.9rem 0 0;
+  color: var(--edo-auth-muted);
+  max-width: 42ch;
+}
+
+.auth-card {
+  box-shadow: var(--edo-auth-shadow);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 0;
+  gap: 0.25rem;
+}
+
+.auth-tabs a {
+  text-decoration: none;
+  color: var(--edo-auth-muted);
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.62rem;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.auth-tabs a.is-active {
+  background: #eef3f8;
+  color: var(--edo-auth-ink);
+}
+
+.auth-body {
+  padding: 0.75rem 0 0;
+}
+
+@media (max-width: 900px) {
+  .auth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-header {
+    padding: 0.75rem;
+  }
+}

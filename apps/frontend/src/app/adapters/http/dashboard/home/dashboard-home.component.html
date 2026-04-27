@@ -1,0 +1,130 @@
+<edo-dogx-page-section
+  title="Панель управления"
+  subtitle="Сводка и интерактивные панели с мок-данными"
+>
+  <div class="dashboard-home__metrics">
+    <edo-dogx-metric-card
+      label="Ожидают подтверждения"
+      [value]="pendingApprovalCount().toString()"
+      [hint]="'Изменение: +' + pendingApprovalDelta().toString()"
+      icon="pending"
+      (pressed)="onMetricPressed('pending')"
+    />
+
+    <edo-dogx-metric-card
+      label="Требуют внимания"
+      [value]="actionItemsCount().toString()"
+      [hint]="'Просрочено: ' + overdueNoticesCount().toString()"
+      icon="warning"
+      (pressed)="onMetricPressed('review')"
+    />
+  </div>
+
+  <div class="dashboard-home__main">
+    <edo-dogx-card title="Недельный объем" subtitle="Клик по столбцу выбирает день">
+      <edo-dogx-bar-mini-chart [bars]="chartBars()" (barPressed)="onBarPressed($event)" />
+      <button type="button" class="dashboard-home__link-button" (click)="resetQuickFilters()">
+        Сбросить быстрые фильтры
+      </button>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Последние документы" subtitle="Действия: предпросмотр, редактирование, скачивание">
+      <edo-dogx-data-table
+        [columns]="recentDocumentColumns"
+        [rows]="recentDocumentRows()"
+        [sort]="documentSort()"
+        rowActionLabel="Открыть"
+        emptyText="Документы не найдены"
+        (sortChanged)="onRecentDocumentSortChanged($event)"
+        (rowAction)="onRecentDocumentAction($event)"
+      />
+
+      @if (selectedDocument()) {
+        <div class="dashboard-home__document-menu">
+          <edo-dogx-dropdown-menu [items]="documentMenuItems" (itemPressed)="onDocumentMenuAction($event)" />
+        </div>
+      }
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Системная активность" subtitle="Последние события">
+      <edo-dogx-activity-feed [items]="activity()" (itemPressed)="onActivityPressed($event)" />
+    </edo-dogx-card>
+  </div>
+
+  <div class="dashboard-home__side">
+    <edo-dogx-card title="Активные фильтры" subtitle="Состояние панели">
+      <p class="dashboard-home__text">Поиск сверху: {{ globalSearch() || 'не задан' }}</p>
+      <p class="dashboard-home__text">
+        Быстрый фильтр: {{ quickStatusFilter() ? getStatusLabel(quickStatusFilter()!) : 'не задан' }}
+      </p>
+      <p class="dashboard-home__text">Выбранный день: {{ selectedDay() ?? 'не выбран' }}</p>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Использование хранилища" subtitle="Текущая загрузка и детали">
+      <edo-dogx-progress-meter label="Использовано" [percent]="storagePercent()" />
+      <p class="dashboard-home__storage">{{ storageLabel() }}</p>
+      <edo-dogx-button label="Показать детали" appearance="secondary" size="s" (pressed)="openStorageDetails()" />
+    </edo-dogx-card>
+  </div>
+
+  <edo-dogx-drawer
+    [open]="previewOpen()"
+    [title]="'Предпросмотр: ' + (previewDocument()?.title ?? '')"
+    ariaLabel="Панель предпросмотра документа"
+    (closed)="closePreview()"
+  >
+    @if (previewDocument(); as preview) {
+      <div class="dashboard-home__preview">
+        <p>{{ preview.body }}</p>
+        @if (selectedDocument(); as doc) {
+          <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
+          <p class="dashboard-home__text">Изменен: {{ doc.modifiedAtLabel }}</p>
+        }
+      </div>
+    }
+  </edo-dogx-drawer>
+
+  <edo-dogx-modal
+    [open]="editOpen()"
+    title="Редактирование документа"
+    ariaLabel="Редактирование документа"
+    (closed)="closeEdit()"
+  >
+    @if (selectedDocument()) {
+      <form class="dashboard-home__edit" (submit)="$event.preventDefault(); saveEdit()">
+        <label>
+          <span>Имя файла</span>
+          <input type="text" [formControl]="editFilenameControl" />
+        </label>
+
+        <label>
+          <span>Статус</span>
+          <select [formControl]="editStatusControl">
+            <option value="pending">Ожидает</option>
+            <option value="review">На проверке</option>
+            <option value="finalized">Утвержден</option>
+            <option value="archived">В архиве</option>
+          </select>
+        </label>
+
+        <edo-dogx-button label="Сохранить" appearance="primary" size="m" (pressed)="saveEdit()" />
+      </form>
+    }
+  </edo-dogx-modal>
+
+  <edo-dogx-modal
+    [open]="storageDetailsOpen()"
+    title="Детали хранилища"
+    ariaLabel="Детали использования хранилища"
+    (closed)="closeStorageDetails()"
+  >
+    <div class="dashboard-home__storage-details">
+      <p>Текущее использование: {{ storageLabel() }}</p>
+      <p>Рекомендация: перенесите архивные файлы в холодное хранилище.</p>
+    </div>
+  </edo-dogx-modal>
+
+  @if (message()) {
+    <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+  }
+</edo-dogx-page-section>

@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  font-family: var(--edo-ui-font-family);
+}
+
+.edo-ui-kit-card {
+  display: grid;
+  gap: var(--edo-ui-space-3);
+  padding: var(--edo-ui-space-4);
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-lg);
+  background: var(--edo-ui-panel);
+}
+
+.edo-ui-kit-card--flat {
+  background: var(--edo-ui-surface-low);
+}
+
+.edo-ui-kit-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--edo-ui-space-3);
+}
+
+.edo-ui-kit-card__header h3 {
+  margin: 0;
+  color: var(--edo-ui-ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.edo-ui-kit-card__header p {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.edo-ui-kit-card__body {
+  min-width: 0;
+}

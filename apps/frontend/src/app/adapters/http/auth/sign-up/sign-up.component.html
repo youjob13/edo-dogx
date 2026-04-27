@@ -1,0 +1,111 @@
+<section class="auth-page">
+  <header class="auth-page__header">
+    <h2 i18n="@@auth.signUp.title">Создать аккаунт</h2>
+    <p i18n="@@auth.signUp.subtitle">Настройте безопасный доступ с компактной формой регистрации.</p>
+  </header>
+
+  <edo-dogx-auth-cat
+    [passwordHidden]="!passwordVisible()"
+    [focused]="passwordFocused()"
+    [typing]="passwordTyping()"
+  />
+
+  <form [formGroup]="form" class="auth-form" (ngSubmit)="submit()">
+    <edo-dogx-input
+      i18n-label="@@auth.common.emailLabel"
+      label="Эл. почта"
+      [control]="emailControl"
+      type="email"
+      autocomplete="email"
+      i18n-errorText="@@auth.common.emailError"
+      errorText="Введите корректный адрес электронной почты."
+    />
+
+    <div>
+      <edo-dogx-password-field
+        [control]="passwordControl"
+        autocomplete="new-password"
+        (visibilityChange)="onPasswordVisibilityChange($event)"
+        (focusChange)="onPasswordFocusChange($event)"
+        (typingChange)="onPasswordTypingChange($event)"
+      />
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <p class="auth-form__error" i18n="@@auth.common.passwordMinError">
+          Пароль должен быть не короче 8 символов.
+        </p>
+      }
+    </div>
+
+    <div>
+      <edo-dogx-input
+        i18n-label="@@auth.signUp.confirmPasswordLabel"
+        label="Подтвердите пароль"
+        [control]="confirmPasswordControl"
+        type="password"
+        autocomplete="new-password"
+        i18n-errorText="@@auth.signUp.confirmPasswordError"
+        errorText="Подтвердите пароль."
+      />
+      @if (form.touched && form.hasError('passwordMismatch')) {
+        <p class="auth-form__error" i18n="@@auth.signUp.passwordMismatch">
+          Пароли не совпадают.
+        </p>
+      }
+    </div>
+
+    <label class="terms">
+      <input type="checkbox" tuiCheckbox formControlName="acceptedTerms" />
+      <span i18n="@@auth.signUp.termsAccept">Я принимаю условия использования и политику конфиденциальности.</span>
+    </label>
+    @if (form.controls.acceptedTerms.touched && form.controls.acceptedTerms.invalid) {
+      <p class="auth-form__error" i18n="@@auth.signUp.termsError">
+        Чтобы продолжить, нужно принять условия.
+      </p>
+    }
+
+    @if (submitError()) {
+      <p class="auth-form__error auth-form__error--submit">{{ submitError() }}</p>
+    }
+
+    <edo-dogx-button
+      appearance="primary"
+      size="l"
+      type="submit"
+      [block]="true"
+      [disabled]="form.invalid || loading()"
+      [loading]="loading()"
+      i18n-label="@@auth.signUp.submitLabel"
+      label="Создать аккаунт"
+      i18n-loadingLabel="@@auth.signUp.loadingLabel"
+      loadingLabel="Создаём аккаунт..."
+      class="auth-form__submit"
+    />
+  </form>
+
+  <section class="social-login" i18n-aria-label="@@auth.signUp.socialAria" aria-label="Провайдеры социальной регистрации">
+    <p i18n="@@auth.signUp.socialText">Или зарегистрироваться через</p>
+    <div class="social-login__buttons">
+      <edo-dogx-button
+        appearance="secondary"
+        size="s"
+        type="button"
+        [block]="true"
+        label="Google"
+        (pressed)="onSocialClick('Google')"
+      />
+      <edo-dogx-button
+        appearance="secondary"
+        size="s"
+        type="button"
+        [block]="true"
+        label="GitHub"
+        (pressed)="onSocialClick('GitHub')"
+      />
+    </div>
+  </section>
+
+  <p class="auth-page__switch">
+    <span i18n="@@auth.signUp.hasAccount">Уже есть аккаунт?</span>
+    <a routerLink="/auth/sign-in" i18n="@@auth.signUp.signInLink">Войти</a>
+  </p>
+</section>

@@ -1,3 +1,4 @@
+import '@angular/localize/init';
 import { vi } from 'vitest';
 
 Object.defineProperty(window, 'matchMedia', {

@@ -1,0 +1,40 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-app-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  background: var(--edo-ui-surface);
+}
+
+.edo-ui-kit-app-shell__sidebar {
+  border-inline-end: 1px solid var(--edo-ui-outline);
+  background: var(--edo-ui-sidebar-bg);
+}
+
+.edo-ui-kit-app-shell__content {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.edo-ui-kit-app-shell__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 3rem;
+  border-bottom: 1px solid var(--edo-ui-outline);
+  background: var(--edo-ui-topbar-bg);
+}
+
+.edo-ui-kit-app-shell__main {
+  padding: var(--edo-ui-space-page);
+}
+
+@media (min-width: 960px) {
+  .edo-ui-kit-app-shell {
+    grid-template-columns: 16rem 1fr;
+  }
+}

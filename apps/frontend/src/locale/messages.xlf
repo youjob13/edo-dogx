@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="ru">
+  <file id="ngi18n" original="ng.template">
+    <unit id="auth.layout.platformLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:7,10</note>
+      </notes>
+      <segment>
+        <source>ЭДО Платформа</source>
+      </segment>
+    </unit>
+    <unit id="auth.layout.subtitle">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:12,14</note>
+      </notes>
+      <segment>
+        <source> Компактный и безопасный вход и регистрация для пользователей рабочего пространства документов. </source>
+      </segment>
+    </unit>
+    <unit id="auth.layout.cardTitle">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:19,20</note>
+      </notes>
+      <segment>
+        <source>Аутентификация</source>
+      </segment>
+    </unit>
+    <unit id="auth.layout.cardSubtitle">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:21,23</note>
+      </notes>
+      <segment>
+        <source>Выберите страницу входа или регистрации</source>
+      </segment>
+    </unit>
+    <unit id="auth.layout.tabsAria">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:23,25</note>
+      </notes>
+      <segment>
+        <source>Страницы аутентификации</source>
+      </segment>
+    </unit>
+    <unit id="auth.layout.signInTab">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:30,32</note>
+      </notes>
+      <segment>
+        <source> Войти </source>
+      </segment>
+    </unit>
+    <unit id="auth.layout.signUpTab">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/auth-layout.component.html:38,40</note>
+      </notes>
+      <segment>
+        <source> Завести аккаунт </source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.title">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:3,4</note>
+      </notes>
+      <segment>
+        <source>Вход</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.subtitle">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:4,7</note>
+      </notes>
+      <segment>
+        <source>Используйте рабочую почту и пароль.</source>
+      </segment>
+    </unit>
+    <unit id="auth.common.emailLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:16,18</note>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:16,18</note>
+      </notes>
+      <segment>
+        <source>Эл. почта</source>
+      </segment>
+    </unit>
+    <unit id="auth.common.emailError">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:21,25</note>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:21,25</note>
+      </notes>
+      <segment>
+        <source>Введите корректный адрес электронной почты.</source>
+      </segment>
+    </unit>
+    <unit id="auth.common.passwordMinError">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:33,36</note>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:34,37</note>
+      </notes>
+      <segment>
+        <source> Пароль должен быть не короче 8 символов. </source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.submitLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:50</note>
+      </notes>
+      <segment>
+        <source>Войти</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.loadingLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:51,53</note>
+      </notes>
+      <segment>
+        <source>Входим...</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.socialAria">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:56,57</note>
+      </notes>
+      <segment>
+        <source>Провайдеры социального входа</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.socialText">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:57,58</note>
+      </notes>
+      <segment>
+        <source>Или продолжить через</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.noAccount">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:77,78</note>
+      </notes>
+      <segment>
+        <source>Ещё нет аккаунта?</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.createAccountLink">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.html:78,80</note>
+      </notes>
+      <segment>
+        <source>Создать</source>
+      </segment>
+    </unit>
+    <unit id="auth.signIn.submitError">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.ts:67</note>
+      </notes>
+      <segment>
+        <source>Не удалось войти прямо сейчас. Попробуйте ещё раз.</source>
+      </segment>
+    </unit>
+    <unit id="auth.social.loginNotReady">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-in/sign-in.component.ts:87</note>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.ts:108</note>
+      </notes>
+      <segment>
+        <source>Вход через <ph id="0" equiv="provider" disp="provider"/> пока не подключён.</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.title">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:3,4</note>
+      </notes>
+      <segment>
+        <source>Создать аккаунт</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.subtitle">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:4,7</note>
+      </notes>
+      <segment>
+        <source>Настройте безопасный доступ с компактной формой регистрации.</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.confirmPasswordLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:42,44</note>
+      </notes>
+      <segment>
+        <source>Подтвердите пароль</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.confirmPasswordError">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:47,49</note>
+      </notes>
+      <segment>
+        <source>Подтвердите пароль.</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.passwordMismatch">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:51,54</note>
+      </notes>
+      <segment>
+        <source> Пароли не совпадают. </source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.termsAccept">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:58,60</note>
+      </notes>
+      <segment>
+        <source>Я принимаю условия использования и политику конфиденциальности.</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.termsError">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:62,66</note>
+      </notes>
+      <segment>
+        <source> Чтобы продолжить, нужно принять условия. </source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.submitLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:77,78</note>
+      </notes>
+      <segment>
+        <source>Создать аккаунт</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.loadingLabel">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:79,81</note>
+      </notes>
+      <segment>
+        <source>Создаём аккаунт...</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.socialAria">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:84,85</note>
+      </notes>
+      <segment>
+        <source>Провайдеры социальной регистрации</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.socialText">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:85,86</note>
+      </notes>
+      <segment>
+        <source>Или зарегистрироваться через</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.hasAccount">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:105,106</note>
+      </notes>
+      <segment>
+        <source>Уже есть аккаунт?</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.signInLink">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.html:106,108</note>
+      </notes>
+      <segment>
+        <source>Войти</source>
+      </segment>
+    </unit>
+    <unit id="auth.signUp.submitError">
+      <notes>
+        <note category="location">src/app/adapters/http/auth/sign-up/sign-up.component.ts:88</note>
+      </notes>
+      <segment>
+        <source>Не удалось создать аккаунт прямо сейчас. Попробуйте ещё раз.</source>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.hide">
+      <notes>
+        <note category="location">src/app/adapters/ui/password-field/password-field.component.html:25,27</note>
+      </notes>
+      <segment>
+        <source>Скрыть</source>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.show">
+      <notes>
+        <note category="location">src/app/adapters/ui/password-field/password-field.component.html:27,30</note>
+      </notes>
+      <segment>
+        <source>Показать</source>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.showAria">
+      <notes>
+        <note category="location">src/app/adapters/ui/password-field/password-field.component.ts:27</note>
+      </notes>
+      <segment>
+        <source>Показать пароль</source>
+      </segment>
+    </unit>
+    <unit id="auth.passwordField.hideAria">
+      <notes>
+        <note category="location">src/app/adapters/ui/password-field/password-field.component.ts:28</note>
+      </notes>
+      <segment>
+        <source>Скрыть пароль</source>
+      </segment>
+    </unit>
+  </file>
+</xliff>

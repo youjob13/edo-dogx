@@ -1,0 +1,16 @@
+<edo-dogx-page-section title="Настройки" subtitle="Заглушка для проверки маршрута /dashboard/settings">
+  <edo-dogx-card title="Раздел настроек" subtitle="Маршрут и элементы взаимодействуют">
+    <p class="dashboard-page__text">Здесь будет реализовано управление параметрами панели.</p>
+
+    <edo-dogx-button
+      label="Выполнить тестовое действие"
+      appearance="secondary"
+      size="m"
+      (pressed)="onActionPressed()"
+    />
+
+    @if (message()) {
+      <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+    }
+  </edo-dogx-card>
+</edo-dogx-page-section>

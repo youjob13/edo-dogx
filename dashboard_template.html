@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        /* Custom scrollbar for high-density UI */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#271901",
+                        "on-surface-variant": "#45464d",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dae2fd",
+                        "tertiary-container": "#271901",
+                        "outline-variant": "#c6c6cd",
+                        "surface-tint": "#565e74",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f7f9fb",
+                        "secondary-container": "#d0e1fb",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-variant": "#e0e3e5",
+                        "primary-fixed-dim": "#bec6e0",
+                        "surface-container-high": "#e6e8ea",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "secondary-fixed": "#d3e4fe",
+                        "on-secondary-container": "#54647a",
+                        "surface-bright": "#f7f9fb",
+                        "on-primary-container": "#7c839b",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "primary": "#000000",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-background": "#191c1e",
+                        "inverse-surface": "#2d3133",
+                        "on-tertiary-container": "#98805d",
+                        "surface-dim": "#d8dadc",
+                        "inverse-on-surface": "#eff1f3",
+                        "tertiary": "#000000",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "background": "#f7f9fb",
+                        "on-primary-fixed": "#131b2e",
+                        "secondary": "#505f76",
+                        "primary-container": "#131b2e",
+                        "outline": "#76777d",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#fcdeb5",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#0b1c30",
+                        "inverse-primary": "#bec6e0",
+                        "surface-container-low": "#f2f4f6",
+                        "surface-container": "#eceef0",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "md": "12px",
+                        "gutter": "12px",
+                        "margin": "20px",
+                        "lg": "16px"
+                    },
+                    "fontFamily": {
+                        "table-data": ["Inter"],
+                        "h2": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-xs": ["Inter"],
+                        "h1": ["Inter"]
+                    },
+                    "fontSize": {
+                        "table-data": ["13px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "h2": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "body-xs": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "h1": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-background font-body-sm antialiased">
+<!-- SideNavBar -->
+<aside class="h-screen w-16 lg:w-64 fixed left-0 top-0 border-r border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex flex-col h-full z-50">
+<div class="p-lg border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-lg" data-icon="description">description</span>
+</div>
+<div class="hidden lg:block">
+<h1 class="text-lg font-bold tracking-tighter text-slate-900 dark:text-slate-50">EDMS</h1>
+<p class="text-[10px] text-slate-500 font-medium">v2.4.0</p>
+</div>
+</div>
+<nav class="flex-1 py-md overflow-y-auto">
+<div class="px-md mb-md">
+<button class="w-full bg-slate-900 text-white py-sm px-md rounded text-body-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+<span class="hidden lg:block">New Document</span>
+</button>
+</div>
+<!-- Dashboard Active -->
+<a class="flex items-center gap-3 px-3 py-2 bg-slate-200/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-50 font-semibold border-r-2 border-slate-900 dark:border-slate-50 transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="hidden lg:block font-table-data text-table-data">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="hidden lg:block font-table-data text-table-data">Documents</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="hidden lg:block font-table-data text-table-data">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="hidden lg:block font-table-data text-table-data">Archive</span>
+</a>
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors duration-150 border-t border-slate-100 mt-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="hidden lg:block font-table-data text-table-data">Settings</span>
+</a>
+</div>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<div class="lg:pl-64 flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 w-full h-12 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4">
+<div class="flex items-center gap-lg flex-1">
+<div class="relative w-full max-w-md hidden md:block">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm" data-icon="search">search</span>
+<input class="w-full bg-slate-100 border-none rounded py-1 pl-8 text-[10px] font-sans uppercase tracking-widest focus:ring-1 focus:ring-slate-400" placeholder="SEARCH DOCUMENTS..." type="text"/>
+</div>
+<div class="lg:block hidden">
+<span class="text-sm font-bold text-slate-900 dark:text-slate-50 font-sans uppercase tracking-wider">Document Workspace</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded uppercase tracking-wider hover:opacity-90 active:opacity-80 transition-all">Upload</button>
+<div class="h-4 w-[1px] bg-slate-200 mx-2"></div>
+<span class="material-symbols-outlined text-slate-500 cursor-pointer hover:text-slate-900" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-slate-500 cursor-pointer hover:text-slate-900" data-icon="history">history</span>
+<span class="material-symbols-outlined text-slate-500 cursor-pointer hover:text-slate-900" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<main class="p-margin flex-1 space-y-lg">
+<!-- Summary Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Pending Approval Card -->
+<div class="bg-white border border-slate-200 p-lg flex flex-col justify-between group hover:border-slate-900 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-label-caps text-on-surface-variant">PENDING APPROVAL</span>
+<span class="material-symbols-outlined text-amber-500" data-icon="pending">pending</span>
+</div>
+<div class="mt-md">
+<span class="font-h1 text-[32px] font-extrabold tracking-tighter">14</span>
+<p class="font-body-xs text-body-xs text-on-surface-variant mt-1">+2 from yesterday</p>
+</div>
+</div>
+<!-- Recent Activity Action Items -->
+<div class="bg-white border border-slate-200 p-lg flex flex-col justify-between group hover:border-slate-900 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-label-caps text-on-surface-variant">ACTION ITEMS</span>
+<span class="material-symbols-outlined text-error" data-icon="priority_high">priority_high</span>
+</div>
+<div class="mt-md">
+<span class="font-h1 text-[32px] font-extrabold tracking-tighter">08</span>
+<p class="font-body-xs text-body-xs text-error mt-1">3 Overdue notices</p>
+</div>
+</div>
+<!-- Document Volume Chart (Compact) -->
+<div class="md:col-span-2 bg-white border border-slate-200 p-lg flex flex-col group hover:border-slate-900 transition-colors relative overflow-hidden">
+<div class="flex justify-between items-center mb-base">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">WEEKLY VOLUME</span>
+<span class="font-body-xs text-body-xs font-bold text-slate-900">1.2K TOTAL</span>
+</div>
+<div class="flex-1 flex items-end justify-between gap-1 pt-md h-16">
+<div class="w-full bg-slate-100 h-[20%] hover:bg-slate-900 transition-colors"></div>
+<div class="w-full bg-slate-100 h-[45%] hover:bg-slate-900 transition-colors"></div>
+<div class="w-full bg-slate-100 h-[30%] hover:bg-slate-900 transition-colors"></div>
+<div class="w-full bg-slate-100 h-[80%] hover:bg-slate-900 transition-colors"></div>
+<div class="w-full bg-slate-900 h-[100%]"></div>
+<div class="w-full bg-slate-100 h-[65%] hover:bg-slate-900 transition-colors"></div>
+<div class="w-full bg-slate-100 h-[40%] hover:bg-slate-900 transition-colors"></div>
+</div>
+<div class="flex justify-between mt-xs font-label-caps text-[8px] text-slate-400">
+<span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+</div>
+</div>
+</div>
+<!-- Content Area: Documents & Activity -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter h-full">
+<!-- Main Workspace: Recent Documents -->
+<div class="lg:col-span-2 bg-white border border-slate-200 flex flex-col">
+<div class="px-lg py-md border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+<h2 class="font-h2 text-h2 uppercase tracking-tight">Recent Documents</h2>
+<button class="font-body-xs text-body-xs font-bold text-slate-500 hover:text-slate-900">VIEW ALL</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-slate-100 bg-slate-50/30">
+<th class="px-lg py-sm font-label-caps text-label-caps text-slate-500">FILENAME</th>
+<th class="px-lg py-sm font-label-caps text-label-caps text-slate-500">TYPE</th>
+<th class="px-lg py-sm font-label-caps text-label-caps text-slate-500">STATUS</th>
+<th class="px-lg py-sm font-label-caps text-label-caps text-slate-500">MODIFIED</th>
+<th class="px-lg py-sm"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="group hover:bg-slate-50 border-b border-slate-50 transition-colors">
+<td class="px-lg py-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="description">description</span>
+<span class="font-table-data text-table-data font-semibold">Q3_Financial_Audit_v2.pdf</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-600">PDF Report</td>
+<td class="px-lg py-sm">
+<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-label-caps text-[9px]">FINALIZED</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-500">2h ago</td>
+<td class="px-lg py-sm text-right">
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-900 cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 border-b border-slate-50 transition-colors">
+<td class="px-lg py-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="assignment">assignment</span>
+<span class="font-table-data text-table-data font-semibold">Vendor_Agreement_Draft.docx</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-600">Legal Doc</td>
+<td class="px-lg py-sm">
+<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-label-caps text-[9px]">REVIEW</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-500">5h ago</td>
+<td class="px-lg py-sm text-right">
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-900 cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 border-b border-slate-50 transition-colors">
+<td class="px-lg py-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="table_chart">table_chart</span>
+<span class="font-table-data text-table-data font-semibold">HR_Payroll_Export_June.xlsx</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-600">Spreadsheet</td>
+<td class="px-lg py-sm">
+<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 font-label-caps text-[9px]">ARCHIVED</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-500">Yesterday</td>
+<td class="px-lg py-sm text-right">
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-900 cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 border-b border-slate-50 transition-colors">
+<td class="px-lg py-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="image">image</span>
+<span class="font-table-data text-table-data font-semibold">Project_Blueprint_Alpha.jpg</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-600">Image Asset</td>
+<td class="px-lg py-sm">
+<span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-label-caps text-[9px]">PENDING</span>
+</td>
+<td class="px-lg py-sm font-table-data text-table-data text-slate-500">Yesterday</td>
+<td class="px-lg py-sm text-right">
+<span class="material-symbols-outlined text-slate-300 group-hover:text-slate-900 cursor-pointer" data-icon="more_vert">more_vert</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Sidebar: Activity Feed -->
+<div class="bg-white border border-slate-200 flex flex-col">
+<div class="px-lg py-md border-b border-slate-100 bg-slate-50/50">
+<h2 class="font-h2 text-h2 uppercase tracking-tight">System Activity</h2>
+</div>
+<div class="p-lg space-y-lg">
+<!-- Activity Item -->
+<div class="flex gap-md">
+<div class="relative">
+<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+<span class="material-symbols-outlined text-sm" data-icon="person">person</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[8px] text-white" data-icon="done" data-weight="fill">done</span>
+</div>
+</div>
+<div class="flex-1">
+<p class="font-body-sm text-body-sm leading-tight"><span class="font-bold">Sarah Miller</span> approved <span class="font-semibold text-slate-900">Procurement_04.pdf</span></p>
+<span class="font-body-xs text-body-xs text-slate-400">12 minutes ago</span>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="relative">
+<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+<span class="material-symbols-outlined text-sm" data-icon="cloud_upload">cloud_upload</span>
+</div>
+</div>
+<div class="flex-1">
+<p class="font-body-sm text-body-sm leading-tight"><span class="font-bold">System</span> ingested 124 new records from <span class="font-semibold text-slate-900">API_Inbound</span></p>
+<span class="font-body-xs text-body-xs text-slate-400">45 minutes ago</span>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="relative">
+<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[8px] text-white" data-icon="warning" data-weight="fill">warning</span>
+</div>
+</div>
+<div class="flex-1">
+<p class="font-body-sm text-body-sm leading-tight"><span class="font-bold">David Chen</span> flagged a discrepancy in <span class="font-semibold text-slate-900">Tax_Return_2023.pdf</span></p>
+<span class="font-body-xs text-body-xs text-slate-400">1 hour ago</span>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="relative">
+<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+<span class="material-symbols-outlined text-sm" data-icon="share">share</span>
+</div>
+</div>
+<div class="flex-1">
+<p class="font-body-sm text-body-sm leading-tight"><span class="font-bold">External Access</span> granted to <span class="italic text-slate-500">Legal Partners Group</span></p>
+<span class="font-body-xs text-body-xs text-slate-400">2 hours ago</span>
+</div>
+</div>
+</div>
+<div class="mt-auto p-lg border-t border-slate-100">
+<div class="bg-slate-50 p-md border border-slate-200">
+<p class="font-label-caps text-[10px] text-slate-500 mb-xs">STORAGE USAGE</p>
+<div class="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
+<div class="bg-slate-900 h-full w-3/4"></div>
+</div>
+<div class="flex justify-between mt-sm">
+<span class="font-body-xs text-[10px] text-slate-700">1.2 TB of 1.5 TB</span>
+<span class="font-body-xs text-[10px] font-bold">80%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

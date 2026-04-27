@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--edo-ui-space-2);
+  flex-wrap: wrap;
+}
+
+.edo-ui-kit-table-toolbar__right,
+.edo-ui-kit-table-toolbar__pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--edo-ui-space-2);
+}
+
+button {
+  min-height: 2rem;
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-md);
+  background: var(--edo-ui-panel);
+  color: var(--edo-ui-ink);
+  padding: 0 var(--edo-ui-space-2);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+span {
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}

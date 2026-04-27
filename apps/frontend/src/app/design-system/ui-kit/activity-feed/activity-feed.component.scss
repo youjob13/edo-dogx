@@ -1,0 +1,43 @@
+:host {
+  display: block;
+}
+
+.edo-ui-kit-activity-feed {
+  display: grid;
+  gap: var(--edo-ui-space-2);
+}
+
+.edo-ui-kit-activity-feed__item {
+  width: 100%;
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-md);
+  background: var(--edo-ui-panel);
+  display: flex;
+  gap: var(--edo-ui-space-2);
+  align-items: flex-start;
+  padding: var(--edo-ui-space-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.edo-ui-kit-activity-feed__item:hover {
+  background: var(--edo-ui-surface-low);
+}
+
+.edo-ui-kit-activity-feed__title,
+.edo-ui-kit-activity-feed__desc {
+  margin: 0;
+}
+
+.edo-ui-kit-activity-feed__title {
+  color: var(--edo-ui-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.edo-ui-kit-activity-feed__desc,
+.edo-ui-kit-activity-feed__item span,
+.edo-ui-kit-activity-feed__empty {
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}

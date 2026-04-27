@@ -1,0 +1,65 @@
+:root {
+  --edo-ui-font-family: Inter, 'Segoe UI', sans-serif;
+  --edo-ui-surface: #f7f9fb;
+  --edo-ui-surface-low: #f2f4f6;
+  --edo-ui-panel: #ffffff;
+  --edo-ui-panel-strong: #eceef0;
+  --edo-ui-ink: #191c1e;
+  --edo-ui-ink-muted: #45464d;
+  --edo-ui-outline: #c6c6cd;
+  --edo-ui-outline-strong: #76777d;
+  --edo-ui-primary: #000000;
+  --edo-ui-primary-ink: #ffffff;
+  --edo-ui-success: #0a7a3f;
+  --edo-ui-success-soft: rgba(10, 122, 63, 0.1);
+  --edo-ui-warning: #996100;
+  --edo-ui-warning-soft: rgba(153, 97, 0, 0.14);
+  --edo-ui-draft: #505f76;
+  --edo-ui-draft-soft: rgba(80, 95, 118, 0.12);
+  --edo-ui-error: #ba1a1a;
+  --edo-ui-error-soft: #ffdad6;
+  --edo-ui-info: #0a67b5;
+  --edo-ui-info-soft: rgba(10, 103, 181, 0.14);
+  --edo-ui-focus: #0a84ff;
+  --edo-ui-sidebar-bg: #f8fafc;
+  --edo-ui-topbar-bg: rgba(255, 255, 255, 0.92);
+
+  --edo-ui-radius-sm: 0.125rem;
+  --edo-ui-radius-md: 0.25rem;
+  --edo-ui-radius-lg: 0.5rem;
+  --edo-ui-radius-pill: 9999px;
+
+  --edo-ui-space-1: 4px;
+  --edo-ui-space-2: 8px;
+  --edo-ui-space-3: 12px;
+  --edo-ui-space-4: 16px;
+  --edo-ui-space-page: 20px;
+
+  --edo-ui-shadow-floating: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark {
+  --edo-ui-surface: #161a1d;
+  --edo-ui-surface-low: #20262b;
+  --edo-ui-panel: #1d2328;
+  --edo-ui-panel-strong: #2a3137;
+  --edo-ui-ink: #eef2f6;
+  --edo-ui-ink-muted: #b8c0c8;
+  --edo-ui-outline: #3a434b;
+  --edo-ui-outline-strong: #647180;
+  --edo-ui-primary: #f6f8fb;
+  --edo-ui-primary-ink: #101214;
+  --edo-ui-success: #44d088;
+  --edo-ui-success-soft: rgba(68, 208, 136, 0.2);
+  --edo-ui-warning: #f0bf63;
+  --edo-ui-warning-soft: rgba(240, 191, 99, 0.2);
+  --edo-ui-draft: #97a8ba;
+  --edo-ui-draft-soft: rgba(151, 168, 186, 0.2);
+  --edo-ui-error: #f07886;
+  --edo-ui-error-soft: rgba(240, 120, 134, 0.2);
+  --edo-ui-info: #78b8f0;
+  --edo-ui-info-soft: rgba(120, 184, 240, 0.2);
+  --edo-ui-focus: #7ec1ff;
+  --edo-ui-sidebar-bg: #13171a;
+  --edo-ui-topbar-bg: rgba(20, 24, 27, 0.92);
+}

@@ -1,0 +1,30 @@
+:host {
+  display: inline-flex;
+}
+
+.edo-ui-kit-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 1px solid transparent;
+  border-radius: var(--edo-ui-radius-md);
+  background: transparent;
+  color: var(--edo-ui-ink-muted);
+  cursor: pointer;
+}
+
+.edo-ui-kit-icon-button:hover:not(:disabled) {
+  background: var(--edo-ui-surface-low);
+}
+
+.edo-ui-kit-icon-button:focus-visible {
+  outline: 2px solid var(--edo-ui-focus);
+  outline-offset: 2px;
+}
+
+.edo-ui-kit-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

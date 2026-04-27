@@ -1,0 +1,96 @@
+<edo-dogx-app-shell [themeMode]="themeMode()">
+  <edo-dogx-sidebar sidebar>
+    <h1 class="dashboard-logo">EDO</h1>
+
+    <edo-dogx-nav-item
+      route="/dashboard/home"
+      label="Панель"
+      icon="dashboard"
+      [exact]="true"
+    />
+    <edo-dogx-nav-item route="/dashboard/documents" label="Документы" icon="documents" />
+    <edo-dogx-nav-item route="/dashboard/tasks" label="Задачи" icon="tasks" />
+    <edo-dogx-nav-item route="/dashboard/archive" label="Архив" icon="archive" />
+    <edo-dogx-nav-item route="/dashboard/settings" label="Настройки" icon="settings" />
+  </edo-dogx-sidebar>
+
+  <edo-dogx-topbar topbar>
+    <div class="dashboard-topbar__left">
+      <edo-dogx-toolbar-search
+        [control]="searchControl"
+        label="Поиск"
+        placeholder="Поиск документов"
+        (submitted)="onSearchSubmit()"
+      />
+    </div>
+
+    <div class="dashboard-topbar__actions">
+      <edo-dogx-topbar-action
+        icon="upload"
+        ariaLabel="Загрузить документ"
+        (pressed)="onUploadPressed()"
+      />
+      <edo-dogx-topbar-action
+        icon="notifications"
+        ariaLabel="Открыть уведомления"
+        [badgeCount]="2"
+        (pressed)="onNotificationsPressed()"
+      />
+      <edo-dogx-topbar-action
+        icon="history"
+        ariaLabel="Открыть историю"
+        (pressed)="onHistoryPressed()"
+      />
+      <edo-dogx-topbar-action
+        icon="account"
+        ariaLabel="Открыть профиль"
+        (pressed)="onAccountPressed()"
+      />
+    </div>
+
+    @if (notificationsOpen()) {
+      <div class="dashboard-topbar__menu dashboard-topbar__menu--notifications">
+        <edo-dogx-dropdown-menu [items]="notificationItems" (itemPressed)="onNotificationSelected($event)" />
+      </div>
+    }
+
+    @if (accountOpen()) {
+      <div class="dashboard-topbar__menu dashboard-topbar__menu--account">
+        <edo-dogx-dropdown-menu [items]="accountItems()" (itemPressed)="onAccountSelected($event)" />
+      </div>
+    }
+  </edo-dogx-topbar>
+
+  <section class="dashboard-layout__content">
+    <edo-dogx-modal
+      [open]="uploadOpen()"
+      title="Загрузка документов"
+      ariaLabel="Модальное окно загрузки"
+      (closed)="closeUpload()"
+    >
+      <div class="dashboard-layout__upload">
+        <p>Файлы будут загружены в раздел документов. Это мок-сценарий.</p>
+        <button type="button" class="dashboard-layout__confirm" (click)="confirmUpload()">Запустить загрузку</button>
+      </div>
+    </edo-dogx-modal>
+
+    <edo-dogx-drawer
+      [open]="historyOpen()"
+      title="История действий"
+      ariaLabel="Панель истории"
+      (closed)="closeHistory()"
+    >
+      <ul class="dashboard-layout__history">
+        <li>Проверен пакет документов procurement-q2.</li>
+        <li>Изменен статус Tax_Return_2023.pdf.</li>
+        <li>Добавлен новый пользователь из Legal Partners.</li>
+      </ul>
+    </edo-dogx-drawer>
+
+    @if (lastAction()) {
+      <p class="dashboard-layout__message" aria-live="polite">{{ lastAction() }}</p>
+    }
+
+    <router-outlet />
+  </section>
+</edo-dogx-app-shell>
