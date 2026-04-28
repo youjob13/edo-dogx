@@ -17,7 +17,7 @@ import { DashboardApiPort } from '../../ports/outbound/dashboard-api.port';
 
 const LATENCY_MS = 180;
 
-const MOCK_WEEKLY_VOLUME: ReadonlyArray<WeeklyVolumePoint> = [
+const MOCK_WEEKLY_VOLUME: Array<WeeklyVolumePoint> = [
   { day: 'mon', value: 22 },
   { day: 'tue', value: 45 },
   { day: 'wed', value: 30 },
@@ -27,7 +27,7 @@ const MOCK_WEEKLY_VOLUME: ReadonlyArray<WeeklyVolumePoint> = [
   { day: 'sun', value: 40 },
 ];
 
-const MOCK_ACTIVITY: ReadonlyArray<ActivityItem> = [
+const MOCK_ACTIVITY: Array<ActivityItem> = [
   {
     id: 'a1',
     actor: 'Сара Миллер',
@@ -186,7 +186,7 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     );
   }
 
-  public getWeeklyVolume(): Observable<ReadonlyArray<WeeklyVolumePoint>> {
+  public getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>> {
     return of(MOCK_WEEKLY_VOLUME).pipe(delay(LATENCY_MS));
   }
 
@@ -257,7 +257,7 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     }).pipe(delay(LATENCY_MS));
   }
 
-  public getActivity(query: DashboardQuery): Observable<ReadonlyArray<ActivityItem>> {
+  public getActivity(query: DashboardQuery): Observable<Array<ActivityItem>> {
     const text = query.text?.trim().toLowerCase();
     let activity = [...MOCK_ACTIVITY];
 

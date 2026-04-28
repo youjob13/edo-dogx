@@ -59,7 +59,7 @@ export class DashboardLayoutComponent {
   protected readonly accountOpen = signal(false);
   protected readonly themeMode = signal<'light' | 'dark'>('light');
 
-  protected readonly accountItems = computed<ReadonlyArray<UiKitDropdownItem>>(() => [
+  protected readonly accountItems = computed<Array<UiKitDropdownItem>>(() => [
     { id: 'profile', label: 'Профиль', icon: 'account' },
     {
       id: 'toggle-theme',
@@ -69,7 +69,7 @@ export class DashboardLayoutComponent {
     { id: 'settings', label: 'Настройки', icon: 'settings' },
   ]);
 
-  protected readonly notificationItems: ReadonlyArray<UiKitDropdownItem> = [
+  protected readonly notificationItems: Array<UiKitDropdownItem> = [
     { id: 'n1', label: 'Новый договор требует проверки', icon: 'warning' },
     { id: 'n2', label: 'Отчет за неделю готов', icon: 'success' },
   ];

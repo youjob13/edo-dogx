@@ -56,7 +56,7 @@ export class DashboardHomeComponent {
   private readonly useCases = inject(DashboardUseCases);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly recentDocumentColumns: ReadonlyArray<UiKitTableColumn> = [
+  protected readonly recentDocumentColumns: Array<UiKitTableColumn> = [
     { key: 'filename', label: 'Документ', sortable: true },
     { key: 'statusLabel', label: 'Статус', sortable: true },
     { key: 'modifiedAtLabel', label: 'Обновлен', sortable: true },
@@ -65,7 +65,7 @@ export class DashboardHomeComponent {
   protected readonly documentSort = signal<UiKitSortState>({ key: 'modifiedAtLabel', direction: 'desc' });
   protected readonly quickStatusFilter = signal<DashboardDocumentStatus | null>(null);
   protected readonly globalSearch = signal('');
-  protected readonly recentDocuments = signal<ReadonlyArray<DocumentItem>>([]);
+  protected readonly recentDocuments = signal<Array<DocumentItem>>([]);
   protected readonly selectedDocumentId = signal<string | null>(null);
   protected readonly previewDocument = signal<DashboardPreviewDocument | null>(null);
   protected readonly previewOpen = signal(false);
@@ -80,21 +80,21 @@ export class DashboardHomeComponent {
   protected readonly pendingApprovalDelta = signal(0);
   protected readonly actionItemsCount = signal(0);
   protected readonly overdueNoticesCount = signal(0);
-  protected readonly weeklyVolume = signal<ReadonlyArray<WeeklyVolumePoint>>([]);
+  protected readonly weeklyVolume = signal<Array<WeeklyVolumePoint>>([]);
   protected readonly selectedDay = signal<WeeklyVolumePoint['day'] | null>(null);
   protected readonly storagePercent = signal(0);
   protected readonly storageLabel = signal('0 / 0 ТБ');
-  protected readonly activity = signal<ReadonlyArray<UiKitActivityItem>>([]);
+  protected readonly activity = signal<Array<UiKitActivityItem>>([]);
   protected readonly activityDocumentMap = signal<Record<string, string | undefined>>({});
   protected readonly message = signal('');
 
-  protected readonly documentMenuItems: ReadonlyArray<UiKitDropdownItem> = [
+  protected readonly documentMenuItems: Array<UiKitDropdownItem> = [
     { id: 'preview', label: 'Предпросмотр', icon: 'preview' },
     { id: 'edit', label: 'Редактировать', icon: 'edit' },
     { id: 'download', label: 'Скачать', icon: 'download' },
   ];
 
-  protected readonly chartBars = computed<ReadonlyArray<UiKitChartBar>>(() => {
+  protected readonly chartBars = computed<Array<UiKitChartBar>>(() => {
     const selected = this.selectedDay();
 
     return this.weeklyVolume().map((item) => ({
@@ -104,7 +104,7 @@ export class DashboardHomeComponent {
     }));
   });
 
-  protected readonly recentDocumentRows = computed<ReadonlyArray<Record<string, string>>>(() =>
+  protected readonly recentDocumentRows = computed<Array<Record<string, string>>>(() =>
     this.filteredRecentDocuments().map((item) => ({
       id: item.id,
       filename: item.filename,
@@ -367,7 +367,7 @@ export class DashboardHomeComponent {
   private weekdayFromIso(value: string): WeeklyVolumePoint['day'] {
     const date = new Date(value);
     const index = date.getUTCDay();
-    const map: ReadonlyArray<WeeklyVolumePoint['day']> = [
+    const map: Array<WeeklyVolumePoint['day']> = [
       'sun',
       'mon',
       'tue',

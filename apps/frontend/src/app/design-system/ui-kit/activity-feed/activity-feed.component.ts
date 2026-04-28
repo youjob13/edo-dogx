@@ -25,7 +25,7 @@ import { UiKitActivityItem } from '../ui-kit.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivityFeedComponent {
-  public readonly items = input<ReadonlyArray<UiKitActivityItem>>([]);
+  public readonly items = input<Array<UiKitActivityItem>>([]);
 
   public readonly itemPressed = output<string>();
 }

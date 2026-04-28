@@ -53,7 +53,7 @@ export interface DashboardQuery {
 }
 
 export interface PaginatedResult<T> {
-  readonly items: ReadonlyArray<T>;
+  readonly items: Array<T>;
   readonly totalItems: number;
   readonly page: number;
   readonly pageSize: number;

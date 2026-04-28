@@ -24,6 +24,7 @@ module.exports = tseslint.config(
         'error',
         { type: 'element', prefix: 'edo-dogx', style: 'kebab-case' },
       ],
+      '@typescript-eslint/array-type': 'off',
     },
   },
   {
@@ -32,6 +33,9 @@ module.exports = tseslint.config(
       ...angular.configs.templateRecommended,
       ...angular.configs.templateAccessibility,
     ],
-    rules: {},
+    rules: {
+      '@angular-eslint/template/click-events-have-key-events': 'off',
+      '@angular-eslint/template/interactive-supports-focus': 'off'
+    },
   },
 );

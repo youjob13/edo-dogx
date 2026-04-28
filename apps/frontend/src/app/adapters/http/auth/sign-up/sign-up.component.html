@@ -1,14 +1,14 @@
 <section class="auth-page">
   <header class="auth-page__header">
+    <edo-dogx-auth-cat
+      class="auth-page__cat"
+      [passwordHidden]="!passwordVisible()"
+      [focused]="passwordFocused()"
+      [typing]="passwordTyping()"
+    />
     <h2 i18n="@@auth.signUp.title">Создать аккаунт</h2>
     <p i18n="@@auth.signUp.subtitle">Настройте безопасный доступ с компактной формой регистрации.</p>
   </header>
-
-  <edo-dogx-auth-cat
-    [passwordHidden]="!passwordVisible()"
-    [focused]="passwordFocused()"
-    [typing]="passwordTyping()"
-  />
 
   <form [formGroup]="form" class="auth-form" (ngSubmit)="submit()">
     <edo-dogx-input
@@ -37,14 +37,11 @@
     </div>
 
     <div>
-      <edo-dogx-input
+      <edo-dogx-password-field
         i18n-label="@@auth.signUp.confirmPasswordLabel"
         label="Подтвердите пароль"
         [control]="confirmPasswordControl"
-        type="password"
         autocomplete="new-password"
-        i18n-errorText="@@auth.signUp.confirmPasswordError"
-        errorText="Подтвердите пароль."
       />
       @if (form.touched && form.hasError('passwordMismatch')) {
         <p class="auth-form__error" i18n="@@auth.signUp.passwordMismatch">

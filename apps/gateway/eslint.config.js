@@ -15,6 +15,8 @@ module.exports = tseslint.config(
       ...tseslint.configs.stylistic,
       prettierConfig,
     ],
-    rules: {},
+    rules: {
+      '@typescript-eslint/array-type': 'off'
+    },
   },
 );

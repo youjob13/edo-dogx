@@ -1,28 +1,5 @@
 :host {
-  display: block;
   font-family: var(--edo-ui-font-family);
-}
-
-.edo-ui-kit-input {
-  display: grid;
-  gap: var(--edo-ui-space-1);
-}
-
-.edo-ui-kit-input--compact .edo-ui-kit-input__label {
-  font-size: 11px;
-}
-
-.edo-ui-kit-input tui-textfield {
-  display: block;
-  width: 100%;
-}
-
-.edo-ui-kit-input input {
-  width: 100%;
-}
-
-.edo-ui-kit-input--compact input {
-  min-height: 30px;
 }
 
 .edo-ui-kit-input__label {

@@ -7,9 +7,7 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet, TuiRoot],
   template: `
   <tui-root>
-    <ng-container ngProjectAs="tuiOverContent">
-      <router-outlet />
-    </ng-container>
+    <router-outlet />
   </tui-root>
   `,
 })

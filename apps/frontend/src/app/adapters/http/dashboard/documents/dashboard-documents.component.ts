@@ -54,14 +54,14 @@ export class DashboardDocumentsComponent {
   private readonly defaultSort: UiKitSortState = { key: 'modifiedAtLabel', direction: 'desc' };
   private readonly defaultPageSize = 5;
 
-  protected readonly columns: ReadonlyArray<UiKitTableColumn> = [
+  protected readonly columns: Array<UiKitTableColumn> = [
     { key: 'filename', label: 'Документ', sortable: true },
     { key: 'typeLabel', label: 'Тип', sortable: true },
     { key: 'statusLabel', label: 'Статус', sortable: true },
     { key: 'modifiedAtLabel', label: 'Изменен', sortable: true },
   ];
 
-  protected readonly statusOptions: ReadonlyArray<{ value: DashboardDocumentStatus | 'all'; label: string }> = [
+  protected readonly statusOptions: Array<{ value: DashboardDocumentStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Все статусы' },
     { value: 'pending', label: 'Ожидает' },
     { value: 'review', label: 'На проверке' },
@@ -69,7 +69,7 @@ export class DashboardDocumentsComponent {
     { value: 'archived', label: 'В архиве' },
   ];
 
-  protected readonly typeOptions: ReadonlyArray<{ value: DashboardDocumentType | 'all'; label: string }> = [
+  protected readonly typeOptions: Array<{ value: DashboardDocumentType | 'all'; label: string }> = [
     { value: 'all', label: 'Все типы' },
     { value: 'pdf', label: 'PDF' },
     { value: 'legal', label: 'Юридический' },
@@ -96,14 +96,14 @@ export class DashboardDocumentsComponent {
     totalItems: 0,
   });
   protected readonly loading = signal(false);
-  protected readonly documents = signal<ReadonlyArray<DocumentItem>>([]);
+  protected readonly documents = signal<Array<DocumentItem>>([]);
   protected readonly selectedDocumentId = signal<string | null>(null);
   protected readonly previewDocument = signal<DashboardPreviewDocument | null>(null);
   protected readonly previewOpen = signal(false);
   protected readonly editOpen = signal(false);
   protected readonly message = signal('');
 
-  protected readonly rowView = computed<ReadonlyArray<Record<string, string>>>(() =>
+  protected readonly rowView = computed<Array<Record<string, string>>>(() =>
     this.documents().map((item) => ({
       id: item.id,
       filename: item.filename,
@@ -122,7 +122,7 @@ export class DashboardDocumentsComponent {
     return this.documents().find((item) => item.id === selectedId) ?? null;
   });
 
-  protected readonly menuItems: ReadonlyArray<UiKitDropdownItem> = [
+  protected readonly menuItems: Array<UiKitDropdownItem> = [
     { id: 'preview', label: 'Открыть предпросмотр', icon: 'preview' },
     { id: 'edit', label: 'Редактировать', icon: 'edit' },
     { id: 'download', label: 'Скачать', icon: 'download' },

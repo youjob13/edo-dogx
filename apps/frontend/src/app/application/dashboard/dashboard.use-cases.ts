@@ -24,7 +24,7 @@ export class DashboardUseCases {
     return this.api.getDashboardSummary(query);
   }
 
-  public getWeeklyVolume(): Observable<ReadonlyArray<WeeklyVolumePoint>> {
+  public getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>> {
     return this.api.getWeeklyVolume();
   }
 
@@ -32,7 +32,7 @@ export class DashboardUseCases {
     return this.api.getDocuments(query);
   }
 
-  public getActivity(query: DashboardQuery): Observable<ReadonlyArray<ActivityItem>> {
+  public getActivity(query: DashboardQuery): Observable<Array<ActivityItem>> {
     return this.api.getActivity(query);
   }
 

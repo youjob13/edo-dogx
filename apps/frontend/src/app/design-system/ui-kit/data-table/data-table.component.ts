@@ -91,8 +91,8 @@ type TableRow = Record<string, string | number | null | undefined>;
 })
 export class DataTableComponent {
   public readonly caption = input('');
-  public readonly columns = input.required<ReadonlyArray<UiKitTableColumn>>();
-  public readonly rows = input<ReadonlyArray<TableRow>>([]);
+  public readonly columns = input.required<Array<UiKitTableColumn>>();
+  public readonly rows = input<Array<TableRow>>([]);
   public readonly rowActionLabel = input('');
   public readonly emptyText = input('No data available.');
   public readonly sort = input<UiKitSortState | null>(null);

@@ -21,7 +21,7 @@ import { InputComponent } from '../input/input.component';
 })
 export class ToolbarSearchComponent {
   public readonly control = input.required<FormControl<string>>();
-  public readonly label = input('Поиск');
+  public readonly label = input<string>();
   public readonly placeholder = input('Поиск документов');
   public readonly id = input('toolbar-search-input');
 

@@ -1,0 +1,18 @@
+<div class="edo-ui-kit-input" [class.edo-ui-kit-input--compact]="compact()">
+    @if(label(); as label) {
+    <label class="edo-ui-kit-input__label" [for]="inputId()">{{ label }}</label>
+    }
+
+    <tui-textfield tuiTextfieldSize="s" [iconStart]=`@tui.${leadingIcon()}`>
+        <input tuiInput [id]="inputId()" [type]="type()" [formControl]="control()" [placeholder]="placeholder()"
+            [autocomplete]="autocomplete()" (keydown.enter)="keyPressedEnter.emit()" />
+    </tui-textfield>
+
+    @if (hint()) {
+    <p class="edo-ui-kit-input__hint">{{ hint() }}</p>
+    }
+
+    @if (shouldShowError()) {
+    <p class="edo-ui-kit-input__error">{{ errorText() }}</p>
+    }
+</div>

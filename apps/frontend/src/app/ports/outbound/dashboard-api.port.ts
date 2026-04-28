@@ -14,9 +14,9 @@ import {
 
 export interface DashboardApiPort {
   getDashboardSummary(query: DashboardQuery): Observable<DashboardSummary>;
-  getWeeklyVolume(): Observable<ReadonlyArray<WeeklyVolumePoint>>;
+  getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>>;
   getDocuments(query: DashboardQuery): Observable<PaginatedResult<DocumentItem>>;
-  getActivity(query: DashboardQuery): Observable<ReadonlyArray<ActivityItem>>;
+  getActivity(query: DashboardQuery): Observable<Array<ActivityItem>>;
   getStorageUsage(): Observable<StorageUsage>;
   previewDocument(id: string): Observable<DashboardPreviewDocument>;
   downloadDocument(id: string): Observable<void>;

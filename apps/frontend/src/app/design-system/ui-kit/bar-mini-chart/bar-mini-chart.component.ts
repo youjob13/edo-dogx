@@ -27,7 +27,7 @@ import { UiKitChartBar } from '../ui-kit.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BarMiniChartComponent {
-  public readonly bars = input<ReadonlyArray<UiKitChartBar>>([]);
+  public readonly bars = input<Array<UiKitChartBar>>([]);
 
   public readonly barPressed = output<string>();
 }

@@ -26,7 +26,7 @@ import { UiKitDropdownItem } from '../ui-kit.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DropdownMenuComponent {
-  public readonly items = input<ReadonlyArray<UiKitDropdownItem>>([]);
+  public readonly items = input<Array<UiKitDropdownItem>>([]);
   public readonly ariaLabel = input('Меню действий');
 
   public readonly itemPressed = output<string>();
