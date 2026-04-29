@@ -21,7 +21,7 @@ declare module 'fastify' {
 
 export interface AppConfig {
   sessionSecret: string;
-  nodeEnv: string;
+  cookieSecure: boolean;
   cookieMaxAgeMs: number;
 }
 
@@ -43,7 +43,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     store: sessionStore as Parameters<typeof fastifySession>[1]['store'],
     saveUninitialized: false,
     cookie: {
-      secure: config.nodeEnv === 'production',
+      secure: config.cookieSecure,
       httpOnly: true,
       sameSite: 'lax',
       maxAge: config.cookieMaxAgeMs,
@@ -64,7 +64,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     },
   );
 
-  void app.register(authRoutes, { prefix: '/api/auth', authService });
+  void app.register(authRoutes, { prefix: '/auth', authService });
 
   app.get('/health', async () => {
     return { status: 'ok' };

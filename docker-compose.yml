@@ -88,6 +88,11 @@ services:
       dockerfile: apps/gateway/Dockerfile
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Keycloak is reachable inside Docker via its service name, but browsers need localhost
+      KEYCLOAK_PUBLIC_URL: http://localhost:8080
+      # Set to true only when serving over HTTPS
+      COOKIE_SECURE: "false"
     ports:
       - "${GATEWAY_PORT:-3000}:3000"
     depends_on:

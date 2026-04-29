@@ -25,6 +25,7 @@ export function app(): express.Express {
     createProxyMiddleware({
       target: apiTarget,
       changeOrigin: true,
+      pathRewrite: { '^/api': '' },
     }),
   );
 

@@ -6,7 +6,7 @@ WORKDIR /repo
 
 RUN corepack enable
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/frontend/package.json ./apps/frontend/
 COPY shared/ts-types/package.json ./shared/ts-types/
 

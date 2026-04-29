@@ -4,6 +4,8 @@ import type { TokenData, OidcClientPort } from '../../../ports/outbound/oidc-cli
 
 export interface KeycloakConfig {
   url: string;
+  /** Public-facing Keycloak URL visible to browsers. Defaults to `url` when not set. */
+  publicUrl?: string;
   realm: string;
   clientId: string;
   clientSecret: string;
@@ -27,7 +29,18 @@ export class KeycloakAdapter implements OidcClientPort {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const issuer = await Issuer.discover(issuerUrl);
-        const client = new issuer.Client({
+
+        // In Docker dev, Keycloak issues JWTs with the public-facing hostname (e.g. localhost:8080)
+        // but discovery is done via the internal hostname (e.g. keycloak:8080).
+        // Patch only the `issuer` field so openid-client validates `iss` against the public URL.
+        const patchedIssuer = config.publicUrl
+          ? new Issuer({
+              ...issuer.metadata,
+              issuer: `${config.publicUrl}/realms/${config.realm}`,
+            })
+          : issuer;
+
+        const client = new patchedIssuer.Client({
           client_id: config.clientId,
           client_secret: config.clientSecret,
           redirect_uris: [config.redirectUri],
@@ -66,14 +79,24 @@ export class KeycloakAdapter implements OidcClientPort {
     if (loginHint) {
       params['login_hint'] = loginHint;
     }
-    return this.client.authorizationUrl(params);
+    const authUrl = this.client.authorizationUrl(params);
+    // Rewrite internal Docker hostname to the public URL so the browser can reach Keycloak
+    if (this.config.publicUrl) {
+      const parsed = new URL(authUrl);
+      const pub = new URL(this.config.publicUrl);
+      parsed.hostname = pub.hostname;
+      parsed.port = pub.port;
+      parsed.protocol = pub.protocol;
+      return parsed.toString();
+    }
+    return authUrl;
   }
 
   async exchangeCode(
     params: Record<string, string>,
     pkceState: PkceState,
   ): Promise<TokenData> {
-    const tokenSet = await this.client.oauthCallback(
+    const tokenSet = await this.client.callback(
       this.config.redirectUri,
       params,
       {

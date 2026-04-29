@@ -5,6 +5,7 @@ import { type CanActivateFn } from '@angular/router';
 import { catchError, map, of, throwError } from 'rxjs';
 import type { UserProfile } from '@edo/types';
 
+let retries = 0;
 /**
  * Checks active session via GET /api/auth/me.
  * Redirects to the BFF login endpoint (Keycloak Authorization Code flow) on 401.
@@ -23,6 +24,10 @@ export const authGuard: CanActivateFn = () => {
     map(() => true),
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse && err.status === 401) {
+        if (retries > 10) {
+          return of(false)
+        }
+        retries += 1;
         document.location.href = '/api/auth/login';
         return of(false);
       }
