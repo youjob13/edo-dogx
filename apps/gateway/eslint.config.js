@@ -16,7 +16,8 @@ module.exports = tseslint.config(
       prettierConfig,
     ],
     rules: {
-      '@typescript-eslint/array-type': 'off'
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/no-require-imports': 'off'
     },
   },
 );

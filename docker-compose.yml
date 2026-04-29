@@ -41,7 +41,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     restart: unless-stopped
-    command: start-dev --import-realm
+    command: start-dev --import-realm --health-enabled=true
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-edo}
@@ -58,6 +58,11 @@ services:
         condition: service_healthy
     networks:
       - edo-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && timeout 3 cat <&3 | grep -q UP"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
 
   # ── Microservices ─────────────────────────────────────────────────
 
@@ -89,7 +94,7 @@ services:
       redis:
         condition: service_healthy
       keycloak:
-        condition: service_started
+        condition: service_healthy
       service:
         condition: service_started
     networks:
@@ -101,6 +106,9 @@ services:
       dockerfile: apps/frontend/Dockerfile
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Inside Docker, the gateway is reachable by its service name, not localhost.
+      API_BASE_URL: http://gateway:3000
     ports:
       - "${FRONTEND_PORT:-4000}:4000"
     depends_on:

@@ -1,18 +1,65 @@
-// BFF Gateway — entry point
-// Wires up the Fastify server, registers plugins and route adapters.
+if (process.env['NODE_ENV'] !== 'production') {
+  require('dotenv').config();
+}
+
+import Redis from 'ioredis';
+import { buildApp } from './adapters/inbound/http/app.js';
+import { RedisSessionAdapter } from './adapters/outbound/redis/session-store.adapter.js';
+import { KeycloakAdapter } from './adapters/outbound/oidc/keycloak.adapter.js';
+import { AuthService } from './application/auth.service.js';
+
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}
 
 async function main(): Promise<void> {
-  // TODO: bootstrap application
-  //   1. Load config from environment
-  //   2. Create Fastify instance
-  //   3. Register session plugin (Redis-backed)
-  //   4. Register Keycloak auth plugin
-  //   5. Register inbound HTTP adapters (routes)
-  //   6. Start listening
-  console.log('Gateway starting on port', process.env['PORT'] ?? 3000);
+  const port = parseInt(process.env['GATEWAY_PORT'] ?? '3000', 10);
+  const sessionSecret = requireEnv('SESSION_SECRET');
+  const nodeEnv = process.env['NODE_ENV'] ?? 'development';
+
+  // Redis
+  const redis = new Redis({
+    host: process.env['REDIS_HOST'] ?? 'localhost',
+    port: parseInt(process.env['REDIS_PORT'] ?? '6379', 10),
+    password: process.env['REDIS_PASSWORD'] || undefined,
+  });
+
+  // Keycloak OIDC adapter (discovers issuer at startup)
+  const keycloakAdapter = await KeycloakAdapter.create({
+    url: requireEnv('KEYCLOAK_URL'),
+    realm: requireEnv('KEYCLOAK_REALM'),
+    clientId: requireEnv('KEYCLOAK_CLIENT_ID'),
+    clientSecret: requireEnv('KEYCLOAK_CLIENT_SECRET'),
+    redirectUri:
+      process.env['KEYCLOAK_REDIRECT_URI'] ??
+      `http://localhost:${port}/api/auth/callback`,
+    postLogoutRedirectUri:
+      process.env['KEYCLOAK_POST_LOGOUT_REDIRECT_URI'] ??
+      `http://localhost:${process.env['FRONTEND_PORT'] ?? 4000}`,
+  });
+
+  const sessionStore = new RedisSessionAdapter(redis);
+  const authService = new AuthService(keycloakAdapter);
+
+  const app = buildApp({
+    authService,
+    sessionStore,
+    config: {
+      sessionSecret,
+      nodeEnv,
+      cookieMaxAgeMs: 86_400 * 1000, // 24 hours
+    },
+  });
+
+  await app.listen({ port, host: '0.0.0.0' });
 }
 
 main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+

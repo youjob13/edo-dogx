@@ -1,7 +1,70 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from 'fastify';
+import fastifyCookie from '@fastify/cookie';
+import fastifySession from '@fastify/session';
+import type { AuthPort } from '../../../ports/inbound/auth.port.js';
+import type { SessionStorePort } from '../../../ports/outbound/session-store.port.js';
+import authRoutes from './auth/auth.routes.js';
+import type { AuthSession } from '../../../domain/auth.js';
 
-export function buildApp(): FastifyInstance {
-  const app = Fastify({ logger: false });
+declare module 'fastify' {
+  interface FastifyInstance {
+    authenticate(
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): Promise<void>;
+  }
+}
+
+export interface AppConfig {
+  sessionSecret: string;
+  nodeEnv: string;
+  cookieMaxAgeMs: number;
+}
+
+export interface AppDeps {
+  authService: AuthPort;
+  sessionStore: SessionStorePort;
+  config: AppConfig;
+}
+
+export function buildApp(deps: AppDeps): FastifyInstance {
+  const { authService, sessionStore, config } = deps;
+
+  const app = Fastify({ logger: true });
+
+  void app.register(fastifyCookie);
+
+  void app.register(fastifySession, {
+    secret: config.sessionSecret,
+    store: sessionStore as Parameters<typeof fastifySession>[1]['store'],
+    saveUninitialized: false,
+    cookie: {
+      secure: config.nodeEnv === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: config.cookieMaxAgeMs,
+    },
+  });
+
+  // Decorator for protecting future proxy routes
+  app.decorate(
+    'authenticate',
+    async function (
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): Promise<void> {
+      const authData = request.session.auth as AuthSession | undefined;
+      if (!authData) {
+        await reply.code(401).send({ error: 'Unauthorized' });
+      }
+    },
+  );
+
+  void app.register(authRoutes, { prefix: '/api/auth', authService });
 
   app.get('/health', async () => {
     return { status: 'ok' };
@@ -9,3 +72,4 @@ export function buildApp(): FastifyInstance {
 
   return app;
 }
+

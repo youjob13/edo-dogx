@@ -13,12 +13,14 @@
   },
   "dependencies": {
     "@edo/ts-types": "workspace:*",
-    "@fastify/cookie": "^9.0.0",
-    "@fastify/session": "^10.0.0",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/session": "^11.1.1",
     "@grpc/grpc-js": "^1.10.0",
     "@grpc/proto-loader": "^0.7.0",
-    "fastify": "^5.0.0",
-    "ioredis": "^5.0.0"
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "ioredis": "^5.0.0",
+    "openid-client": "^5.7.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

@@ -13,8 +13,95 @@ servers:
 tags:
   - name: health
     description: Service health checks
+  - name: auth
+    description: Authentication and session management (OAuth2 Authorization Code + PKCE via Keycloak)
 
 paths:
+  /api/auth/login:
+    get:
+      tags: [auth]
+      summary: Initiate OAuth2 login
+      description: |
+        Generates PKCE code verifier + challenge, stores them in the server-side session,
+        and redirects the browser to the Keycloak authorization endpoint.
+      operationId: authLogin
+      parameters:
+        - in: query
+          name: login_hint
+          schema:
+            type: string
+          description: Pre-fill the email field on the Keycloak login page
+      responses:
+        "302":
+          description: Redirect to Keycloak authorization endpoint
+
+  /api/auth/callback:
+    get:
+      tags: [auth]
+      summary: OAuth2 authorization code callback
+      description: |
+        Receives the authorization code from Keycloak, verifies the PKCE state,
+        exchanges the code for tokens, stores the session, and redirects to /dashboard.
+      operationId: authCallback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: state
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to /dashboard on success or /auth/sign-in?error=auth_failed on failure
+        "400":
+          description: Missing or invalid session state
+
+  /api/auth/logout:
+    get:
+      tags: [auth]
+      summary: Logout
+      description: Destroys the server-side session and redirects to the Keycloak logout endpoint.
+      operationId: authLogout
+      responses:
+        "302":
+          description: Redirect to Keycloak end-session endpoint
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Get current user profile
+      description: Returns the authenticated user's profile from the active session.
+      operationId: authMe
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Authenticated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: No active session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/register:
+    get:
+      tags: [auth]
+      summary: Initiate registration
+      description: Redirects the browser to the Keycloak self-registration page.
+      operationId: authRegister
+      responses:
+        "302":
+          description: Redirect to Keycloak registration endpoint
+
   /health:
     get:
       tags: [health]
@@ -38,7 +125,36 @@ components:
           type: string
           example: ok
 
+    UserProfile:
+      type: object
+      required: [userId, email, roles]
+      properties:
+        userId:
+          type: string
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        roles:
+          type: array
+          items:
+            type: string
+          example: ["user"]
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: "Unauthorized"
+
   securitySchemes:
     keycloak:
       type: openIdConnect
       openIdConnectUrl: http://localhost:8080/realms/edo/.well-known/openid-configuration
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sessionId
