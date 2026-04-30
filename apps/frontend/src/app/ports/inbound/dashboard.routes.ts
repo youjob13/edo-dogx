@@ -25,6 +25,13 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
+        path: 'tasks/:boardId/task/:taskId',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/tasks/dashboard-task-details.component').then(
+            (m) => m.DashboardTaskDetailsComponent,
+          ),
+      },
+      {
         path: 'tasks',
         loadComponent: () =>
           import('../../adapters/http/dashboard/tasks/dashboard-tasks.component').then(

@@ -2,6 +2,128 @@
   display: block;
 }
 
+.dashboard-tasks__filters {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+  label {
+    color: var(--edo-ui-ink-muted);
+    font-size: 0.75rem;
+  }
+
+  select {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--edo-ui-border), #ffffff 20%);
+    background: var(--edo-ui-surface);
+    color: var(--edo-ui-ink);
+  }
+}
+
+.dashboard-tasks__board {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.dashboard-tasks__column {
+  border: 1px solid color-mix(in srgb, var(--edo-ui-border), #ffffff 18%);
+  background: color-mix(in srgb, var(--edo-ui-surface), #f4f7fb 16%);
+  border-radius: 0.9rem;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+  align-content: start;
+}
+
+.dashboard-tasks__column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h4 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--edo-ui-accent), #ffffff 72%);
+    font-size: 0.75rem;
+  }
+}
+
+.dashboard-tasks__group {
+  display: grid;
+  gap: 0.5rem;
+
+  h5 {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--edo-ui-ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}
+
+.dashboard-tasks__task {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--edo-ui-border), #ffffff 22%);
+  background: var(--edo-ui-surface);
+
+  label {
+    font-size: 0.73rem;
+    color: var(--edo-ui-ink-muted);
+  }
+
+  select {
+    width: 100%;
+    padding: 0.38rem 0.5rem;
+    border-radius: 0.55rem;
+    border: 1px solid color-mix(in srgb, var(--edo-ui-border), #ffffff 18%);
+    background: color-mix(in srgb, var(--edo-ui-surface), #f7f9fc 16%);
+    color: var(--edo-ui-ink);
+  }
+}
+
+.dashboard-tasks__task-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.dashboard-tasks__task-description {
+  margin: 0.15rem 0 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.8rem;
+}
+
+.dashboard-tasks__meta {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}
+
+.dashboard-tasks__task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.dashboard-tasks__empty {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}
+
 .dashboard-page__text {
   margin: 0 0 0.75rem;
   color: var(--edo-ui-ink-muted);

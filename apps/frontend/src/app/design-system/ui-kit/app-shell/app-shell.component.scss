@@ -10,8 +10,21 @@
 }
 
 .edo-ui-kit-app-shell__sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
   border-inline-end: 1px solid var(--edo-ui-outline);
   background: var(--edo-ui-sidebar-bg);
+  overflow: hidden;
+}
+
+.edo-ui-kit-app-shell__sidebar-content {
+  height: 100%;
+}
+
+.edo-ui-kit-app-shell__sidebar-toggle {
+  display: none;
 }
 
 .edo-ui-kit-app-shell__content {
@@ -35,6 +48,33 @@
 
 @media (min-width: 960px) {
   .edo-ui-kit-app-shell {
-    grid-template-columns: 16rem 1fr;
+    grid-template-columns: 10rem 1fr;
+    transition: grid-template-columns 180ms ease;
+  }
+
+  .edo-ui-kit-app-shell.sidebar-collapsed {
+    grid-template-columns: 2.65rem 1fr;
+  }
+
+  .edo-ui-kit-app-shell__sidebar-toggle {
+    position: absolute;
+    top: 0.75rem;
+    inset-inline-end: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid var(--edo-ui-outline);
+    border-radius: 999px;
+    background: var(--edo-ui-surface);
+    color: var(--edo-ui-text-primary);
+    cursor: pointer;
+    line-height: inherit;
+  }
+
+  .edo-ui-kit-app-shell__sidebar-toggle:focus-visible {
+    outline: 2px solid var(--edo-ui-focus, var(--edo-ui-outline));
+    outline-offset: 2px;
   }
 }

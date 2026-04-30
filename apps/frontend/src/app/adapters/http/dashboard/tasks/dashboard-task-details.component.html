@@ -1,0 +1,100 @@
+<edo-dogx-page-section title="Детали задачи" subtitle="Назначение, комментарии и перемещение задач внутри выбранной канбан-доски">
+  <edo-dogx-card title="Навигация" subtitle="Возврат к общей доске задач">
+    <edo-dogx-button
+      label="Назад к доскам"
+      appearance="secondary"
+      size="s"
+      (pressed)="navigateBackToBoard()"
+    />
+  </edo-dogx-card>
+
+  @if (loading()) {
+    <p class="dashboard-task-details__message">Загрузка задачи...</p>
+  }
+
+  @if (!loading() && task(); as taskModel) {
+    <edo-dogx-card
+      [title]="taskModel.title"
+      [subtitle]="'Статус: ' + getStatusLabel(taskModel.status) + ' • Срок: ' + taskModel.dueDateLabel"
+    >
+      <p class="dashboard-task-details__description">{{ taskModel.description }}</p>
+
+      @if (!canManage()) {
+        <p class="dashboard-task-details__warning">
+          Вы не входите в состав участников этой канбан-доски. Назначение, комментарии и перемещение недоступны.
+        </p>
+      }
+
+      <div class="dashboard-task-details__controls">
+        <label for="task-assignee">Исполнитель</label>
+        <select id="task-assignee" [formControl]="assigneeControl" [disabled]="!canManage()">
+          <option value="">Не назначен</option>
+          @for (member of details()?.members ?? []; track member.id) {
+            <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
+          }
+        </select>
+
+        <edo-dogx-button
+          label="Сохранить исполнителя"
+          appearance="secondary"
+          size="s"
+          [disabled]="!canManage()"
+          (pressed)="assignTask()"
+        />
+
+        <label for="task-status">Колонка</label>
+        <select id="task-status" [formControl]="statusControl" [disabled]="!canManage()">
+          <option value="todo">К выполнению</option>
+          <option value="inProgress">В работе</option>
+          <option value="review">Проверка</option>
+          <option value="done">Готово</option>
+        </select>
+
+        <edo-dogx-button
+          label="Переместить задачу"
+          appearance="secondary"
+          size="s"
+          [disabled]="!canManage()"
+          (pressed)="moveTask()"
+        />
+      </div>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Комментарии" subtitle="Участники доски могут добавлять комментарии к задаче">
+      <label for="task-comment">Новый комментарий</label>
+      <textarea
+        id="task-comment"
+        [formControl]="commentControl"
+        rows="4"
+        placeholder="Опишите изменение или задайте вопрос"
+        [disabled]="!canManage()"
+      ></textarea>
+
+      <edo-dogx-button
+        label="Добавить комментарий"
+        appearance="primary"
+        size="s"
+        [disabled]="!canManage()"
+        (pressed)="addComment()"
+      />
+
+      <div class="dashboard-task-details__comments" role="list" aria-label="Список комментариев">
+        @if (taskModel.comments.length === 0) {
+          <p class="dashboard-task-details__empty">Комментариев пока нет.</p>
+        }
+
+        @for (comment of taskModel.comments; track comment.id) {
+          <article class="dashboard-task-details__comment" role="listitem">
+            <p class="dashboard-task-details__comment-author">{{ comment.authorName }}</p>
+            <p class="dashboard-task-details__comment-text">{{ comment.text }}</p>
+            <p class="dashboard-task-details__comment-date">{{ comment.createdAtLabel }}</p>
+          </article>
+        }
+      </div>
+    </edo-dogx-card>
+  }
+
+  @if (message()) {
+    <p class="dashboard-task-details__message" aria-live="polite">{{ message() }}</p>
+  }
+</edo-dogx-page-section>

@@ -69,3 +69,74 @@ export interface DashboardPreviewDocument {
   readonly title: string;
   readonly body: string;
 }
+
+export type KanbanTaskStatus = 'todo' | 'inProgress' | 'review' | 'done';
+
+export type KanbanTaskGroupBy = 'assignee' | 'department' | 'group';
+
+export interface KanbanBoardMember {
+  readonly id: string;
+  readonly fullName: string;
+  readonly department: string;
+}
+
+export interface KanbanTaskComment {
+  readonly id: string;
+  readonly authorId: string;
+  readonly authorName: string;
+  readonly text: string;
+  readonly createdAtLabel: string;
+}
+
+export interface KanbanTask {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly status: KanbanTaskStatus;
+  readonly assigneeId: string | null;
+  readonly assigneeName: string;
+  readonly department: string;
+  readonly groupId: string;
+  readonly groupName: string;
+  readonly dueDateLabel: string;
+  readonly comments: Array<KanbanTaskComment>;
+}
+
+export interface KanbanBoardSummary {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly membersCount: number;
+  readonly tasksCount: number;
+}
+
+export interface KanbanBoardDetails {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly name: string;
+  readonly description: string;
+  readonly allowedGrouping: Array<KanbanTaskGroupBy>;
+  readonly members: Array<KanbanBoardMember>;
+  readonly tasks: Array<KanbanTask>;
+}
+
+export interface KanbanTaskDetails {
+  readonly board: KanbanBoardSummary;
+  readonly task: KanbanTask;
+  readonly members: Array<KanbanBoardMember>;
+  readonly currentUserId: string;
+  readonly canManage: boolean;
+}
+
+export interface KanbanTaskAssignPayload {
+  readonly assigneeId: string | null;
+}
+
+export interface KanbanTaskMovePayload {
+  readonly status: KanbanTaskStatus;
+}
+
+export interface KanbanTaskCommentPayload {
+  readonly text: string;
+}
