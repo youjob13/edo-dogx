@@ -304,7 +304,7 @@ const mockTaskBoardsSeed = (): Array<MutableTaskBoard> => {
       tasks: [
         {
           id: 't-201',
-          title: 'Выдать доступ в EDO и CRM',
+          title: 'Выдать доступ в ЭДО и CRM',
           description: 'Создать учетные записи и передать временный пароль.',
           status: 'todo',
           assigneeId: 'u5',

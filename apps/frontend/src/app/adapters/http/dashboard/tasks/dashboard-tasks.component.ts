@@ -37,7 +37,7 @@ export class DashboardTasksComponent {
   private readonly statusOrder: Array<KanbanTaskStatus> = ['todo', 'inProgress', 'review', 'done'];
 
   protected readonly organizationOptions: Array<{ value: string; label: string }> = [
-    { value: 'org-main', label: 'EDO Group' },
+    { value: 'org-main', label: 'ЭДО Group' },
     { value: 'org-empty', label: 'Пустая организация' },
   ];
 
