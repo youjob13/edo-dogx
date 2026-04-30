@@ -7,6 +7,12 @@
   gap: 0.75rem;
 }
 
+.dashboard-home__main > edo-dogx-card,
+.dashboard-home__metrics > edo-dogx-metric-card,
+.dashboard-home__metrics > edo-dogx-card {
+  block-size: 100%;
+}
+
 .dashboard-home__main,
 .dashboard-home__side {
   display: grid;
@@ -84,12 +90,13 @@
 
 @media (min-width: 900px) {
   .dashboard-home__metrics {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1fr 1fr 2fr;
+    align-items: stretch;
   }
 
   .dashboard-home__main {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.8fr) minmax(0, 1.2fr);
-    align-items: start;
+    grid-template-columns: 3fr 1fr;
+    align-items: stretch;
   }
 
   .dashboard-home__side {

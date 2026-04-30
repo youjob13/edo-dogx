@@ -1,7 +1,7 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, PLATFORM_ID } from '@angular/core';
-import { type CanActivateFn } from '@angular/router';
+import { Router, type CanActivateFn } from '@angular/router';
 import { catchError, map, of, throwError } from 'rxjs';
 import type { UserProfile } from '@edo/types';
 
@@ -18,18 +18,17 @@ export const authGuard: CanActivateFn = () => {
   }
 
   const http = inject(HttpClient);
-  const document = inject(DOCUMENT);
+  const router = inject(Router);
 
   return http.get<UserProfile>('/api/auth/me').pipe(
     map(() => true),
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse && err.status === 401) {
         if (retries > 10) {
-          return of(false)
+          return of(router.parseUrl('/guest'));
         }
         retries += 1;
-        document.location.href = '/api/auth/login';
-        return of(false);
+        return of(router.parseUrl('/guest'));
       }
       return throwError(() => err);
     }),

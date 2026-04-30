@@ -5,7 +5,11 @@ import { TuiButton } from '@taiga-ui/core/components/button';
   selector: 'edo-dogx-card',
   imports: [TuiButton],
   template: `
-    <article class="edo-ui-kit-card" [class.edo-ui-kit-card--flat]="flat()">
+    <article
+      class="edo-ui-kit-card"
+      [class.edo-ui-kit-card--flat]="flat()"
+      [class.edo-ui-kit-card--full-height]="fullHeight()"
+    >
       <header class="edo-ui-kit-card__header">
         <div>
           <h3>{{ title() }}</h3>
@@ -40,6 +44,7 @@ export class CardComponent {
   public readonly subtitle = input('');
   public readonly actionLabel = input('');
   public readonly flat = input(false);
+  public readonly fullHeight = input(false);
 
   public readonly actionClick = output<void>();
 }

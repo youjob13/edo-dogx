@@ -5,8 +5,10 @@
 
 .edo-ui-kit-card {
   display: grid;
+  grid-template-rows: min-content auto;
   gap: var(--edo-ui-space-3);
   padding: var(--edo-ui-space-4);
+  box-sizing: border-box;
   border: 1px solid var(--edo-ui-outline);
   border-radius: var(--edo-ui-radius-lg);
   background: var(--edo-ui-panel);
@@ -14,6 +16,10 @@
 
 .edo-ui-kit-card--flat {
   background: var(--edo-ui-surface-low);
+}
+
+.edo-ui-kit-card--full-height {
+  block-size: 100%;
 }
 
 .edo-ui-kit-card__header {

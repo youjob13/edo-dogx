@@ -6,6 +6,7 @@
     <edo-dogx-metric-card
       label="Ожидают подтверждения"
       [value]="pendingApprovalCount().toString()"
+      [fullHeight]="true"
       [hint]="'Изменение: +' + pendingApprovalDelta().toString()"
       icon="pending"
       (pressed)="onMetricPressed('pending')"
@@ -14,20 +15,18 @@
     <edo-dogx-metric-card
       label="Требуют внимания"
       [value]="actionItemsCount().toString()"
+      [fullHeight]="true"
       [hint]="'Просрочено: ' + overdueNoticesCount().toString()"
       icon="warning"
       (pressed)="onMetricPressed('review')"
     />
+
+    <edo-dogx-card title="Недельный объем" subtitle="Клик по столбцу выбирает день">
+      <edo-dogx-bar-mini-chart [bars]="chartBars()" (barPressed)="onBarPressed($event)" />
+    </edo-dogx-card>
   </div>
 
   <div class="dashboard-home__main">
-    <edo-dogx-card title="Недельный объем" subtitle="Клик по столбцу выбирает день">
-      <edo-dogx-bar-mini-chart [bars]="chartBars()" (barPressed)="onBarPressed($event)" />
-      <button type="button" class="dashboard-home__link-button" (click)="resetQuickFilters()">
-        Сбросить быстрые фильтры
-      </button>
-    </edo-dogx-card>
-
     <edo-dogx-card title="Последние документы" subtitle="Действия: предпросмотр, редактирование, скачивание">
       <edo-dogx-data-table
         [columns]="recentDocumentColumns"
@@ -46,7 +45,7 @@
       }
     </edo-dogx-card>
 
-    <edo-dogx-card title="Системная активность" subtitle="Последние события">
+    <edo-dogx-card title="Системная активность" subtitle="Последние события" [fullHeight]="true">
       <edo-dogx-activity-feed [items]="activity()" (itemPressed)="onActivityPressed($event)" />
     </edo-dogx-card>
   </div>
@@ -58,6 +57,9 @@
         Быстрый фильтр: {{ quickStatusFilter() ? getStatusLabel(quickStatusFilter()!) : 'не задан' }}
       </p>
       <p class="dashboard-home__text">Выбранный день: {{ selectedDay() ?? 'не выбран' }}</p>
+      <button type="button" class="dashboard-home__link-button" (click)="resetQuickFilters()">
+        Сбросить быстрые фильтры
+      </button>
     </edo-dogx-card>
 
     <edo-dogx-card title="Использование хранилища" subtitle="Текущая загрузка и детали">

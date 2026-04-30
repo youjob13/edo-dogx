@@ -6,7 +6,7 @@ import { UiKitIconName } from '../ui-kit.models';
   selector: 'edo-dogx-metric-card',
   imports: [IconComponent],
   template: `
-    <button class="edo-ui-kit-metric-card" type="button" (click)="pressed.emit()">
+    <button [style.height]="fullHeight() ? '100%' : 'auto'" class="edo-ui-kit-metric-card" type="button" (click)="pressed.emit()">
       <div class="edo-ui-kit-metric-card__head">
         <span>{{ label() }}</span>
         <edo-dogx-icon [name]="icon()" [size]="20" />
@@ -23,6 +23,7 @@ import { UiKitIconName } from '../ui-kit.models';
 export class MetricCardComponent {
   public readonly label = input.required<string>();
   public readonly value = input.required<string>();
+  public readonly fullHeight = input(false);
   public readonly hint = input('');
   public readonly icon = input<UiKitIconName>('pending');
 

@@ -7,6 +7,11 @@
   gap: var(--edo-ui-space-2);
 }
 
+.edo-ui-kit-page-section__body {
+  display: grid;
+  gap: var(--edo-ui-space-4);
+}
+
 header h2 {
   margin: 0;
   font-size: 1rem;
