@@ -5,7 +5,7 @@
 
 .edo-ui-kit-card {
   display: grid;
-  grid-template-rows: min-content auto;
+  grid-template-rows: min-content auto min-content;
   gap: var(--edo-ui-space-3);
   padding: var(--edo-ui-space-4);
   box-sizing: border-box;

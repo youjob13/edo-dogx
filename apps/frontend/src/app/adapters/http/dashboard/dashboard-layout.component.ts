@@ -124,6 +124,18 @@ export class DashboardLayoutComponent {
       return;
     }
 
+    if (id === 'profile') {
+      this.accountOpen.set(false);
+      this.router.navigate(['/dashboard/profile']);
+      return;
+    }
+
+    if (id === 'settings') {
+      this.accountOpen.set(false);
+      this.router.navigate(['/dashboard/settings']);
+      return;
+    }
+
     this.accountOpen.set(false);
     this.lastAction.set(`Открыт раздел аккаунта: ${id}`);
   }

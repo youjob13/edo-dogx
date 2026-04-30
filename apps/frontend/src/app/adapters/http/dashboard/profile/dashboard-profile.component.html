@@ -1,0 +1,88 @@
+<edo-dogx-page-section
+  title="Профиль"
+  subtitle="Управление персональными данными и рабочими атрибутами"
+>
+  <div class="dashboard-profile__layout">
+    <edo-dogx-card [fullHeight]="true" title="Аватар" subtitle="Фотография отображается в интерфейсе аккаунта">
+      <div class="dashboard-profile__avatar-block">
+        <div class="dashboard-profile__avatar" aria-label="Текущий аватар пользователя">
+          @if (avatarUrl(); as src) {
+            <img [src]="src" alt="Аватар пользователя" />
+          } @else {
+            <span>Нет фото</span>
+          }
+        </div>
+
+        <label for="profile-avatar" class="dashboard-profile__label">Загрузить новый аватар</label>
+        <input
+          id="profile-avatar"
+          type="file"
+          accept="image/*"
+          (change)="onAvatarSelected($event)"
+        />
+
+      </div>
+      
+        <edo-dogx-button
+          footer
+          label="Удалить аватар"
+          appearance="secondary"
+          size="s"
+          (pressed)="clearAvatar()"
+        />
+    </edo-dogx-card>
+
+    <edo-dogx-card [fullHeight]="true" title="Профиль сотрудника" subtitle="Базовые данные пользователя EDO">
+      <form class="dashboard-profile__form" (submit)="$event.preventDefault(); saveProfile()">
+        <label for="profile-fullname">ФИО</label>
+        <input id="profile-fullname" type="text" [formControl]="fullNameControl" />
+
+        <label for="profile-email">Корпоративная почта</label>
+        <input id="profile-email" type="email" [formControl]="emailControl" />
+
+        <label for="profile-department">Подразделение</label>
+        <input id="profile-department" type="text" [formControl]="departmentControl" />
+
+        <label for="profile-position">Должность</label>
+        <input id="profile-position" type="text" [formControl]="positionControl" />
+
+        <edo-dogx-button label="Сохранить изменения" appearance="primary" size="m" (pressed)="saveProfile()" />
+      </form>
+    </edo-dogx-card>
+  </div>
+
+  <div class="dashboard-profile__layout">
+    <edo-dogx-card [fullHeight]="true" title="Настройки уведомлений" subtitle="Выберите удобные каналы оповещений">
+      <form class="dashboard-profile__form" (submit)="$event.preventDefault(); saveProfile()">
+        <label class="dashboard-profile__checkbox" for="profile-notify-email">
+          <input id="profile-notify-email" type="checkbox" [formControl]="notifyEmailControl" />
+          <span>Email уведомления</span>
+        </label>
+
+        <label class="dashboard-profile__checkbox" for="profile-notify-push">
+          <input id="profile-notify-push" type="checkbox" [formControl]="notifyPushControl" />
+          <span>Push уведомления</span>
+        </label>
+
+        <label class="dashboard-profile__checkbox" for="profile-notify-inapp">
+          <input id="profile-notify-inapp" type="checkbox" [formControl]="notifyInAppControl" />
+          <span>In-app уведомления</span>
+        </label>
+      </form>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Контакты" subtitle="Данные для связи внутри организации">
+      <form class="dashboard-profile__form" (submit)="$event.preventDefault(); saveProfile()">
+        <label for="profile-phone">Номер телефона</label>
+        <input id="profile-phone" type="tel" [formControl]="phoneControl" />
+
+        <label for="profile-vk">ВКонтакте</label>
+        <input id="profile-vk" type="url" [formControl]="vkControl" placeholder="https://vk.com/username" />
+      </form>
+    </edo-dogx-card>
+  </div>
+
+  @if (message()) {
+    <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+  }
+</edo-dogx-page-section>

@@ -46,6 +46,13 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
+        path: 'profile',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/profile/dashboard-profile.component').then(
+            (m) => m.DashboardProfileComponent,
+          ),
+      },
+      {
         path: '',
         redirectTo: 'home',
         pathMatch: 'full',

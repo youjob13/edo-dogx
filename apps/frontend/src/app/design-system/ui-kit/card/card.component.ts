@@ -34,6 +34,10 @@ import { TuiButton } from '@taiga-ui/core/components/button';
       <div class="edo-ui-kit-card__body">
         <ng-content />
       </div>
+
+      <footer>
+        <ng-content select="[footer]" />
+      </footer>
     </article>
   `,
   styleUrl: './card.component.scss',
