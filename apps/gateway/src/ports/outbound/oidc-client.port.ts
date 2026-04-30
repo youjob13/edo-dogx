@@ -19,5 +19,5 @@ export interface OidcClientPort {
     pkceState: PkceState,
   ): Promise<TokenData>;
   buildLogoutUrl(idToken: string): string;
-  buildRegisterUrl(): string;
+  buildRegisterUrl(pkceState: PkceState): string;
 }

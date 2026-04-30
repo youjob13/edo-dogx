@@ -138,15 +138,27 @@ export class KeycloakAdapter implements OidcClientPort {
     });
   }
 
-  buildRegisterUrl(): string {
-    const url = new URL(
-      `${this.config.url}/realms/${this.config.realm}/protocol/openid-connect/registrations`,
-    );
-    url.searchParams.set('client_id', this.config.clientId);
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', 'openid');
-    url.searchParams.set('redirect_uri', this.config.redirectUri);
-    return url.toString();
+  buildRegisterUrl(pkceState: PkceState): string {
+    const authUrl = this.client.authorizationUrl({
+      scope: 'openid email profile',
+      redirect_uri: this.config.redirectUri,
+      state: pkceState.state,
+      code_challenge: generators.codeChallenge(pkceState.codeVerifier),
+      code_challenge_method: 'S256',
+      kc_action: 'register',
+    });
+
+    // Rewrite internal Docker hostname to the public URL so the browser can reach Keycloak
+    if (this.config.publicUrl) {
+      const parsed = new URL(authUrl);
+      const pub = new URL(this.config.publicUrl);
+      parsed.hostname = pub.hostname;
+      parsed.port = pub.port;
+      parsed.protocol = pub.protocol;
+      return parsed.toString();
+    }
+
+    return authUrl;
   }
 }
 

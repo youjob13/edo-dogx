@@ -15,6 +15,12 @@ export class AuthService implements AuthPort {
     return { authUrl, pkceState };
   }
 
+  initiateRegister(): InitiateLoginResult {
+    const pkceState = this.oidcClient.generatePkceState();
+    const authUrl = this.oidcClient.buildRegisterUrl(pkceState);
+    return { authUrl, pkceState };
+  }
+
   async handleCallback(
     params: Record<string, string>,
     pkceState: PkceState,
@@ -41,9 +47,5 @@ export class AuthService implements AuthPort {
       email: session.email,
       roles: session.roles,
     };
-  }
-
-  buildRegisterUrl(): string {
-    return this.oidcClient.buildRegisterUrl();
   }
 }

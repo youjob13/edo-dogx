@@ -128,9 +128,10 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
   );
 
   // GET /api/auth/register — redirect to Keycloak self-registration
-  fastify.get('/register', async (_request, reply) => {
-    const registerUrl = authService.buildRegisterUrl();
-    return reply.redirect(registerUrl);
+  fastify.get('/register', async (request, reply) => {
+    const { authUrl, pkceState } = authService.initiateRegister();
+    request.session.pkce = pkceState;
+    return reply.redirect(authUrl);
   });
 };
 

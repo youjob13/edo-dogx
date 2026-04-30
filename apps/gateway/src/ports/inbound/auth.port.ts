@@ -8,6 +8,7 @@ export interface InitiateLoginResult {
 
 export interface AuthPort {
   initiateLogin(loginHint?: string): InitiateLoginResult;
+  initiateRegister(): InitiateLoginResult;
   handleCallback(
     params: Record<string, string>,
     pkceState: PkceState,
@@ -15,5 +16,4 @@ export interface AuthPort {
   /** Returns the Keycloak end-session URL to redirect to. */
   logout(idToken: string): string;
   getCurrentUser(session: AuthSession): UserProfile;
-  buildRegisterUrl(): string;
 }
