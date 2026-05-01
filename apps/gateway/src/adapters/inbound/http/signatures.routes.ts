@@ -1,15 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { edmsRbacGuard } from './middleware/edms-rbac.guard.js';
+import { SignatureServiceClient } from '../../outbound/grpc/signature.client.js';
 
-interface SignatureDto {
-  id: string;
-  documentId: string;
-  status: 'PENDING' | 'PARTIAL' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
-  providerRef: string;
-}
-
-const signatureStore = new Map<string, SignatureDto>();
-const byDocument = new Map<string, string>();
+const signatureClient = new SignatureServiceClient();
 
 const signaturesRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.post<{
@@ -56,17 +49,20 @@ const signaturesRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         return reply.code(400).send({ error: 'at least one signer is required' });
       }
 
-      const id = `sig-${Date.now()}`;
-      const dto: SignatureDto = {
-        id,
-        documentId,
-        status: 'PENDING',
-        providerRef: 'provider-pending',
-      };
-
-      signatureStore.set(id, dto);
-      byDocument.set(documentId, id);
-      return reply.code(202).send(dto);
+      try {
+        const response = await signatureClient.startSignature({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+          signers: request.body.signers.map((signer) => ({
+            user_id: signer.userId,
+            due_at: signer.dueAt,
+          })),
+        });
+        return reply.code(202).send(response);
+      } catch (error) {
+        request.log.error({ error }, 'signature-service start signature failed');
+        return reply.code(503).send({ error: 'signature-service unavailable' });
+      }
     },
   );
 
@@ -90,17 +86,16 @@ const signaturesRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         return reply.code(400).send({ error: 'documentId is required' });
       }
 
-      const signatureId = byDocument.get(documentId);
-      if (!signatureId) {
-        return reply.code(404).send({ error: 'No signature request found' });
+      try {
+        const response = await signatureClient.getSignatureStatus({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+        });
+        return reply.send(response);
+      } catch (error) {
+        request.log.error({ error }, 'signature-service get status failed');
+        return reply.code(503).send({ error: 'signature-service unavailable' });
       }
-
-      const dto = signatureStore.get(signatureId);
-      if (!dto) {
-        return reply.code(404).send({ error: 'Signature request not found' });
-      }
-
-      return reply.send(dto);
     },
   );
 
@@ -132,15 +127,18 @@ const signaturesRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =>
     async (request, reply) => {
       const { signatureRequestId } = request.params;
       const { status, providerRef } = request.body;
-      const dto = signatureStore.get(signatureRequestId);
-      if (!dto) {
-        return reply.code(404).send({ error: 'Signature request not found' });
+      try {
+        const response = await signatureClient.recordSignatureCallback({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          signature_request_id: signatureRequestId,
+          status,
+          provider_ref: providerRef,
+        });
+        return reply.code(202).send(response);
+      } catch (error) {
+        request.log.error({ error }, 'signature-service callback failed');
+        return reply.code(503).send({ error: 'signature-service unavailable' });
       }
-
-      dto.status = status;
-      dto.providerRef = providerRef;
-      signatureStore.set(dto.id, dto);
-      return reply.code(202).send(dto);
     },
   );
 };

@@ -1,18 +1,9 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { edmsRbacGuard } from './middleware/edms-rbac.guard.js';
-
-interface DocumentDto {
-  id: string;
-  title: string;
-  category: string;
-  status: 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
-  version: number;
-  updatedAt: string;
-}
-
-const documentStore = new Map<string, DocumentDto>();
+import { DocumentServiceClient } from '../../outbound/grpc/document.client.js';
 
 const allowedStatuses = new Set(['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED']);
+const documentClient = new DocumentServiceClient();
 
 const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.post<{ Body: { title: string; category: string } }>(
@@ -39,18 +30,17 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.code(400).send({ error: 'category is required' });
       }
 
-      const id = `doc-${Date.now()}`;
-      const now = new Date().toISOString();
-      const draft: DocumentDto = {
-        id,
-        title: title.trim(),
-        category: category.trim(),
-        status: 'DRAFT',
-        version: 1,
-        updatedAt: now,
-      };
-      documentStore.set(id, draft);
-      return reply.code(201).send(draft);
+      try {
+        const response = await documentClient.createDraft({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          title: title.trim(),
+          category: category.trim(),
+        });
+        return reply.code(201).send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service create draft failed');
+        return reply.code(503).send({ error: 'document-service unavailable' });
+      }
     },
   );
 
@@ -100,25 +90,20 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.code(400).send({ error: 'invalid status filter' });
       }
 
-      const items = [...documentStore.values()].filter((doc) => {
-        if (q && !doc.title.toLowerCase().includes(q.toLowerCase())) {
-          return false;
-        }
-        if (status && doc.status !== status) {
-          return false;
-        }
-        if (category && doc.category !== category) {
-          return false;
-        }
-        return true;
-      });
-
-      return reply.send({
-        items: items.slice(offset, offset + limit),
-        total: items.length,
-        limit,
-        offset,
-      });
+      try {
+        const response = await documentClient.searchDocuments({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          query: q,
+          status,
+          category,
+          limit,
+          offset,
+        });
+        return reply.send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service search failed');
+        return reply.code(503).send({ error: 'document-service unavailable' });
+      }
     },
   );
 
@@ -142,16 +127,16 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.code(400).send({ error: 'documentId is required' });
       }
 
-      const record = documentStore.get(documentId);
-      if (!record) {
-        return reply.code(404).send({ error: 'Document not found' });
+      try {
+        const response = await documentClient.submitWorkflow({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+        });
+        return reply.code(202).send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service submit workflow failed');
+        return reply.code(503).send({ error: 'document-service unavailable' });
       }
-
-      record.status = 'IN_REVIEW';
-      record.version += 1;
-      record.updatedAt = new Date().toISOString();
-      documentStore.set(record.id, record);
-      return reply.code(202).send({ id: record.id, status: record.status, version: record.version });
     },
   );
 
@@ -186,19 +171,17 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.code(400).send({ error: 'expectedVersion must be a positive integer' });
       }
 
-      const record = documentStore.get(documentId);
-      if (!record) {
-        return reply.code(404).send({ error: 'Document not found' });
+      try {
+        const response = await documentClient.approveWorkflow({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+          expected_version: expectedVersion,
+        });
+        return reply.code(202).send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service approve workflow failed');
+        return reply.code(503).send({ error: 'document-service unavailable' });
       }
-      if (record.version !== expectedVersion) {
-        return reply.code(409).send({ error: 'Document version mismatch' });
-      }
-
-      record.status = 'APPROVED';
-      record.version += 1;
-      record.updatedAt = new Date().toISOString();
-      documentStore.set(record.id, record);
-      return reply.code(202).send({ id: record.id, status: record.status, version: record.version });
     },
   );
 };

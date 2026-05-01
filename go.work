@@ -1,3 +1,9 @@
 go 1.23
 
-use ./services/service
+use ./services/document-service
+
+use ./services/authorization-audit-service
+
+use ./services/signature-service
+
+use ./services/search-notification-service

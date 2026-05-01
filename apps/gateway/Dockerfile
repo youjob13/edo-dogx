@@ -14,6 +14,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY apps/gateway ./apps/gateway
 COPY shared/ts-types ./shared/ts-types
+COPY shared/proto ./shared/proto
 
 WORKDIR /repo/apps/gateway
 RUN pnpm build
@@ -31,6 +32,7 @@ ENV PORT=3000
 
 COPY --from=builder /repo/apps/gateway/dist ./dist
 COPY --from=builder /gateway-deploy/node_modules ./node_modules
+COPY --from=builder /repo/shared/proto ./shared/proto
 
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

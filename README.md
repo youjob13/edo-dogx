@@ -134,8 +134,8 @@ pnpm dev:gateway
 # Start frontend dev server
 pnpm dev:frontend
 
-# Start Go service
-cd services/service && go run ./cmd/server
+# Start one Go microservice locally (example)
+cd services/document-service && go run ./cmd/server
 ```
 
 ### Proto code generation
@@ -147,7 +147,7 @@ protoc --go_out=. --go-grpc_out=. shared/proto/service.proto
 
 ## Adding a New Microservice
 
-1. Create `services/<name>/` with the same hexagonal structure as `services/service/`.
+1. Create `services/<name>/` with the same hexagonal structure as existing split services (for example `services/document-service/`).
 2. Add the module to `go.work`: `use ./services/<name>`.
 3. Add the service to `docker-compose.yml`.
 4. Add a proto contract in `shared/proto/`.

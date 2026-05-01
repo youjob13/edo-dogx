@@ -85,16 +85,60 @@ services:
 
   # ── Microservices ─────────────────────────────────────────────────
 
-  service:
+  document-service:
     build:
-      context: services/service
+      context: services/document-service
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
+    environment:
+      GRPC_ADDR: :50052
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    networks:
+      - edo-network
+
+  authorization-audit-service:
+    build:
+      context: services/authorization-audit-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GRPC_ADDR: :50053
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - edo-network
+
+  signature-service:
+    build:
+      context: services/signature-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GRPC_ADDR: :50054
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - edo-network
+
+  search-notification-service:
+    build:
+      context: services/search-notification-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GRPC_ADDR: :50055
+    depends_on:
+      postgres:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
@@ -121,7 +165,13 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-      service:
+      document-service:
+        condition: service_started
+      authorization-audit-service:
+        condition: service_started
+      signature-service:
+        condition: service_started
+      search-notification-service:
         condition: service_started
       elasticsearch:
         condition: service_healthy

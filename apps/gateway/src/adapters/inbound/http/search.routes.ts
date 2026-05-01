@@ -1,65 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { edmsRbacGuard } from './middleware/edms-rbac.guard.js';
+import { SearchNotificationServiceClient } from '../../outbound/grpc/search_notification.client.js';
 
-interface SearchItem {
-  documentId: string;
-  title: string;
-  category: 'HR' | 'FINANCE' | 'GENERAL';
-  status: 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
-  updatedAt: string;
-}
-
-interface NotificationCenterItem {
-  id: string;
-  eventType: string;
-  recipientUserId: string;
-  documentId: string;
-  deliveryStatus: 'PENDING' | 'SENT' | 'FAILED' | 'RETRYING';
-  createdAt: string;
-}
-
-const searchIndex: SearchItem[] = [
-  {
-    documentId: 'doc-hr-001',
-    title: 'Трудовой договор 2026',
-    category: 'HR',
-    status: 'IN_REVIEW',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    documentId: 'doc-fin-002',
-    title: 'Финансовый отчет Q1',
-    category: 'FINANCE',
-    status: 'APPROVED',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    documentId: 'doc-gen-003',
-    title: 'Общий регламент закупок',
-    category: 'GENERAL',
-    status: 'DRAFT',
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-const notificationCenter: NotificationCenterItem[] = [
-  {
-    id: 'notif-1',
-    eventType: 'documents.submitted',
-    recipientUserId: 'user.hr@edo.local',
-    documentId: 'doc-hr-001',
-    deliveryStatus: 'SENT',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'notif-2',
-    eventType: 'documents.approved',
-    recipientUserId: 'user.finance@edo.local',
-    documentId: 'doc-fin-002',
-    deliveryStatus: 'PENDING',
-    createdAt: new Date().toISOString(),
-  },
-];
+const searchNotificationClient = new SearchNotificationServiceClient();
 
 const searchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.get<{
@@ -100,25 +43,20 @@ const searchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           ? request.query.offset
           : 0;
 
-      const filtered = searchIndex.filter((item) => {
-        if (q && !item.title.toLowerCase().includes(q)) {
-          return false;
-        }
-        if (category && item.category !== category) {
-          return false;
-        }
-        if (status && item.status !== status) {
-          return false;
-        }
-        return true;
-      });
-
-      return reply.send({
-        items: filtered.slice(offset, offset + limit),
-        total: filtered.length,
-        limit,
-        offset,
-      });
+      try {
+        const response = await searchNotificationClient.searchDocuments({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          query: q,
+          status,
+          category,
+          limit,
+          offset,
+        });
+        return reply.send(response);
+      } catch (error) {
+        request.log.error({ error }, 'search-notification-service search failed');
+        return reply.code(503).send({ error: 'search-notification-service unavailable' });
+      }
     },
   );
 
@@ -127,8 +65,19 @@ const searchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     {
       preHandler: [fastify.authenticate, edmsRbacGuard('notifications.read')],
     },
-    async (_request, reply) => {
-      return reply.send({ items: notificationCenter });
+    async (request, reply) => {
+      try {
+        const response = await searchNotificationClient.emitNotification({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          event_type: 'notifications.center.read',
+          recipient_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: '',
+        });
+        return reply.send({ items: [response] });
+      } catch (error) {
+        request.log.error({ error }, 'search-notification-service notification center failed');
+        return reply.code(503).send({ error: 'search-notification-service unavailable' });
+      }
     },
   );
 };

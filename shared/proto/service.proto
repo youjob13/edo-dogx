@@ -2,11 +2,36 @@ syntax = "proto3";
 
 package service.v1;
 
-option go_package = "edo/services/service/internal/adapters/inbound/grpc/pb;pb";
+option go_package = "edo/shared/proto/pb;pb";
 
 // ExampleService is a placeholder — rename and extend per domain.
 service ExampleService {
   rpc Ping(PingRequest) returns (PingResponse);
+}
+
+service DocumentWorkflowService {
+  rpc CreateDraft(CreateDraftRequest) returns (Document);
+  rpc UpdateDraft(UpdateDraftRequest) returns (Document);
+  rpc GetDocument(GetDocumentRequest) returns (Document);
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+  rpc SubmitWorkflow(SubmitWorkflowRequest) returns (WorkflowInstance);
+  rpc ApproveWorkflow(ApproveWorkflowRequest) returns (WorkflowInstance);
+  rpc RequestWorkflowChanges(RequestWorkflowChangesRequest) returns (WorkflowInstance);
+  rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
+}
+
+service AuthorizationAuditService {
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+  rpc AuthorizeTransition(AuthorizeTransitionRequest) returns (AuthorizeTransitionResponse);
+  rpc AppendAuditEvent(AppendAuditEventRequest) returns (AppendAuditEventResponse);
+  rpc GetAuditEvents(GetAuditEventsRequest) returns (GetAuditEventsResponse);
+}
+
+service SearchNotificationService {
+  rpc SyncSearchProjection(SyncSearchProjectionRequest) returns (SyncSearchProjectionResponse);
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+  rpc EmitNotification(EmitNotificationRequest) returns (EmitNotificationResponse);
+  rpc RetryFailedNotifications(RetryFailedNotificationsRequest) returns (RetryFailedNotificationsResponse);
 }
 
 service DocumentService {
@@ -159,6 +184,24 @@ message RequestChangesRequest {
   int64 expected_version = 4;
 }
 
+message SubmitWorkflowRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+}
+
+message ApproveWorkflowRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  int64 expected_version = 3;
+}
+
+message RequestWorkflowChangesRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string comment = 3;
+  int64 expected_version = 4;
+}
+
 message StartSignatureRequest {
   string actor_user_id = 1;
   string document_id = 2;
@@ -189,6 +232,18 @@ message CheckPermissionRequest {
 }
 
 message CheckPermissionResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+message AuthorizeTransitionRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string action = 3;
+  int64 expected_version = 4;
+}
+
+message AuthorizeTransitionResponse {
   bool allowed = 1;
   string reason = 2;
 }
@@ -251,4 +306,15 @@ message RetryFailedNotificationsRequest {
 
 message RetryFailedNotificationsResponse {
   int32 retried_count = 1;
+}
+
+message SyncSearchProjectionRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string version = 3;
+}
+
+message SyncSearchProjectionResponse {
+  bool synced = 1;
+  string indexed_at = 2;
 }
