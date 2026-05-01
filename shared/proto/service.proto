@@ -9,10 +9,246 @@ service ExampleService {
   rpc Ping(PingRequest) returns (PingResponse);
 }
 
+service DocumentService {
+  rpc CreateDraft(CreateDraftRequest) returns (Document);
+  rpc UpdateDraft(UpdateDraftRequest) returns (Document);
+  rpc GetDocument(GetDocumentRequest) returns (Document);
+  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+  rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
+}
+
+service WorkflowService {
+  rpc StartWorkflow(StartWorkflowRequest) returns (WorkflowInstance);
+  rpc ApproveStep(ApproveStepRequest) returns (WorkflowInstance);
+  rpc RejectStep(RejectStepRequest) returns (WorkflowInstance);
+  rpc RequestChanges(RequestChangesRequest) returns (WorkflowInstance);
+}
+
+service SignatureService {
+  rpc StartSignature(StartSignatureRequest) returns (SignatureRequest);
+  rpc RecordSignatureCallback(RecordSignatureCallbackRequest) returns (SignatureRequest);
+  rpc GetSignatureStatus(GetSignatureStatusRequest) returns (SignatureRequest);
+}
+
+service AuthorizationService {
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+  rpc RevokeRole(RevokeRoleRequest) returns (RevokeRoleResponse);
+}
+
+service AuditService {
+  rpc AppendAuditEvent(AppendAuditEventRequest) returns (AppendAuditEventResponse);
+  rpc GetAuditEvents(GetAuditEventsRequest) returns (GetAuditEventsResponse);
+}
+
+service NotificationService {
+  rpc EmitNotification(EmitNotificationRequest) returns (EmitNotificationResponse);
+  rpc RetryFailedNotifications(RetryFailedNotificationsRequest) returns (RetryFailedNotificationsResponse);
+}
+
 message PingRequest {
   string message = 1;
 }
 
 message PingResponse {
   string message = 1;
+}
+
+message Document {
+  string id = 1;
+  string title = 2;
+  string category = 3;
+  string status = 4;
+  string owner_user_id = 5;
+  int64 version = 6;
+  string updated_at = 7;
+}
+
+message WorkflowInstance {
+  string id = 1;
+  string document_id = 2;
+  string current_step_code = 3;
+  string status = 4;
+  string assigned_user_id = 5;
+  string updated_at = 6;
+}
+
+message SignatureRequest {
+  string id = 1;
+  string document_id = 2;
+  string status = 3;
+  string provider_ref = 4;
+  string due_at = 5;
+}
+
+message AuditEvent {
+  string id = 1;
+  string actor_user_id = 2;
+  string action_type = 3;
+  string outcome = 4;
+  string target_id = 5;
+  string occurred_at = 6;
+}
+
+message CreateDraftRequest {
+  string actor_user_id = 1;
+  string title = 2;
+  string category = 3;
+}
+
+message UpdateDraftRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string title = 3;
+  int64 expected_version = 4;
+}
+
+message GetDocumentRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+}
+
+message SearchDocumentsRequest {
+  string actor_user_id = 1;
+  string query = 2;
+  string status = 3;
+  string category = 4;
+  int32 limit = 5;
+  int32 offset = 6;
+}
+
+message SearchDocumentsResponse {
+  repeated Document items = 1;
+  int32 total = 2;
+}
+
+message ArchiveDocumentRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  int64 expected_version = 3;
+}
+
+message ArchiveDocumentResponse {
+  bool archived = 1;
+  string archived_at = 2;
+}
+
+message StartWorkflowRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+}
+
+message ApproveStepRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string step_code = 3;
+  int64 expected_version = 4;
+}
+
+message RejectStepRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string reason = 3;
+  int64 expected_version = 4;
+}
+
+message RequestChangesRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  string comment = 3;
+  int64 expected_version = 4;
+}
+
+message StartSignatureRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  repeated SignatureSigner signers = 3;
+}
+
+message SignatureSigner {
+  string user_id = 1;
+  string due_at = 2;
+}
+
+message RecordSignatureCallbackRequest {
+  string actor_user_id = 1;
+  string signature_request_id = 2;
+  string status = 3;
+  string provider_ref = 4;
+}
+
+message GetSignatureStatusRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+}
+
+message CheckPermissionRequest {
+  string actor_user_id = 1;
+  string action = 2;
+  string category = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+message AssignRoleRequest {
+  string actor_user_id = 1;
+  string user_id = 2;
+  string role_code = 3;
+}
+
+message AssignRoleResponse {
+  bool assigned = 1;
+}
+
+message RevokeRoleRequest {
+  string actor_user_id = 1;
+  string user_id = 2;
+  string role_code = 3;
+}
+
+message RevokeRoleResponse {
+  bool revoked = 1;
+}
+
+message AppendAuditEventRequest {
+  string actor_user_id = 1;
+  string action_type = 2;
+  string outcome = 3;
+  string target_id = 4;
+}
+
+message AppendAuditEventResponse {
+  string event_id = 1;
+}
+
+message GetAuditEventsRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+}
+
+message GetAuditEventsResponse {
+  repeated AuditEvent items = 1;
+}
+
+message EmitNotificationRequest {
+  string actor_user_id = 1;
+  string event_type = 2;
+  string recipient_user_id = 3;
+  string document_id = 4;
+}
+
+message EmitNotificationResponse {
+  string notification_id = 1;
+}
+
+message RetryFailedNotificationsRequest {
+  string actor_user_id = 1;
+  int32 batch_size = 2;
+}
+
+message RetryFailedNotificationsResponse {
+  int32 retried_count = 1;
 }

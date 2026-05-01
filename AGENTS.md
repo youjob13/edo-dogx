@@ -93,6 +93,10 @@ adapters/
 - SSR is enabled; avoid browser-only APIs without `isPlatformBrowser` guards
 - Styles: SCSS for component styles, Less for Taiga UI theme imports
 - Taiga UI is used for UX components
+- Prioritize readability and maintainability over clever abstractions; keep functions/components focused and predictable
+- Meet WCAG expectations (keyboard navigation, focus states, semantic markup, sufficient contrast, ARIA only when needed)
+- Build responsive and adaptive interfaces for mobile/desktop, long content, and localization expansion
+- Keep motion subtle and purposeful; error messages must be precise, friendly, and actionable
 
 ### Commits
 Angular commit format is enforced by commitlint on every commit:

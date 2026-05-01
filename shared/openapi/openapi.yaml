@@ -15,8 +15,143 @@ tags:
     description: Service health checks
   - name: auth
     description: Authentication and session management (OAuth2 Authorization Code + PKCE via Keycloak)
+  - name: documents
+    description: EDMS document and workflow operations
+  - name: signatures
+    description: EDMS legally binding signature operations
+  - name: audit
+    description: EDMS audit trail operations
 
 paths:
+  /api/documents:
+    post:
+      tags: [documents]
+      summary: Create document draft
+      operationId: createDocumentDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDocumentRequest"
+      responses:
+        "201":
+          description: Draft document created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+    get:
+      tags: [documents]
+      summary: Search documents
+      operationId: searchDocuments
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocumentResponse"
+
+  /api/documents/{documentId}/workflow/submit:
+    post:
+      tags: [documents]
+      summary: Submit document into workflow
+      operationId: submitWorkflow
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "202":
+          description: Workflow started
+
+  /api/documents/{documentId}/workflow/approve:
+    post:
+      tags: [documents]
+      summary: Approve workflow step
+      operationId: approveWorkflowStep
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "202":
+          description: Approval accepted
+
+  /api/documents/{documentId}/signatures:
+    post:
+      tags: [signatures]
+      summary: Start signature request
+      operationId: createSignatureRequest
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSignatureRequest"
+      responses:
+        "202":
+          description: Signature request created
+
+  /api/documents/{documentId}/audit-events:
+    get:
+      tags: [audit]
+      summary: Get document audit events
+      operationId: getDocumentAuditEvents
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Document audit events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditEventResponse"
+
   /api/auth/login:
     get:
       tags: [auth]
@@ -149,6 +284,65 @@ components:
         error:
           type: string
           example: "Unauthorized"
+
+    CreateDocumentRequest:
+      type: object
+      required: [title, category]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        category:
+          type: string
+          enum: [HR, FINANCE, GENERAL]
+
+    CreateSignatureRequest:
+      type: object
+      required: [signers]
+      properties:
+        signers:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [userId]
+            properties:
+              userId:
+                type: string
+              dueAt:
+                type: string
+                format: date-time
+
+    DocumentResponse:
+      type: object
+      required: [id, title, category, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          type: string
+        status:
+          type: string
+
+    AuditEventResponse:
+      type: object
+      required: [id, actionType, outcome, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        actionType:
+          type: string
+        outcome:
+          type: string
+          enum: [SUCCESS, DENIED, FAILED]
+        occurredAt:
+          type: string
+          format: date-time
 
   securitySchemes:
     keycloak:

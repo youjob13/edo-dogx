@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"google.golang.org/grpc"
+	grpcadapter "edo/services/service/internal/adapters/inbound/grpc"
 )
 
 func main() {
@@ -20,14 +20,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	srv := grpc.NewServer()
-
-	// TODO: register service server implementations here
-	// pb.RegisterExampleServiceServer(srv, adapters.NewExampleGRPCAdapter(...))
+	server := grpcadapter.NewServer()
+	server.RegisterServices()
 
 	slog.Info("gRPC server listening", "addr", addr)
 
-	if err := srv.Serve(lis); err != nil {
+	if err := server.GRPCServer().Serve(lis); err != nil {
 		slog.Error("failed to serve", "err", err)
 		os.Exit(1)
 	}
