@@ -5,18 +5,29 @@ import path from 'node:path';
 
 interface EdmsGrpcClients {
   documentService: Client;
-  workflowService: Client;
+  documentWorkflowService: Client;
   signatureService: Client;
-  authorizationService: Client;
-  auditService: Client;
-  notificationService: Client;
+  authorizationAuditService: Client;
+  searchNotificationService: Client;
 }
 
 export class EdmsGrpcClientBootstrap {
-  private readonly address: string;
+  private readonly documentAddress: string;
+  private readonly authAuditAddress: string;
+  private readonly signatureAddress: string;
+  private readonly searchNotificationAddress: string;
 
-  constructor(address = process.env['SERVICE_GRPC_ADDR'] ?? 'service:50051') {
-    this.address = address;
+  constructor() {
+    this.documentAddress =
+      process.env['DOCUMENT_SERVICE_GRPC_ADDR'] ?? 'document-service:50052';
+    this.authAuditAddress =
+      process.env['AUTH_AUDIT_SERVICE_GRPC_ADDR'] ??
+      'authorization-audit-service:50053';
+    this.signatureAddress =
+      process.env['SIGNATURE_SERVICE_GRPC_ADDR'] ?? 'signature-service:50054';
+    this.searchNotificationAddress =
+      process.env['SEARCH_NOTIFICATION_SERVICE_GRPC_ADDR'] ??
+      'search-notification-service:50055';
   }
 
   build(): EdmsGrpcClients {
@@ -41,12 +52,20 @@ export class EdmsGrpcClientBootstrap {
     const creds = credentials.createInsecure();
 
     return {
-      documentService: new ns['DocumentService'](this.address, creds),
-      workflowService: new ns['WorkflowService'](this.address, creds),
-      signatureService: new ns['SignatureService'](this.address, creds),
-      authorizationService: new ns['AuthorizationService'](this.address, creds),
-      auditService: new ns['AuditService'](this.address, creds),
-      notificationService: new ns['NotificationService'](this.address, creds),
+      documentService: new ns['DocumentService'](this.documentAddress, creds),
+      documentWorkflowService: new ns['DocumentWorkflowService'](
+        this.documentAddress,
+        creds,
+      ),
+      signatureService: new ns['SignatureService'](this.signatureAddress, creds),
+      authorizationAuditService: new ns['AuthorizationAuditService'](
+        this.authAuditAddress,
+        creds,
+      ),
+      searchNotificationService: new ns['SearchNotificationService'](
+        this.searchNotificationAddress,
+        creds,
+      ),
     };
   }
 }

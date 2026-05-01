@@ -28,6 +28,8 @@ paths:
       tags: [documents]
       summary: Create document draft
       operationId: createDocumentDraft
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
       requestBody:
         required: true
         content:
@@ -45,6 +47,8 @@ paths:
       tags: [documents]
       summary: Search documents
       operationId: searchDocuments
+      description: Backward-compatible route; provider transitions from draft service to search-notification-service.
+      x-migration-wave: wave-4-search-notification-service
       parameters:
         - in: query
           name: q
@@ -77,6 +81,8 @@ paths:
       tags: [documents]
       summary: Submit document into workflow
       operationId: submitWorkflow
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
       parameters:
         - in: path
           name: documentId
@@ -93,6 +99,8 @@ paths:
       tags: [documents]
       summary: Approve workflow step
       operationId: approveWorkflowStep
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
       parameters:
         - in: path
           name: documentId
@@ -109,6 +117,8 @@ paths:
       tags: [signatures]
       summary: Start signature request
       operationId: createSignatureRequest
+      description: Routed via gateway to signature-service during migration wave 3.
+      x-migration-wave: wave-3-signature-service
       parameters:
         - in: path
           name: documentId
@@ -131,6 +141,8 @@ paths:
       tags: [audit]
       summary: Get document audit events
       operationId: getDocumentAuditEvents
+      description: Routed via gateway to authorization-audit-service during migration wave 2.
+      x-migration-wave: wave-2-authorization-audit-service
       parameters:
         - in: path
           name: documentId
@@ -151,6 +163,61 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/AuditEventResponse"
+
+  /api/search/documents:
+    get:
+      tags: [documents]
+      summary: Search documents using projection service
+      operationId: searchDocumentsProjection
+      description: Routed via gateway to search-notification-service during migration wave 4.
+      x-migration-wave: wave-4-search-notification-service
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results from projection index
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocumentResponse"
+
+  /api/search/notifications/center:
+    get:
+      tags: [audit]
+      summary: Get notification center feed
+      operationId: getNotificationCenter
+      description: Routed via gateway to search-notification-service for notification read model.
+      x-migration-wave: wave-4-search-notification-service
+      responses:
+        "200":
+          description: Notification center feed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationCenterItem"
 
   /api/auth/login:
     get:
@@ -341,6 +408,25 @@ components:
           type: string
           enum: [SUCCESS, DENIED, FAILED]
         occurredAt:
+          type: string
+          format: date-time
+
+    NotificationCenterItem:
+      type: object
+      required: [id, eventType, recipientUserId, documentId, deliveryStatus, createdAt]
+      properties:
+        id:
+          type: string
+        eventType:
+          type: string
+        recipientUserId:
+          type: string
+        documentId:
+          type: string
+        deliveryStatus:
+          type: string
+          enum: [PENDING, SENT, FAILED, RETRYING]
+        createdAt:
           type: string
           format: date-time
 

@@ -1,8 +1,11 @@
 **/node_modules/
 **/.angular/
 **/dist/
+**/coverage/
 **/*.tsbuildinfo
 **/.pnpm-debug.log
+Dockerfile*
+.dockerignore
 
 # Go build output
 services/**/vendor/
@@ -14,6 +17,7 @@ services/**/*.test
 .env
 .env.local
 .env.*.local
+.env*
 
 # IDE / OS
 .git/

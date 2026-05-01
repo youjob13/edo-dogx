@@ -34,7 +34,7 @@ pnpm format           # Prettier write src/**/*.ts
 pnpm test             # vitest run
 ```
 
-### Go service (`services/service`)
+### Go microservice (example: `services/document-service`)
 ```bash
 go run ./cmd/server   # run service
 go build ./cmd/server # build binary
