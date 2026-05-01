@@ -1,0 +1,149 @@
+openapi: 3.0.3
+info:
+  title: EDMS Gateway API Contract (Draft)
+  version: 0.1.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/documents:
+    post:
+      summary: Create a new document draft
+      operationId: createDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+    get:
+      summary: Search documents with filters
+      operationId: searchDocuments
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentResponse'
+  /api/documents/{documentId}/workflow/submit:
+    post:
+      summary: Submit draft into workflow
+      operationId: submitWorkflow
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202':
+          description: Workflow submitted
+  /api/documents/{documentId}/workflow/approve:
+    post:
+      summary: Approve current workflow step
+      operationId: approveWorkflow
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202':
+          description: Approval accepted
+  /api/documents/{documentId}/signatures:
+    post:
+      summary: Initiate signing request
+      operationId: createSignatureRequest
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSignatureRequest'
+      responses:
+        '202':
+          description: Signature process started
+  /api/documents/{documentId}/audit-events:
+    get:
+      summary: Read audit trail for document
+      operationId: getAuditEvents
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Audit events list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEventResponse'
+components:
+  schemas:
+    CreateDocumentRequest:
+      type: object
+      required: [title, category]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 300 }
+        category: { type: string, enum: [HR, FINANCE, GENERAL] }
+    CreateSignatureRequest:
+      type: object
+      required: [signers]
+      properties:
+        signers:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [userId]
+            properties:
+              userId: { type: string }
+              dueAt: { type: string, format: date-time }
+    DocumentResponse:
+      type: object
+      required: [id, title, category, status]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        category: { type: string }
+        status: { type: string }
+    AuditEventResponse:
+      type: object
+      required: [id, actionType, outcome, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        actionType: { type: string }
+        outcome: { type: string, enum: [SUCCESS, DENIED, FAILED] }
+        occurredAt: { type: string, format: date-time }
