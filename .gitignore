@@ -1,8 +1,11 @@
 # ── Node ─────────────────────────────────────────────────────────────
 node_modules/
 dist/
+build/
+coverage/
 .output/
 *.tsbuildinfo
+*.log
 
 # pnpm
 .pnpm-debug.log
@@ -26,6 +29,7 @@ vendor/
 .env
 .env.local
 .env.*.local
+.env*
 
 # ── IDE ──────────────────────────────────────────────────────────────
 .idea/

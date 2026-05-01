@@ -100,6 +100,29 @@ are required; feature-specific modules are added inside the established
 hexagonal layers, including a dedicated Elasticsearch outbound adapter for
 search indexing and querying.
 
+### EDMS Bounded-Context Module Map
+
+- Document Lifecycle
+  - Domain: `services/service/internal/domain/model/document.go`, `services/service/internal/domain/model/workflow.go`
+  - Application: `services/service/internal/application/service/document_lifecycle.go`
+  - Inbound: `services/service/internal/adapters/inbound/grpc/document_handler.go`
+  - Outbound: `services/service/internal/adapters/outbound/postgres/document_repository.go`
+- Signature Flow
+  - Domain: `services/service/internal/domain/model/signature.go`
+  - Application: `services/service/internal/application/service/signature_flow.go`
+  - Inbound: `services/service/internal/adapters/inbound/grpc/signature_handler.go`
+  - Outbound: `services/service/internal/adapters/outbound/signature/provider_adapter.go`
+- Authorization and Audit
+  - Domain: `services/service/internal/domain/model/authorization.go`, `services/service/internal/domain/model/audit.go`
+  - Application: `services/service/internal/application/service/authorization_policy.go`, `services/service/internal/application/service/audit_service.go`
+  - Inbound: `apps/gateway/src/adapters/inbound/http/middleware/edms-rbac.guard.ts`
+  - Outbound: `services/service/internal/adapters/outbound/postgres/authorization_audit_repository.go`
+- Search and Notifications
+  - Domain: `services/service/internal/domain/model/search_projection.go`, `services/service/internal/domain/model/notification.go`
+  - Application: `services/service/internal/application/service/search_projection_sync.go`, `services/service/internal/application/service/notification_dispatcher.go`
+  - Inbound: `apps/gateway/src/adapters/inbound/http/search.routes.ts`
+  - Outbound: `services/service/internal/adapters/outbound/elasticsearch/document_index_adapter.go`
+
 ## Complexity Tracking
 
 No constitution violations require exception handling at this stage.

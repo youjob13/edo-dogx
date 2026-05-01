@@ -11,12 +11,12 @@
 
 **Purpose**: Prepare infrastructure and shared configuration for the EDMS implementation.
 
-- [ ] T001 Add Elasticsearch service and network wiring in docker-compose.yml
-- [ ] T002 Add EDMS environment variables for search/signature/notifications in README.md
-- [ ] T003 [P] Add Elasticsearch client dependency in services/service/go.mod
-- [ ] T004 [P] Add gateway DTO/runtime dependencies for EDMS contracts in apps/gateway/package.json
-- [ ] T005 [P] Register EDMS feature routes in frontend routing config in apps/frontend/src/app/app.routes.ts
-- [ ] T006 Define EDMS bounded-context overview and module map in specs/001-design-edms-platform/plan.md
+- [X] T001 Add Elasticsearch service and network wiring in docker-compose.yml
+- [X] T002 Add EDMS environment variables for search/signature/notifications in README.md
+- [X] T003 [P] Add Elasticsearch client dependency in services/service/go.mod
+- [X] T004 [P] Add gateway DTO/runtime dependencies for EDMS contracts in apps/gateway/package.json
+- [X] T005 [P] Register EDMS feature routes in frontend routing config in apps/frontend/src/app/app.routes.ts
+- [X] T006 Define EDMS bounded-context overview and module map in specs/001-design-edms-platform/plan.md
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 

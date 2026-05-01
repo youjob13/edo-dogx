@@ -110,8 +110,17 @@ docker compose up -d
 | Frontend | http://localhost:4000 |
 | API Gateway | http://localhost:3000 |
 | Keycloak Admin | http://localhost:8080 |
+| Elasticsearch | http://localhost:9200 |
 | PostgreSQL | localhost:5432 |
 | Redis | localhost:6379 |
+
+### EDMS Environment Variables
+
+Add the following variables to `.env` for EDMS runtime wiring:
+
+- `ELASTICSEARCH_URL` - Elasticsearch endpoint used by gateway and service (for example `http://elasticsearch:9200` in Docker).
+- `SIGNATURE_PROVIDER_BASE_URL` - Base URL for external signature provider integration.
+- `NOTIFICATIONS_CHANNEL` - Notification delivery strategy (`internal`, `email`, or provider-specific channel key).
 
 ### Local Development
 
