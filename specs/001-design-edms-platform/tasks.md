@@ -201,12 +201,12 @@ All tasks follow the required checklist format:
 
 ## Release Readiness Checklist
 
-- [ ] API and gRPC mappings are documented and reviewed.
-- [ ] Accessibility and responsive acceptance criteria are reflected in implementation docs.
-- [ ] Security and observability hardening notes are captured in the implementation plan.
-- [ ] Quickstart includes operational sequencing and rollback steps.
+- [X] API and gRPC mappings are documented and reviewed.
+- [X] Accessibility and responsive acceptance criteria are reflected in implementation docs.
+- [X] Security and observability hardening notes are captured in the implementation plan.
+- [X] Quickstart includes operational sequencing and rollback steps.
 - [ ] Manual scenario validation completed for US1-US5 in local environment.
-- [ ] Checklist gate (`requirements.md`) remains fully complete.
+- [X] Checklist gate (`requirements.md`) remains fully complete.
 
 ## MVP Cut Line
 
