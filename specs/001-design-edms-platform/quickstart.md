@@ -34,6 +34,14 @@ Expected:
 - Status transitions are enforced.
 - Unauthorized users cannot approve restricted steps.
 
+US1 acceptance checklist:
+- [ ] Draft creation returns status `DRAFT` and version `1`.
+- [ ] Submit action transitions `DRAFT -> IN_REVIEW`.
+- [ ] Approve action transitions `IN_REVIEW -> APPROVED` with optimistic version check.
+- [ ] Archive action transitions `APPROVED -> ARCHIVED` only.
+- [ ] Search endpoint filters by query/status/category and returns total count.
+- [ ] Frontend lifecycle panel reflects status transitions after each action.
+
 ## Validate core scenario B: legally binding signing
 1. Open an approved signature-eligible document.
 2. Initiate signature request with one or more signers.
@@ -43,6 +51,13 @@ Expected:
 Expected:
 - Signature evidence and timestamps are recorded.
 - Failed or expired signatures do not silently archive documents.
+
+US2 acceptance checklist:
+- [ ] Signature request start endpoint accepts one or more signers and returns `PENDING`.
+- [ ] Signature callback endpoint updates status to `PARTIAL|COMPLETED|FAILED|EXPIRED`.
+- [ ] Signature status endpoint returns current provider ref and state for document.
+- [ ] Non-eligible document status is rejected by signature orchestration use case.
+- [ ] Frontend signature panel can create request and reflect status transitions.
 
 ## Validate core scenario C: RBAC and audit trail
 1. Attempt approval action using a non-approver role.
@@ -63,6 +78,13 @@ Expected:
 - Newly created/updated documents become searchable after indexing sync.
 - Notifications are emitted for major lifecycle events.
 
+US5 acceptance checklist:
+- [ ] Search endpoint returns results filtered by `q`, `category`, and `status`.
+- [ ] Projection sync updates searchable index after document lifecycle changes.
+- [ ] Notification center endpoint returns delivery statuses (`PENDING|SENT|FAILED|RETRYING`).
+- [ ] Retry dispatcher processes failed notifications using configured batch size.
+- [ ] Frontend search and notification center reflects filtered results and event feed.
+
 ## Accessibility and responsiveness checks
 1. Navigate key pages using keyboard only.
 2. Verify focus visibility, semantic labels, and readable contrast.
@@ -75,3 +97,24 @@ Expected:
 ## Notes
 - Under current governance, no automated test authoring/execution tasks are included in this plan.
 - This quickstart is for implementation validation and manual acceptance checks.
+
+## Implementation Sequencing and Rollback Guidance
+
+### Recommended Sequencing
+1. Bring up infra and validate health endpoints.
+2. Validate auth/session flow (`/api/auth/*`) before EDMS flows.
+3. Validate lifecycle routes, then signature routes, then RBAC/audit checks.
+4. Validate category-specific routes and UI flows for `HR` and `FINANCE`.
+5. Validate search projection sync and notification center behavior last.
+
+### Rollback Guidance
+- If gateway route behavior regresses: rollback gateway deployment first while keeping service state intact.
+- If service business logic regresses: rollback service image and re-run smoke checks for lifecycle/signature/audit/search.
+- If Elasticsearch projection logic regresses: disable search route exposure and rebuild index from PostgreSQL source-of-truth.
+- If notification dispatch regresses: pause retry loop, preserve event queue records, and resume after hotfix.
+- For partial rollback scenarios, preserve audit and document state; never rewrite historical audit events.
+
+### Post-Rollback Verification
+- Confirm auth/session, document read/search, and audit timeline are still accessible.
+- Confirm no unauthorized action is accepted during degraded mode.
+- Confirm pending notifications remain retriable after service recovery.

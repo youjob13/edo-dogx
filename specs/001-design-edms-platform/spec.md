@@ -167,6 +167,18 @@ focus states, semantics, and contrast for user-facing interactions.
 - **FR-015**: System MUST define responsive/adaptive behavior across mobile and
 desktop, including long content and localization expansion handling.
 
+### Accessibility and Responsive Acceptance Criteria
+
+- **AX-001**: All primary interactive controls MUST be reachable and operable with keyboard only (Tab/Shift+Tab/Enter/Space/Escape where applicable).
+- **AX-002**: Visible focus indicator MUST remain perceivable on every interactive control in light and dark theme modes.
+- **AX-003**: User-facing text and status tokens MUST maintain WCAG AA contrast ratios for default and error states.
+- **AX-004**: Dynamic updates (search result refresh, workflow status messages, notification updates) MUST expose an ARIA live-region announcement where appropriate.
+- **AX-005**: Form errors MUST be explicit, adjacent to the related control, and include actionable recovery text.
+- **RX-001**: Core dashboard and EDMS flows MUST remain usable from 320px width through desktop breakpoints without horizontal scroll for primary actions.
+- **RX-002**: Tables/lists with long content MUST degrade to wrapped or stacked layouts without clipping action controls.
+- **RX-003**: Localized strings with 30% length growth MUST not overlap controls or hide critical actions.
+- **RX-004**: Modal/drawer flows MUST preserve focus trapping and escape behavior on both mobile and desktop layouts.
+
 ### Key Entities *(include if feature involves data)*
 
 - **Document**: Business record under management, including title, category,

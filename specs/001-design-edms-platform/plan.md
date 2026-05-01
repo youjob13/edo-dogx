@@ -138,3 +138,25 @@ Post-Phase-1 Gate Result: PASS
 - Data model reflects cohesive modules and explicit authorization/audit boundaries.
 - Contracts separate external API concerns (BFF) from internal gRPC contracts.
 - Quickstart includes accessibility/responsiveness validation expectations and avoids testing mandates.
+
+## Security and Observability Hardening Notes
+
+### Security Controls
+- Enforce least-privilege RBAC at gateway route boundaries and service use-case boundaries.
+- Keep OIDC/session material in gateway session store only; avoid exposing access/refresh/id tokens in frontend payloads.
+- Apply optimistic concurrency checks (`expected_version`) on workflow/signature mutating operations.
+- Validate category-scoped access (`HR`/`FINANCE`) in both gateway guard and service policy layers.
+- Restrict callback/update endpoints to trusted actors and verify signer/provider references before state transitions.
+
+### Observability Baseline
+- Emit structured logs with correlation IDs on gateway and service operations touching lifecycle/signature/audit/search flows.
+- Record counters for key events: submit, approve, archive, signature start/callback, search query, notification emit/retry.
+- Track latency histograms for search endpoints and lifecycle transitions against SLO targets in this plan.
+- Surface retry/failure counts for notification dispatch and index synchronization in operational dashboards.
+
+### Operational Constraints and Runbook Notes
+- PostgreSQL remains source of truth; Elasticsearch index is eventually consistent and must be rebuildable from transactional state.
+- Notification delivery is at-least-once; consumers and UI must tolerate duplicate event exposure.
+- Outbound provider and search dependencies must be wrapped in adapters that support degraded-mode behavior.
+- Deployments should be backward-compatible with additive contract changes only; breaking changes require explicit versioning.
+- Incident rollback must prioritize gateway route rollback first, then service adapter rollback, while preserving data schemas.

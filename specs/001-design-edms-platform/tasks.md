@@ -24,13 +24,13 @@
 
 **CRITICAL**: Complete this phase before implementing user stories.
 
-- [ ] T007 Extend internal gRPC contract and message shapes for EDMS domains in shared/proto/service.proto
-- [ ] T008 Align public gateway API contract to EDMS endpoints and payloads in shared/openapi/openapi.yaml
-- [ ] T009 [P] Add shared TypeScript EDMS contract types in shared/ts-types/src/index.ts
-- [ ] T010 [P] Define core repository and outbound service ports in services/service/internal/ports/outbound/edms_ports.go
-- [ ] T011 [P] Define inbound application interfaces for EDMS use cases in services/service/internal/ports/inbound/edms_usecases.go
-- [ ] T012 Implement baseline gRPC server wiring for EDMS services in services/service/internal/adapters/inbound/grpc/server.go
-- [ ] T013 Implement gateway gRPC client bootstrap for EDMS service calls in apps/gateway/src/adapters/outbound/grpc/edms.client.ts
+- [X] T007 Extend internal gRPC contract and message shapes for EDMS domains in shared/proto/service.proto
+- [X] T008 Align public gateway API contract to EDMS endpoints and payloads in shared/openapi/openapi.yaml
+- [X] T009 [P] Add shared TypeScript EDMS contract types in shared/ts-types/src/index.ts
+- [X] T010 [P] Define core repository and outbound service ports in services/service/internal/ports/outbound/edms_ports.go
+- [X] T011 [P] Define inbound application interfaces for EDMS use cases in services/service/internal/ports/inbound/edms_usecases.go
+- [X] T012 Implement baseline gRPC server wiring for EDMS services in services/service/internal/adapters/inbound/grpc/server.go
+- [X] T013 Implement gateway gRPC client bootstrap for EDMS service calls in apps/gateway/src/adapters/outbound/grpc/edms.client.ts
 
 ## Phase 3: User Story 1 - Controlled Document Lifecycle (Priority: P1) MVP
 
@@ -38,15 +38,15 @@
 
 **Independent Validation**: A user can create a draft, submit for review, approve, and archive it with enforced state transitions and immutable history.
 
-- [ ] T014 [P] [US1] Implement Document and DocumentVersion aggregates in services/service/internal/domain/model/document.go
-- [ ] T015 [P] [US1] Implement WorkflowDefinition and WorkflowInstance aggregates in services/service/internal/domain/model/workflow.go
-- [ ] T016 [US1] Implement document lifecycle orchestration use case in services/service/internal/application/service/document_lifecycle.go
-- [ ] T017 [US1] Implement workflow transition policy and validation rules in services/service/internal/application/service/workflow_policy.go
-- [ ] T018 [US1] Implement PostgreSQL repository for document and workflow persistence in services/service/internal/adapters/outbound/postgres/document_repository.go
-- [ ] T019 [US1] Implement gRPC handlers for CreateDraft/Submit/Approve/Archive in services/service/internal/adapters/inbound/grpc/document_handler.go
-- [ ] T020 [US1] Implement gateway HTTP handlers for document create/search/workflow submit/approve in apps/gateway/src/adapters/inbound/http/documents.routes.ts
-- [ ] T021 [US1] Implement frontend document lifecycle UI flow (draft/review/approve/archive) in apps/frontend/src/app/adapters/http/dashboard/dashboard.component.ts
-- [ ] T022 [US1] Add manual US1 acceptance checklist steps in specs/001-design-edms-platform/quickstart.md
+- [X] T014 [P] [US1] Implement Document and DocumentVersion aggregates in services/service/internal/domain/model/document.go
+- [X] T015 [P] [US1] Implement WorkflowDefinition and WorkflowInstance aggregates in services/service/internal/domain/model/workflow.go
+- [X] T016 [US1] Implement document lifecycle orchestration use case in services/service/internal/application/service/document_lifecycle.go
+- [X] T017 [US1] Implement workflow transition policy and validation rules in services/service/internal/application/service/workflow_policy.go
+- [X] T018 [US1] Implement PostgreSQL repository for document and workflow persistence in services/service/internal/adapters/outbound/postgres/document_repository.go
+- [X] T019 [US1] Implement gRPC handlers for CreateDraft/Submit/Approve/Archive in services/service/internal/adapters/inbound/grpc/document_handler.go
+- [X] T020 [US1] Implement gateway HTTP handlers for document create/search/workflow submit/approve in apps/gateway/src/adapters/inbound/http/documents.routes.ts
+- [X] T021 [US1] Implement frontend document lifecycle UI flow (draft/review/approve/archive) in apps/frontend/src/app/adapters/http/dashboard/dashboard.component.ts
+- [X] T022 [US1] Add manual US1 acceptance checklist steps in specs/001-design-edms-platform/quickstart.md
 
 ## Phase 4: User Story 2 - Legally Binding Signing Flow (Priority: P1)
 
@@ -54,14 +54,14 @@
 
 **Independent Validation**: A document can start a signature request, collect signer results, and lock content after completed signatures.
 
-- [ ] T023 [P] [US2] Implement SignatureRequest and SignatureRecord aggregates in services/service/internal/domain/model/signature.go
-- [ ] T024 [P] [US2] Define signature provider outbound port and callback contract in services/service/internal/ports/outbound/signature_provider.go
-- [ ] T025 [US2] Implement signature orchestration use case with due-date and status rules in services/service/internal/application/service/signature_flow.go
-- [ ] T026 [US2] Implement external signature provider adapter shell in services/service/internal/adapters/outbound/signature/provider_adapter.go
-- [ ] T027 [US2] Implement gRPC handlers for StartSignature/GetSignatureStatus/RecordCallback in services/service/internal/adapters/inbound/grpc/signature_handler.go
-- [ ] T028 [US2] Implement gateway signature endpoints and payload mapping in apps/gateway/src/adapters/inbound/http/signatures.routes.ts
-- [ ] T029 [US2] Implement frontend signing request/status UI integration in apps/frontend/src/app/adapters/http/dashboard/signature-panel.component.ts
-- [ ] T030 [US2] Add manual US2 signing acceptance steps and failure-path checks in specs/001-design-edms-platform/quickstart.md
+- [X] T023 [P] [US2] Implement SignatureRequest and SignatureRecord aggregates in services/service/internal/domain/model/signature.go
+- [X] T024 [P] [US2] Define signature provider outbound port and callback contract in services/service/internal/ports/outbound/signature_provider.go
+- [X] T025 [US2] Implement signature orchestration use case with due-date and status rules in services/service/internal/application/service/signature_flow.go
+- [X] T026 [US2] Implement external signature provider adapter shell in services/service/internal/adapters/outbound/signature/provider_adapter.go
+- [X] T027 [US2] Implement gRPC handlers for StartSignature/GetSignatureStatus/RecordCallback in services/service/internal/adapters/inbound/grpc/signature_handler.go
+- [X] T028 [US2] Implement gateway signature endpoints and payload mapping in apps/gateway/src/adapters/inbound/http/signatures.routes.ts
+- [X] T029 [US2] Implement frontend signing request/status UI integration in apps/frontend/src/app/adapters/http/dashboard/signature-panel.component.ts
+- [X] T030 [US2] Add manual US2 signing acceptance steps and failure-path checks in specs/001-design-edms-platform/quickstart.md
 
 ## Phase 5: User Story 3 - Role-Based Access and Auditability (Priority: P1)
 
@@ -69,13 +69,13 @@
 
 **Independent Validation**: Unauthorized actions are denied and logged; authorized actions succeed and appear in ordered audit history.
 
-- [ ] T031 [P] [US3] Implement Role and PermissionAssignment domain models in services/service/internal/domain/model/authorization.go
-- [ ] T032 [P] [US3] Implement AuditEvent aggregate and append-only constraints in services/service/internal/domain/model/audit.go
-- [ ] T033 [US3] Implement authorization policy service for action/category checks in services/service/internal/application/service/authorization_policy.go
-- [ ] T034 [US3] Implement audit append/read use case orchestration in services/service/internal/application/service/audit_service.go
-- [ ] T035 [US3] Implement PostgreSQL adapters for permissions and audit persistence in services/service/internal/adapters/outbound/postgres/authorization_audit_repository.go
-- [ ] T036 [US3] Enforce RBAC guard middleware on gateway EDMS routes in apps/gateway/src/adapters/inbound/http/middleware/edms-rbac.guard.ts
-- [ ] T037 [US3] Implement frontend audit timeline and denied-action feedback UX in apps/frontend/src/app/adapters/http/dashboard/audit-timeline.component.ts
+- [X] T031 [P] [US3] Implement Role and PermissionAssignment domain models in services/service/internal/domain/model/authorization.go
+- [X] T032 [P] [US3] Implement AuditEvent aggregate and append-only constraints in services/service/internal/domain/model/audit.go
+- [X] T033 [US3] Implement authorization policy service for action/category checks in services/service/internal/application/service/authorization_policy.go
+- [X] T034 [US3] Implement audit append/read use case orchestration in services/service/internal/application/service/audit_service.go
+- [X] T035 [US3] Implement PostgreSQL adapters for permissions and audit persistence in services/service/internal/adapters/outbound/postgres/authorization_audit_repository.go
+- [X] T036 [US3] Enforce RBAC guard middleware on gateway EDMS routes in apps/gateway/src/adapters/inbound/http/middleware/edms-rbac.guard.ts
+- [X] T037 [US3] Implement frontend audit timeline and denied-action feedback UX in apps/frontend/src/app/adapters/http/dashboard/audit-timeline.component.ts
 
 ## Phase 6: User Story 4 - Specialized HR and Financial Handling (Priority: P2)
 
@@ -83,11 +83,11 @@
 
 **Independent Validation**: HR and Finance documents follow distinct routing/visibility policies and archive behavior.
 
-- [ ] T038 [P] [US4] Implement category policy model for HR/FINANCE/GENERAL in services/service/internal/domain/model/category_policy.go
-- [ ] T039 [US4] Implement category-based workflow assignment use case in services/service/internal/application/service/category_routing.go
-- [ ] T040 [US4] Implement category-scoped authorization checks in services/service/internal/application/service/category_access_control.go
-- [ ] T041 [US4] Implement gateway request handling for category-specific actions in apps/gateway/src/adapters/inbound/http/category.routes.ts
-- [ ] T042 [US4] Implement frontend category-aware document forms and status presentation in apps/frontend/src/app/adapters/http/dashboard/category-workflow.component.ts
+- [X] T038 [P] [US4] Implement category policy model for HR/FINANCE/GENERAL in services/service/internal/domain/model/category_policy.go
+- [X] T039 [US4] Implement category-based workflow assignment use case in services/service/internal/application/service/category_routing.go
+- [X] T040 [US4] Implement category-scoped authorization checks in services/service/internal/application/service/category_access_control.go
+- [X] T041 [US4] Implement gateway request handling for category-specific actions in apps/gateway/src/adapters/inbound/http/category.routes.ts
+- [X] T042 [US4] Implement frontend category-aware document forms and status presentation in apps/frontend/src/app/adapters/http/dashboard/category-workflow.component.ts
 
 ## Phase 7: User Story 5 - Search, Retrieval, and Notifications (Priority: P2)
 
@@ -95,24 +95,24 @@
 
 **Independent Validation**: Indexed documents are retrievable via filters/keywords and notification events are emitted for lifecycle actions.
 
-- [ ] T043 [P] [US5] Implement SearchDocumentProjection domain model and indexing rules in services/service/internal/domain/model/search_projection.go
-- [ ] T044 [P] [US5] Implement NotificationEvent domain model and delivery status transitions in services/service/internal/domain/model/notification.go
-- [ ] T045 [US5] Implement Elasticsearch outbound adapter for index upsert/query in services/service/internal/adapters/outbound/elasticsearch/document_index_adapter.go
-- [ ] T046 [US5] Implement projection synchronization use case from lifecycle events in services/service/internal/application/service/search_projection_sync.go
-- [ ] T047 [US5] Implement notification dispatcher use case with retry policy in services/service/internal/application/service/notification_dispatcher.go
-- [ ] T048 [US5] Implement gateway search endpoint integration with filter DTO mapping in apps/gateway/src/adapters/inbound/http/search.routes.ts
-- [ ] T049 [US5] Implement frontend search/filter/notification center experience in apps/frontend/src/app/adapters/http/dashboard/search-notification.component.ts
-- [ ] T050 [US5] Add manual US5 search-index sync and notification validation in specs/001-design-edms-platform/quickstart.md
+- [X] T043 [P] [US5] Implement SearchDocumentProjection domain model and indexing rules in services/service/internal/domain/model/search_projection.go
+- [X] T044 [P] [US5] Implement NotificationEvent domain model and delivery status transitions in services/service/internal/domain/model/notification.go
+- [X] T045 [US5] Implement Elasticsearch outbound adapter for index upsert/query in services/service/internal/adapters/outbound/elasticsearch/document_index_adapter.go
+- [X] T046 [US5] Implement projection synchronization use case from lifecycle events in services/service/internal/application/service/search_projection_sync.go
+- [X] T047 [US5] Implement notification dispatcher use case with retry policy in services/service/internal/application/service/notification_dispatcher.go
+- [X] T048 [US5] Implement gateway search endpoint integration with filter DTO mapping in apps/gateway/src/adapters/inbound/http/search.routes.ts
+- [X] T049 [US5] Implement frontend search/filter/notification center experience in apps/frontend/src/app/adapters/http/dashboard/search-notification.component.ts
+- [X] T050 [US5] Add manual US5 search-index sync and notification validation in specs/001-design-edms-platform/quickstart.md
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final consistency, docs alignment, and production-readiness hardening across stories.
 
-- [ ] T051 [P] Document EDMS API and gRPC contract alignment notes in specs/001-design-edms-platform/contracts/internal-grpc.md
-- [ ] T052 [P] Refine accessibility and responsive UX acceptance criteria wording in specs/001-design-edms-platform/spec.md
-- [ ] T053 Harden security/observability notes and operational constraints in specs/001-design-edms-platform/plan.md
-- [ ] T054 Update implementation quickstart sequencing and rollback guidance in specs/001-design-edms-platform/quickstart.md
-- [ ] T055 Capture release-readiness checklist and MVP cut line in specs/001-design-edms-platform/tasks.md
+- [X] T051 [P] Document EDMS API and gRPC contract alignment notes in specs/001-design-edms-platform/contracts/internal-grpc.md
+- [X] T052 [P] Refine accessibility and responsive UX acceptance criteria wording in specs/001-design-edms-platform/spec.md
+- [X] T053 Harden security/observability notes and operational constraints in specs/001-design-edms-platform/plan.md
+- [X] T054 Update implementation quickstart sequencing and rollback guidance in specs/001-design-edms-platform/quickstart.md
+- [X] T055 Capture release-readiness checklist and MVP cut line in specs/001-design-edms-platform/tasks.md
 
 ## Dependencies & Execution Order
 
@@ -198,3 +198,23 @@ All tasks follow the required checklist format:
 - Optional `[P]` parallel marker only where applicable
 - Required `[USx]` label on user-story tasks
 - Clear action and exact file path in every task
+
+## Release Readiness Checklist
+
+- [ ] API and gRPC mappings are documented and reviewed.
+- [ ] Accessibility and responsive acceptance criteria are reflected in implementation docs.
+- [ ] Security and observability hardening notes are captured in the implementation plan.
+- [ ] Quickstart includes operational sequencing and rollback steps.
+- [ ] Manual scenario validation completed for US1-US5 in local environment.
+- [ ] Checklist gate (`requirements.md`) remains fully complete.
+
+## MVP Cut Line
+
+### In Scope for MVP Release
+- Phase 1 through Phase 7 deliverables (`T001`-`T050`).
+- Phase 8 documentation and release-hardening tasks (`T051`-`T055`).
+
+### Out of Scope for MVP Release
+- New feature work beyond `specs/001-design-edms-platform/spec.md`.
+- Additional integrations not represented by current contracts and task set.
+- Automated test authoring/execution under current governance policy.

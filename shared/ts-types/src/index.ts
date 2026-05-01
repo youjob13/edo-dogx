@@ -10,3 +10,33 @@ export interface UserProfile {
   email: string;
   roles: string[];
 }
+
+export type DocumentCategory = 'HR' | 'FINANCE' | 'GENERAL';
+
+export interface CreateDocumentRequest {
+  title: string;
+  category: DocumentCategory;
+}
+
+export interface DocumentResponse {
+  id: string;
+  title: string;
+  category: DocumentCategory;
+  status: string;
+}
+
+export interface SignatureSigner {
+  userId: string;
+  dueAt?: string;
+}
+
+export interface CreateSignatureRequest {
+  signers: SignatureSigner[];
+}
+
+export interface AuditEventResponse {
+  id: string;
+  actionType: string;
+  outcome: 'SUCCESS' | 'DENIED' | 'FAILED';
+  occurredAt: string;
+}

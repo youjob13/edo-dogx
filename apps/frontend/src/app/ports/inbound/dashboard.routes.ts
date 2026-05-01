@@ -25,6 +25,34 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
+        path: 'signatures',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/signature-panel.component').then(
+            (m) => m.SignaturePanelComponent,
+          ),
+      },
+      {
+        path: 'audit',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/audit-timeline.component').then(
+            (m) => m.AuditTimelineComponent,
+          ),
+      },
+      {
+        path: 'category-workflow',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/category-workflow.component').then(
+            (m) => m.CategoryWorkflowComponent,
+          ),
+      },
+      {
+        path: 'search-notification',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/search-notification.component').then(
+            (m) => m.SearchNotificationComponent,
+          ),
+      },
+      {
         path: 'tasks/:boardId/task/:taskId',
         loadComponent: () =>
           import('../../adapters/http/dashboard/tasks/dashboard-task-details.component').then(
