@@ -48,13 +48,6 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
-        path: 'audit',
-        loadComponent: () =>
-          import('../../adapters/http/dashboard/audit-timeline.component').then(
-            (m) => m.AuditTimelineComponent,
-          ),
-      },
-      {
         path: 'category-workflow',
         loadComponent: () =>
           import('../../adapters/http/dashboard/category-workflow.component').then(

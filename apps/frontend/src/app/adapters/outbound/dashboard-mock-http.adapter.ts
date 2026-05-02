@@ -34,6 +34,7 @@ import {
   WeeklyVolumePoint,
 } from '../../domain/dashboard/dashboard.models';
 import { DashboardApiPort } from '../../ports/outbound/dashboard-api.port';
+import { Params } from '@angular/router';
 
 const LATENCY_MS = 180;
 
@@ -78,76 +79,31 @@ const MOCK_ACTIVITY: Array<ActivityItem> = [
 
 const mockDocumentsSeed = (): Array<DocumentItem> => [
   {
-    id: 'd1',
-    filename: 'Q3_Financial_Audit_v2.pdf',
-    type: 'pdf',
-    status: 'finalized',
-    modifiedAtLabel: '2 часа назад',
-    modifiedAtIso: '2026-04-28T09:00:00.000Z',
-    sizeKb: 2450,
-  },
-  {
-    id: 'd2',
-    filename: 'Vendor_Agreement_Draft.docx',
-    type: 'legal',
-    status: 'review',
-    modifiedAtLabel: '5 часов назад',
-    modifiedAtIso: '2026-04-28T06:00:00.000Z',
-    sizeKb: 860,
-  },
-  {
     id: 'd3',
-    filename: 'HR_Payroll_Export_June.xlsx',
+    title: 'HR_Payroll_Export_June.xlsx',
     type: 'spreadsheet',
     status: 'archived',
-    modifiedAtLabel: 'вчера',
-    modifiedAtIso: '2026-04-27T10:30:00.000Z',
+    // modifiedAtLabel: 'вчера',
+    updated_at: '2026-04-27T10:30:00.000Z',
     sizeKb: 5120,
   },
   {
     id: 'd4',
-    filename: 'Project_Blueprint_Alpha.jpg',
+    title: 'Project_Blueprint_Alpha.jpg',
     type: 'image',
     status: 'pending',
-    modifiedAtLabel: 'вчера',
-    modifiedAtIso: '2026-04-27T08:10:00.000Z',
+    // modifiedAtLabel: 'вчера',
+    updated_at: '2026-04-27T08:10:00.000Z',
     sizeKb: 3320,
   },
   {
     id: 'd5',
-    filename: 'Incident_Report_2026_04.pdf',
+    title: 'Incident_Report_2026_04.pdf',
     type: 'pdf',
     status: 'pending',
-    modifiedAtLabel: '2 дня назад',
-    modifiedAtIso: '2026-04-26T12:15:00.000Z',
+    // modifiedAtLabel: '2 дня назад',
+    updated_at: '2026-04-26T12:15:00.000Z',
     sizeKb: 1280,
-  },
-  {
-    id: 'd6',
-    filename: 'Tax_Return_2023.pdf',
-    type: 'legal',
-    status: 'review',
-    modifiedAtLabel: '3 дня назад',
-    modifiedAtIso: '2026-04-25T07:30:00.000Z',
-    sizeKb: 2980,
-  },
-  {
-    id: 'd7',
-    filename: 'Facility_Inspection_Photos.zip',
-    type: 'image',
-    status: 'archived',
-    modifiedAtLabel: '4 дня назад',
-    modifiedAtIso: '2026-04-24T16:00:00.000Z',
-    sizeKb: 9120,
-  },
-  {
-    id: 'd8',
-    filename: 'Budget_Forecast_Q4.xlsx',
-    type: 'spreadsheet',
-    status: 'finalized',
-    modifiedAtLabel: '5 дней назад',
-    modifiedAtIso: '2026-04-23T14:00:00.000Z',
-    sizeKb: 4410,
   },
 ];
 
@@ -433,18 +389,6 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
   private taskBoards = mockTaskBoardsSeed();
   private editableDocuments: Array<MutableEditableDocument> = [
     {
-      id: 'd1',
-      title: 'Q3 Financial Audit v2',
-      category: 'FINANCE',
-      status: 'finalized',
-      contentDocument: {
-        type: 'doc',
-        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Аудит финансового отчета Q3.' }] }],
-      },
-      version: 3,
-      modifiedAtIso: '2026-04-28T09:00:00.000Z',
-    },
-    {
       id: 'd2',
       title: 'Vendor Agreement Draft',
       category: 'GENERAL',
@@ -495,7 +439,7 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
   }
 
   public getDashboardSummary(query: DashboardQuery): Observable<DashboardSummary> {
-    return this.getDocuments(query).pipe(
+    return this.getDocumentsData(query).pipe(
       map((result) => {
         const pendingApprovalCount = result.items.filter(
           (documentItem) => documentItem.status === 'pending',
@@ -519,6 +463,13 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     return of(MOCK_WEEKLY_VOLUME).pipe(delay(LATENCY_MS));
   }
 
+  getDocumentsData(query: Params) {
+   return this.http
+      .get<PaginatedResult<DocumentItem>>(`/api/documents`, {
+        params: query
+      })
+  } 
+
   public getDocuments(query: DashboardQuery): Observable<PaginatedResult<DocumentItem>> {
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.max(1, query.pageSize ?? 5);
@@ -529,10 +480,10 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     if (text && text.length > 0) {
       filtered = filtered.filter((documentItem) =>
         [
-          documentItem.filename,
+          documentItem.title,
           documentItem.type,
           documentItem.status,
-          documentItem.modifiedAtLabel,
+          documentItem.updated_at,
         ]
           .join(' ')
           .toLowerCase()
@@ -555,7 +506,7 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
       let compareResult = 0;
 
       if (sortBy === 'filename') {
-        compareResult = left.filename.localeCompare(right.filename, 'ru');
+        compareResult = left.title.localeCompare(right.title, 'ru');
       }
 
       if (sortBy === 'type') {
@@ -568,19 +519,19 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
 
       if (sortBy === 'modifiedAtIso') {
         compareResult =
-          new Date(left.modifiedAtIso).getTime() - new Date(right.modifiedAtIso).getTime();
+          new Date(left.updated_at).getTime() - new Date(right.updated_at).getTime();
       }
 
       return sortDirection === 'asc' ? compareResult : compareResult * -1;
     });
 
-    const totalItems = filtered.length;
+    const total = filtered.length;
     const start = (page - 1) * pageSize;
     const items = filtered.slice(start, start + pageSize);
 
     return of({
       items,
-      totalItems,
+      total,
       page,
       pageSize,
     }).pipe(delay(LATENCY_MS));
@@ -617,8 +568,8 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
 
     return of({
       id: documentItem.id,
-      title: documentItem.filename,
-      body: `Предпросмотр документа ${documentItem.filename} (мок-данные).`,
+      title: documentItem.title,
+      body: `Предпросмотр документа ${documentItem.title} (мок-данные).`,
     }).pipe(delay(LATENCY_MS));
   }
 
@@ -683,11 +634,11 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     this.documents = [
       {
         id,
-        filename: `${trimmedTitle}.pdf`,
+        title: `${trimmedTitle}.pdf`,
         type: 'pdf',
         status: editable.status,
-        modifiedAtLabel: 'только что',
-        modifiedAtIso: nowIso,
+        // modifiedAtLabel: 'только что',
+        updated_at: nowIso,
         sizeKb: 256,
       },
       ...this.documents,
@@ -728,10 +679,10 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
 
     const updated: DocumentItem = {
       ...current,
-      filename: payload.filename,
+      title: payload.filename,
       status: payload.status,
-      modifiedAtIso: new Date().toISOString(),
-      modifiedAtLabel: 'только что',
+      updated_at: new Date().toISOString(),
+      // modifiedAtLabel: 'только что',
     };
 
     this.documents = this.documents.map((item) =>
@@ -746,7 +697,7 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
             status: payload.status,
             contentDocument: payload.contentDocument ?? item.contentDocument,
             version: item.version + 1,
-            modifiedAtIso: updated.modifiedAtIso,
+            modifiedAtIso: updated.updated_at,
           }
         : item,
     );

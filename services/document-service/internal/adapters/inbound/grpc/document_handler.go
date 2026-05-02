@@ -111,6 +111,56 @@ func (h *DocumentHandler) GetDocument(ctx context.Context, req *pb.GetDocumentRe
 	return mapDocument(document)
 }
 
+func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDocumentsRequest) (*pb.SearchDocumentsResponse, error) {
+	documents, total, err := h.lifecycle.SearchDocuments(ctx, appservice.SearchDocumentsInput{
+		ActorUserID: req.GetActorUserId(),
+		Query:       req.GetQuery(),
+		Status:      model.DocumentStatus(req.GetStatus()),
+		Category:    req.GetCategory(),
+		Limit:       int(req.GetLimit()),
+		Offset:      int(req.GetOffset()),
+	})
+	if err != nil {
+		slog.Error("grpc search documents failed",
+			"actorUserId", req.GetActorUserId(),
+			"query", req.GetQuery(),
+			"status", req.GetStatus(),
+			"category", req.GetCategory(),
+			"err", err,
+		)
+		return nil, toStatusError(err)
+	}
+
+	items := make([]*pb.Document, 0, len(documents))
+	for _, document := range documents {
+		contentJSON := ""
+		if document.ContentDocument != nil {
+			payload, err := json.Marshal(document.ContentDocument)
+			if err != nil {
+				slog.Error("grpc search documents failed to marshal content_document_json",
+					"documentId", document.ID,
+					"err", err,
+				)
+				return nil, status.Error(codes.Internal, "failed to marshal document content")
+			}
+			contentJSON = string(payload)
+		}
+
+		items = append(items, &pb.Document{
+			Id:                  document.ID,
+			Title:               document.Title,
+			Category:            document.Category,
+			Status:              string(document.Status),
+			OwnerUserId:         document.OwnerUser,
+			Version:             document.Version,
+			UpdatedAt:           document.UpdatedAt,
+			ContentDocumentJson: contentJSON,
+		})
+	}
+
+	return &pb.SearchDocumentsResponse{Items: items, Total: int32(total)}, nil
+}
+
 func (h *DocumentHandler) GetEditorControlProfile(ctx context.Context, req *pb.GetEditorControlProfileRequest) (*pb.EditorControlProfile, error) {
 	profile, err := h.lifecycle.GetEditorControlProfile(ctx, appservice.GetEditorControlProfileInput{
 		ActorUserID: req.GetActorUserId(),

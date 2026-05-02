@@ -20,11 +20,12 @@ export interface WeeklyVolumePoint {
 
 export interface DocumentItem {
   readonly id: string;
-  readonly filename: string;
+  readonly title: string;
   readonly type: DashboardDocumentType;
   readonly status: DashboardDocumentStatus;
-  readonly modifiedAtLabel: string;
-  readonly modifiedAtIso: string;
+  readonly updated_at: string;
+  // readonly modifiedAtLabel: string;
+  // readonly modifiedAtIso: string;
   readonly sizeKb: number;
 }
 
@@ -54,7 +55,7 @@ export interface DashboardQuery {
 
 export interface PaginatedResult<T> {
   readonly items: Array<T>;
-  readonly totalItems: number;
+  readonly total: number;
   readonly page: number;
   readonly pageSize: number;
 }

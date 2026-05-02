@@ -80,7 +80,7 @@
         <p>{{ preview.body }}</p>
         @if (selectedDocument(); as doc) {
           <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
-          <p class="dashboard-home__text">Изменен: {{ doc.modifiedAtLabel }}</p>
+          <p class="dashboard-home__text">Изменен: {{ doc.updated_at }}</p>
         }
       </div>
     }

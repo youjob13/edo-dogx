@@ -43,8 +43,8 @@ export class DashboardUseCases {
     return this.api.getWeeklyVolume();
   }
 
-  public getDocuments(query: DashboardQuery): Observable<PaginatedResult<DocumentItem>> {
-    return this.api.getDocuments(query);
+  public getDocuments(query?: DashboardQuery): Observable<PaginatedResult<DocumentItem>> {
+    return this.api.getDocumentsData(query);
   }
 
   public getActivity(query: DashboardQuery): Observable<Array<ActivityItem>> {

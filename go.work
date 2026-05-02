@@ -2,8 +2,6 @@ go 1.26
 
 use ./services/document-service
 
-use ./services/authorization-audit-service
-
 use ./services/signature-service
 
 use ./services/search-notification-service

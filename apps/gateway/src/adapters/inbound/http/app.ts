@@ -11,7 +11,6 @@ import authRoutes from './auth/auth.routes.js';
 import documentsRoutes from './documents.routes.js';
 import editorControlProfilesRoutes from './editor-control-profiles.routes.js';
 import exportsRoutes from './exports.routes.js';
-import auditRoutes from './audit.routes.js';
 import signaturesRoutes from './signatures.routes.js';
 import categoryRoutes from './category.routes.js';
 import searchRoutes from './search.routes.js';
@@ -75,7 +74,6 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   void app.register(documentsRoutes, { prefix: '/api/documents' });
   void app.register(exportsRoutes, { prefix: '/api/documents' });
   void app.register(editorControlProfilesRoutes, { prefix: '/api/editor-control-profiles' });
-  void app.register(auditRoutes, { prefix: '/api/documents' });
   void app.register(signaturesRoutes, { prefix: '/api/documents' });
   void app.register(categoryRoutes, { prefix: '/api/categories' });
   void app.register(searchRoutes, { prefix: '/api/search' });

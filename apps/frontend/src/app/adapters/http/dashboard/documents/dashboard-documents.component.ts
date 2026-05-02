@@ -106,10 +106,10 @@ export class DashboardDocumentsComponent {
   protected readonly rowView = computed<Array<Record<string, string>>>(() =>
     this.documents().map((item) => ({
       id: item.id,
-      filename: item.filename,
+      filename: item.title,
       typeLabel: this.getTypeLabel(item.type),
       statusLabel: this.getStatusLabel(item.status),
-      modifiedAtLabel: item.modifiedAtLabel,
+      // modifiedAtLabel: item.modifiedAtLabel,
     })),
   );
 
@@ -273,7 +273,7 @@ export class DashboardDocumentsComponent {
       .updateDocument(selectedId, payload)
       .pipe(take(1))
       .subscribe((result) => {
-        this.message.set(`Документ ${result.filename} обновлен.`);
+        this.message.set(`Документ ${result.title} обновлен.`);
         this.editOpen.set(false);
         this.loadDocuments();
       });
@@ -290,28 +290,30 @@ export class DashboardDocumentsComponent {
 
     this.loading.set(true);
     this.useCases
-      .getDocuments({
-        text: this.searchControl.value,
-        status:
-          this.statusFilterControl.value === 'all'
-            ? undefined
-            : this.statusFilterControl.value,
-        type:
-          this.typeFilterControl.value === 'all'
-            ? undefined
-            : this.typeFilterControl.value,
-        sortBy,
-        sortDirection: sort.direction,
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-      })
+      .getDocuments(
+      //   {
+      //   text: this.searchControl.value,
+      //   status:
+      //     this.statusFilterControl.value === 'all'
+      //       ? undefined
+      //       : this.statusFilterControl.value,
+      //   type:
+      //     this.typeFilterControl.value === 'all'
+      //       ? undefined
+      //       : this.typeFilterControl.value,
+      //   sortBy,
+      //   sortDirection: sort.direction,
+      //   page: pagination.page,
+      //   pageSize: pagination.pageSize,
+      // }
+    )
       .pipe(
         take(1),
         finalize(() => this.loading.set(false)),
       )
       .subscribe((result) => {
         this.documents.set(result.items);
-        this.pagination.update((state) => ({ ...state, totalItems: result.totalItems }));
+        this.pagination.update((state) => ({ ...state, totalItems: result.total }));
       });
   }
 

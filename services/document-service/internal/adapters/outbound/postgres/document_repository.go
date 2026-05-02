@@ -183,6 +183,90 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 	return current, nil
 }
 
+func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound.SearchDocumentsInput) ([]model.Document, int64, error) {
+	if input.Limit <= 0 {
+		input.Limit = 20
+	}
+	if input.Offset < 0 {
+		input.Offset = 0
+	}
+
+	where := "WHERE true"
+	args := make([]any, 0, 6)
+	argIdx := 1
+
+	if input.Query != "" {
+		where += fmt.Sprintf(" AND (title ILIKE $%d OR category ILIKE $%d)", argIdx, argIdx+1)
+		args = append(args, "%"+input.Query+"%", "%"+input.Query+"%")
+		argIdx += 2
+	}
+
+	if input.Status != "" {
+		where += fmt.Sprintf(" AND status = $%d", argIdx)
+		args = append(args, string(input.Status))
+		argIdx++
+	}
+
+	if input.Category != "" {
+		where += fmt.Sprintf(" AND category = $%d", argIdx)
+		args = append(args, input.Category)
+		argIdx++
+	}
+
+	var total int64
+	totalQuery := fmt.Sprintf("SELECT COUNT(*) FROM documents %s", where)
+	if err := r.db.QueryRowContext(ctx, totalQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, title, category, status, content_document_json, owner_user_id, version, updated_at
+		FROM documents
+		%s
+		ORDER BY updated_at DESC
+		LIMIT $%d OFFSET $%d
+	`, where, argIdx, argIdx+1)
+	args = append(args, input.Limit, input.Offset)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	documents := make([]model.Document, 0)
+	for rows.Next() {
+		var document model.Document
+		var statusValue string
+		var contentRaw []byte
+		if err := rows.Scan(
+			&document.ID,
+			&document.Title,
+			&document.Category,
+			&statusValue,
+			&contentRaw,
+			&document.OwnerUser,
+			&document.Version,
+			&document.UpdatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		document.Status = model.DocumentStatus(statusValue)
+		if len(contentRaw) > 0 {
+			if err := json.Unmarshal(contentRaw, &document.ContentDocument); err != nil {
+				return nil, 0, err
+			}
+		}
+		documents = append(documents, document)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	return documents, total, nil
+}
+
 func (r *DocumentRepository) GetEditorControlProfileByContext(ctx context.Context, contextType string, contextKey string) (model.EditorControlProfile, error) {
 	const query = `
 		SELECT id, context_type, context_key, enabled_controls, disabled_controls, is_active, updated_by_user_id, updated_at

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -78,6 +79,15 @@ type DownloadExportArtifactInput struct {
 type GetDocumentInput struct {
 	ActorUserID string
 	DocumentID  string
+}
+
+type SearchDocumentsInput struct {
+	ActorUserID string
+	Query       string
+	Status      model.DocumentStatus
+	Category    string
+	Limit       int
+	Offset      int
 }
 
 func NewInMemoryDocumentLifecycleService() *DocumentLifecycleService {
@@ -160,6 +170,16 @@ func (s *DocumentLifecycleService) UpdateDraft(ctx context.Context, input Update
 func (s *DocumentLifecycleService) GetDocument(ctx context.Context, input GetDocumentInput) (model.Document, error) {
 	_ = input.ActorUserID
 	return s.documents.GetByID(ctx, input.DocumentID)
+}
+
+func (s *DocumentLifecycleService) SearchDocuments(ctx context.Context, input SearchDocumentsInput) ([]model.Document, int64, error) {
+	return s.documents.SearchDocuments(ctx, outbound.SearchDocumentsInput{
+		Query:    input.Query,
+		Status:   input.Status,
+		Category: input.Category,
+		Limit:    input.Limit,
+		Offset:   input.Offset,
+	})
 }
 
 func (s *DocumentLifecycleService) GetEditorControlProfile(ctx context.Context, input GetEditorControlProfileInput) (model.EditorControlProfile, error) {
@@ -358,6 +378,49 @@ func newInMemoryDocumentVersionRepository() *inMemoryDocumentVersionRepository {
 
 func (r *inMemoryDocumentVersionRepository) AppendVersion(_ context.Context, _ model.Document, _ string, _ string) error {
 	return nil
+}
+
+func (r *inMemoryDocumentRepository) SearchDocuments(_ context.Context, input outbound.SearchDocumentsInput) ([]model.Document, int64, error) {
+	query := strings.TrimSpace(strings.ToLower(input.Query))
+	filtered := make([]model.Document, 0, len(r.items))
+
+	for _, item := range r.items {
+		if query != "" {
+			if !strings.Contains(strings.ToLower(item.Title), query) && !strings.Contains(strings.ToLower(item.Category), query) {
+				continue
+			}
+		}
+		if input.Status != "" && item.Status != input.Status {
+			continue
+		}
+		if input.Category != "" && item.Category != input.Category {
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].UpdatedAt > filtered[j].UpdatedAt
+	})
+
+	total := int64(len(filtered))
+	start := input.Offset
+	if start < 0 {
+		start = 0
+	}
+	limit := input.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	end := start + limit
+	if start > len(filtered) {
+		return []model.Document{}, total, nil
+	}
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+
+	return filtered[start:end], total, nil
 }
 
 func (r *inMemoryDocumentRepository) GetEditorControlProfileByContext(_ context.Context, contextType string, contextKey string) (model.EditorControlProfile, error) {

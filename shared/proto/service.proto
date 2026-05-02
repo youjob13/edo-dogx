@@ -25,13 +25,6 @@ service DocumentWorkflowService {
   rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
 }
 
-service AuthorizationAuditService {
-  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
-  rpc AuthorizeTransition(AuthorizeTransitionRequest) returns (AuthorizeTransitionResponse);
-  rpc AppendAuditEvent(AppendAuditEventRequest) returns (AppendAuditEventResponse);
-  rpc GetAuditEvents(GetAuditEventsRequest) returns (GetAuditEventsResponse);
-}
-
 service SearchNotificationService {
   rpc SyncSearchProjection(SyncSearchProjectionRequest) returns (SyncSearchProjectionResponse);
   rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
@@ -63,17 +56,6 @@ service SignatureService {
   rpc StartSignature(StartSignatureRequest) returns (SignatureRequest);
   rpc RecordSignatureCallback(RecordSignatureCallbackRequest) returns (SignatureRequest);
   rpc GetSignatureStatus(GetSignatureStatusRequest) returns (SignatureRequest);
-}
-
-service AuthorizationService {
-  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
-  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
-  rpc RevokeRole(RevokeRoleRequest) returns (RevokeRoleResponse);
-}
-
-service AuditService {
-  rpc AppendAuditEvent(AppendAuditEventRequest) returns (AppendAuditEventResponse);
-  rpc GetAuditEvents(GetAuditEventsRequest) returns (GetAuditEventsResponse);
 }
 
 service NotificationService {
@@ -147,15 +129,6 @@ message SignatureRequest {
   string status = 3;
   string provider_ref = 4;
   string due_at = 5;
-}
-
-message AuditEvent {
-  string id = 1;
-  string actor_user_id = 2;
-  string action_type = 3;
-  string outcome = 4;
-  string target_id = 5;
-  string occurred_at = 6;
 }
 
 message CreateDraftRequest {
@@ -307,69 +280,6 @@ message RecordSignatureCallbackRequest {
 message GetSignatureStatusRequest {
   string actor_user_id = 1;
   string document_id = 2;
-}
-
-message CheckPermissionRequest {
-  string actor_user_id = 1;
-  string action = 2;
-  string category = 3;
-}
-
-message CheckPermissionResponse {
-  bool allowed = 1;
-  string reason = 2;
-}
-
-message AuthorizeTransitionRequest {
-  string actor_user_id = 1;
-  string document_id = 2;
-  string action = 3;
-  int64 expected_version = 4;
-}
-
-message AuthorizeTransitionResponse {
-  bool allowed = 1;
-  string reason = 2;
-}
-
-message AssignRoleRequest {
-  string actor_user_id = 1;
-  string user_id = 2;
-  string role_code = 3;
-}
-
-message AssignRoleResponse {
-  bool assigned = 1;
-}
-
-message RevokeRoleRequest {
-  string actor_user_id = 1;
-  string user_id = 2;
-  string role_code = 3;
-}
-
-message RevokeRoleResponse {
-  bool revoked = 1;
-}
-
-message AppendAuditEventRequest {
-  string actor_user_id = 1;
-  string action_type = 2;
-  string outcome = 3;
-  string target_id = 4;
-}
-
-message AppendAuditEventResponse {
-  string event_id = 1;
-}
-
-message GetAuditEventsRequest {
-  string actor_user_id = 1;
-  string document_id = 2;
-}
-
-message GetAuditEventsResponse {
-  repeated AuditEvent items = 1;
 }
 
 message EmitNotificationRequest {

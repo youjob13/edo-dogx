@@ -19,8 +19,6 @@ tags:
     description: EDMS document and workflow operations
   - name: signatures
     description: EDMS legally binding signature operations
-  - name: audit
-    description: EDMS audit trail operations
 
 paths:
   /api/documents:
@@ -378,34 +376,6 @@ paths:
         "202":
           description: Signature request created
 
-  /api/documents/{documentId}/audit-events:
-    get:
-      tags: [audit]
-      summary: Get document audit events
-      operationId: getDocumentAuditEvents
-      description: Routed via gateway to authorization-audit-service during migration wave 2.
-      x-migration-wave: wave-2-authorization-audit-service
-      parameters:
-        - in: path
-          name: documentId
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Document audit events
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items]
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AuditEventResponse"
-
   /api/search/documents:
     get:
       tags: [documents]
@@ -442,7 +412,7 @@ paths:
 
   /api/search/notifications/center:
     get:
-      tags: [audit]
+      tags: [documents]
       summary: Get notification center feed
       operationId: getNotificationCenter
       description: Routed via gateway to search-notification-service for notification read model.
@@ -788,22 +758,6 @@ components:
         currentVersion:
           type: integer
           minimum: 1
-
-    AuditEventResponse:
-      type: object
-      required: [id, actionType, outcome, occurredAt]
-      properties:
-        id:
-          type: string
-          format: uuid
-        actionType:
-          type: string
-        outcome:
-          type: string
-          enum: [SUCCESS, DENIED, FAILED]
-        occurredAt:
-          type: string
-          format: date-time
 
     NotificationCenterItem:
       type: object

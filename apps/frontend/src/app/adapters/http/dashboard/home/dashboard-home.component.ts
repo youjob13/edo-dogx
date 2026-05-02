@@ -107,9 +107,9 @@ export class DashboardHomeComponent {
   protected readonly recentDocumentRows = computed<Array<Record<string, string>>>(() =>
     this.filteredRecentDocuments().map((item) => ({
       id: item.id,
-      filename: item.filename,
+      filename: item.title,
       statusLabel: this.getStatusLabel(item.status),
-      modifiedAtLabel: item.modifiedAtLabel,
+      modifiedAtLabel: item.updated_at,
     })),
   );
 
@@ -127,7 +127,7 @@ export class DashboardHomeComponent {
         return true;
       }
 
-      return this.weekdayFromIso(item.modifiedAtIso) === selectedDay;
+      return this.weekdayFromIso(item.updated_at) === selectedDay;
     });
   });
 
@@ -205,7 +205,7 @@ export class DashboardHomeComponent {
         return;
       }
 
-      this.editFilenameControl.setValue(selected.filename);
+      this.editFilenameControl.setValue(selected.title);
       this.editStatusControl.setValue(selected.status);
       this.editOpen.set(true);
       return;
@@ -245,7 +245,7 @@ export class DashboardHomeComponent {
       .updateDocument(id, payload)
       .pipe(take(1))
       .subscribe((updated) => {
-        this.message.set(`Документ ${updated.filename} обновлен.`);
+        this.message.set(`Документ ${updated.title} обновлен.`);
         this.editOpen.set(false);
         this.loadRecentDocuments();
       });

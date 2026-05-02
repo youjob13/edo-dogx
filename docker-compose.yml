@@ -155,20 +155,6 @@ services:
     networks:
       - edo-network
 
-  authorization-audit-service:
-    build:
-      context: services/authorization-audit-service
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      GRPC_ADDR: :50053
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - edo-network
-
   signature-service:
     build:
       context: services/signature-service
@@ -220,8 +206,6 @@ services:
       keycloak:
         condition: service_healthy
       document-service:
-        condition: service_started
-      authorization-audit-service:
         condition: service_started
       signature-service:
         condition: service_started

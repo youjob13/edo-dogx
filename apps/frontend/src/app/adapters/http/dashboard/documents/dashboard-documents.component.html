@@ -63,7 +63,7 @@
 
     <edo-dogx-drawer
       [open]="previewOpen()"
-      [title]="'Предпросмотр: ' + (selectedDocument()?.filename ?? '')"
+      [title]="'Предпросмотр: ' + (selectedDocument()?.title ?? '')"
       ariaLabel="Панель предпросмотра документа"
       (closed)="closePreview()"
     >
@@ -74,7 +74,7 @@
           @if (selectedDocument(); as doc) {
             <p><strong>Статус:</strong></p>
             <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
-            <p><strong>Изменен:</strong> {{ doc.modifiedAtLabel }}</p>
+            <p><strong>Изменен:</strong> {{ doc.updated_at }}</p>
           }
         </div>
       }
