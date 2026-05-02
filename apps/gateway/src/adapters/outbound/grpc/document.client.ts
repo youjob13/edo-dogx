@@ -2,6 +2,16 @@ import { Client, credentials, loadPackageDefinition, type ServiceError } from '@
 import { loadSync } from '@grpc/proto-loader';
 import { resolveServiceProtoPath } from './proto-path.js';
 
+export class GrpcClientError extends Error {
+  public readonly code: number | undefined;
+
+  constructor(message: string, code?: number) {
+    super(message);
+    this.name = 'GrpcClientError';
+    this.code = code;
+  }
+}
+
 type GrpcMethod = (request: unknown, callback: (err: ServiceError | null, response: unknown) => void) => void;
 
 function createClient(serviceName: string, address: string): Client {
@@ -37,7 +47,7 @@ export class DocumentServiceClient {
     return new Promise((resolve, reject) => {
       method(payload, (err, response) => {
         if (err) {
-          reject(err);
+          reject(new GrpcClientError(err.details || err.message, err.code));
           return;
         }
         resolve(response);
@@ -47,6 +57,34 @@ export class DocumentServiceClient {
 
   createDraft(payload: unknown): Promise<unknown> {
     return this.call('CreateDraft', payload);
+  }
+
+  updateDraft(payload: unknown): Promise<unknown> {
+    return this.call('UpdateDraft', payload);
+  }
+
+  getDocument(payload: unknown): Promise<unknown> {
+    return this.call('GetDocument', payload);
+  }
+
+  getEditorControlProfile(payload: unknown): Promise<unknown> {
+    return this.call('GetEditorControlProfile', payload);
+  }
+
+  updateEditorControlProfile(payload: unknown): Promise<unknown> {
+    return this.call('UpdateEditorControlProfile', payload);
+  }
+
+  createExportRequest(payload: unknown): Promise<unknown> {
+    return this.call('CreateExportRequest', payload);
+  }
+
+  getExportRequest(payload: unknown): Promise<unknown> {
+    return this.call('GetExportRequest', payload);
+  }
+
+  downloadExportArtifact(payload: unknown): Promise<unknown> {
+    return this.call('DownloadExportArtifact', payload);
   }
 
   searchDocuments(payload: unknown): Promise<unknown> {

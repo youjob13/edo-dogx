@@ -1,0 +1,73 @@
+<edo-dogx-page-section
+  title="Создание документа"
+  subtitle="Новый черновик для последующего редактирования"
+>
+  <edo-dogx-card title="Новый документ" subtitle="Заполните обязательные поля">
+    <form class="dashboard-document-create" (submit)="$event.preventDefault(); createDocument()">
+      <edo-dogx-input
+        label="Название"
+        [control]="titleControl"
+        [errorText]="'Укажите название (до 300 символов)'"
+      />
+
+      <label class="dashboard-document-create__field">
+        <span>Категория</span>
+        <select [formControl]="categoryControl">
+          <option value="GENERAL">Общая</option>
+          <option value="HR">HR</option>
+          <option value="FINANCE">Финансы</option>
+        </select>
+      </label>
+
+      <section class="dashboard-rich-editor" aria-label="Редактор содержимого">
+        <div class="dashboard-rich-editor__toolbar" role="toolbar" aria-label="Панель форматирования">
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('bold')"
+            (click)="runToolbarAction('bold')"
+          >Жирный</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('italic')"
+            (click)="runToolbarAction('italic')"
+          >Курсив</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('heading')"
+            (click)="runToolbarAction('heading')"
+          >Заголовок</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('list')"
+            (click)="runToolbarAction('bulletList')"
+          >Список</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('list')"
+            (click)="runToolbarAction('orderedList')"
+          >Нумерация</button>
+        </div>
+        <div #editorHost class="dashboard-rich-editor__host"></div>
+      </section>
+
+      <div class="dashboard-document-create__actions">
+        <edo-dogx-button
+          label="Создать черновик"
+          appearance="primary"
+          size="m"
+          [disabled]="loading()"
+          (pressed)="createDocument()"
+        />
+      </div>
+
+      @if (message()) {
+        <p class="dashboard-document-create__message" aria-live="polite">{{ message() }}</p>
+      }
+    </form>
+  </edo-dogx-card>
+</edo-dogx-page-section>

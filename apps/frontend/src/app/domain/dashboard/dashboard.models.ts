@@ -62,6 +62,97 @@ export interface PaginatedResult<T> {
 export interface DashboardEditDocumentPayload {
   readonly filename: string;
   readonly status: DashboardDocumentStatus;
+  readonly contentDocument?: DashboardRichContentDocument;
+  readonly expectedVersion?: number;
+}
+
+export interface DashboardCreateDocumentPayload {
+  readonly title: string;
+  readonly category: 'HR' | 'FINANCE' | 'GENERAL';
+  readonly contentDocument?: DashboardRichContentDocument;
+}
+
+export interface DashboardRichContentMark {
+  readonly type: string;
+}
+
+export interface DashboardRichContentNode {
+  readonly type: string;
+  readonly attrs?: Record<string, unknown>;
+  readonly marks?: Array<DashboardRichContentMark>;
+  readonly text?: string;
+  readonly content?: Array<DashboardRichContentNode>;
+}
+
+export interface DashboardRichContentDocument {
+  readonly type: 'doc';
+  readonly content: Array<DashboardRichContentNode>;
+}
+
+export interface DashboardEditableDocument {
+  readonly id: string;
+  readonly title: string;
+  readonly category: 'HR' | 'FINANCE' | 'GENERAL';
+  readonly status: DashboardDocumentStatus;
+  readonly version: number;
+  readonly contentDocument?: DashboardRichContentDocument;
+}
+
+export type DashboardEditorContextType = 'CATEGORY' | 'TEMPLATE';
+
+export interface DashboardEditorControlProfile {
+  readonly id: string;
+  readonly contextType: DashboardEditorContextType;
+  readonly contextKey: string;
+  readonly enabledControls: Array<string>;
+  readonly disabledControls: Array<string>;
+  readonly isActive: boolean;
+  readonly updatedByUserId: string;
+  readonly updatedAt: string;
+}
+
+export interface DashboardUpdateEditorControlProfilePayload {
+  readonly enabledControls: Array<string>;
+  readonly disabledControls: Array<string>;
+  readonly isActive: boolean;
+  readonly contextType?: DashboardEditorContextType;
+  readonly contextKey?: string;
+}
+
+export type DashboardExportFormat = 'PDF' | 'DOCX';
+export type DashboardExportStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+
+export interface DashboardCreateExportPayload {
+  readonly format: DashboardExportFormat;
+  readonly sourceVersion: number;
+}
+
+export interface DashboardExportArtifact {
+  readonly id: string;
+  readonly fileName: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+  readonly createdAt: string;
+}
+
+export interface DashboardExportRequest {
+  readonly id: string;
+  readonly documentId: string;
+  readonly format: DashboardExportFormat;
+  readonly sourceVersion: number;
+  readonly status: DashboardExportStatus;
+  readonly errorCode?: string;
+  readonly errorMessage?: string;
+  readonly artifact?: DashboardExportArtifact;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface DashboardConflictError {
+  readonly code: 'VERSION_CONFLICT';
+  readonly message: string;
+  readonly expectedVersion: number;
+  readonly currentVersion: number;
 }
 
 export interface DashboardPreviewDocument {

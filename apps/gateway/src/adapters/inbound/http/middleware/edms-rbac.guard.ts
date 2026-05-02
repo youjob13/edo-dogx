@@ -3,7 +3,10 @@ import type { AuthSession } from '../../../../domain/auth.js';
 
 const actionRoleMap: Record<string, string[]> = {
   'documents.create': ['edms.user', 'edms.admin'],
+  'documents.edit': ['edms.user', 'edms.admin'],
   'documents.read': ['edms.user', 'edms.admin'],
+  'documents.configure': ['edms.approver', 'edms.admin'],
+  'documents.export': ['edms.user', 'edms.admin'],
   'documents.submit': ['edms.user', 'edms.admin'],
   'documents.approve': ['edms.approver', 'edms.admin'],
   'signatures.start': ['edms.user', 'edms.admin'],

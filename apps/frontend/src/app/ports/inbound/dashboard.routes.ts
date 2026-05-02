@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../guards/auth.guard';
+import { unsavedChangesGuard } from '../../guards/unsaved-changes.guard';
 
 export const DASHBOARD_ROUTES: Routes = [
   {
@@ -22,6 +23,21 @@ export const DASHBOARD_ROUTES: Routes = [
         loadComponent: () =>
           import('../../adapters/http/dashboard/documents/dashboard-documents.component').then(
             (m) => m.DashboardDocumentsComponent,
+          ),
+      },
+      {
+        path: 'documents/new',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/documents/dashboard-document-create.component').then(
+            (m) => m.DashboardDocumentCreateComponent,
+          ),
+      },
+      {
+        path: 'documents/:id/edit',
+        canDeactivate: [unsavedChangesGuard],
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/documents/dashboard-document-edit.component').then(
+            (m) => m.DashboardDocumentEditComponent,
           ),
       },
       {

@@ -21,6 +21,7 @@ func main() {
 	}
 
 	server := grpcadapter.NewServer()
+	server.AddRegistrar(grpcadapter.NewDocumentHandler())
 	server.RegisterServices()
 
 	slog.Info("document-service gRPC listening", "addr", addr)

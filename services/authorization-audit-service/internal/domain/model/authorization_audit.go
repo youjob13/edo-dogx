@@ -14,5 +14,6 @@ type AuditEvent struct {
 	ActionType  string
 	TargetID    string
 	Outcome     string
+	Metadata    map[string]string
 	OccurredAt  string
 }

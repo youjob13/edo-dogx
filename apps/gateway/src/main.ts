@@ -20,6 +20,9 @@ async function main(): Promise<void> {
   const port = parseInt(process.env['GATEWAY_PORT'] ?? '3000', 10);
   const sessionSecret = requireEnv('SESSION_SECRET');
   const cookieSecure = process.env['COOKIE_SECURE'] === 'true';
+  process.env['DOCUMENT_EXPORT_TIMEOUT_SECONDS'] ??= '10';
+  process.env['DOCUMENT_EXPORT_MAX_CONTENT_BYTES'] ??= '2097152';
+  process.env['DOCUMENT_EXPORT_MAX_RETRIES'] ??= '2';
 
   // Redis
   const redis = new Redis({

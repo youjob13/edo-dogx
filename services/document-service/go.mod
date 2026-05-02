@@ -11,3 +11,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
+
+// NOTE: Export library placeholders are tracked in specs/004-document-editor-export/research.md
+// and will be added to go.mod when concrete export adapters are implemented.

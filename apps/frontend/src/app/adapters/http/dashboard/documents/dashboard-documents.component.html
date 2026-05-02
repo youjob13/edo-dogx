@@ -3,6 +3,15 @@
   subtitle="Фильтрация, сортировка и действия с мок-данными"
 >
   <edo-dogx-card title="Список документов" subtitle="Все элементы страницы кликабельны и обрабатываются">
+    <div class="dashboard-documents__actions">
+      <edo-dogx-button
+        label="Создать документ"
+        appearance="primary"
+        size="m"
+        (pressed)="openCreatePage()"
+      />
+    </div>
+
     <div class="dashboard-documents__filters">
       <edo-dogx-toolbar-search [control]="searchControl" placeholder="Поиск по имени файла" />
 

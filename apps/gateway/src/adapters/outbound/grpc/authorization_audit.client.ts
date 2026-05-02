@@ -49,6 +49,10 @@ export class AuthorizationAuditServiceClient {
     return this.call('CheckPermission', payload);
   }
 
+  appendAuditEvent(payload: unknown): Promise<unknown> {
+    return this.call('AppendAuditEvent', payload);
+  }
+
   getAuditEvents(payload: unknown): Promise<unknown> {
     return this.call('GetAuditEvents', payload);
   }

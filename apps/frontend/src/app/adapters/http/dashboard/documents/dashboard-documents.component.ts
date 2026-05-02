@@ -124,9 +124,13 @@ export class DashboardDocumentsComponent {
 
   protected readonly menuItems: Array<UiKitDropdownItem> = [
     { id: 'preview', label: 'Открыть предпросмотр', icon: 'preview' },
-    { id: 'edit', label: 'Редактировать', icon: 'edit' },
+    { id: 'edit', label: 'Редактировать в отдельной странице', icon: 'edit' },
     { id: 'download', label: 'Скачать', icon: 'download' },
   ];
+
+  protected openCreatePage(): void {
+    this.router.navigate(['/dashboard/documents/new']);
+  }
 
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -230,10 +234,7 @@ export class DashboardDocumentsComponent {
       if (!selected) {
         return;
       }
-
-      this.editFilenameControl.setValue(selected.filename);
-      this.editStatusControl.setValue(selected.status);
-      this.editOpen.set(true);
+      this.router.navigate(['/dashboard/documents', selected.id, 'edit']);
       return;
     }
 
@@ -265,6 +266,7 @@ export class DashboardDocumentsComponent {
     const payload: DashboardEditDocumentPayload = {
       filename: this.editFilenameControl.value,
       status: this.editStatusControl.value,
+      expectedVersion: 1,
     };
 
     this.useCases

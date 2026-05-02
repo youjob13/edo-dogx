@@ -1,0 +1,121 @@
+<edo-dogx-page-section
+  title="Редактирование документа"
+  subtitle="Изменения сохраняются как новая версия черновика"
+>
+  <edo-dogx-card title="Параметры документа" subtitle="Обновите данные и сохраните изменения">
+    <form class="dashboard-document-edit" (submit)="$event.preventDefault(); saveDocument()">
+      <edo-dogx-input
+        label="Название"
+        [control]="titleControl"
+        [errorText]="'Укажите название (до 300 символов)'"
+      />
+
+      <label class="dashboard-document-edit__field">
+        <span>Статус</span>
+        <select [formControl]="statusControl">
+          <option value="pending">Ожидает</option>
+          <option value="review">На проверке</option>
+          <option value="finalized">Утвержден</option>
+          <option value="archived">В архиве</option>
+        </select>
+      </label>
+
+      <section class="dashboard-rich-editor" aria-label="Редактор содержимого">
+        <div class="dashboard-rich-editor__toolbar" role="toolbar" aria-label="Панель форматирования">
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('bold')"
+            (click)="runToolbarAction('bold')"
+          >Жирный</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('italic')"
+            (click)="runToolbarAction('italic')"
+          >Курсив</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('heading')"
+            (click)="runToolbarAction('heading')"
+          >Заголовок</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('list')"
+            (click)="runToolbarAction('bulletList')"
+          >Список</button>
+          <button
+            type="button"
+            class="dashboard-rich-editor__tool"
+            [disabled]="!activeControls().includes('list')"
+            (click)="runToolbarAction('orderedList')"
+          >Нумерация</button>
+        </div>
+        <div #editorHost class="dashboard-rich-editor__host"></div>
+      </section>
+
+      <section class="dashboard-document-export" aria-label="Экспорт документа">
+        <div class="dashboard-document-export__header">
+          <h3>Экспорт</h3>
+          <p>Сформируйте текущую версию документа в PDF или DOCX.</p>
+        </div>
+        <div class="dashboard-document-export__actions">
+          <button
+            type="button"
+            class="dashboard-document-export__button"
+            [class.dashboard-document-export__button--active]="exportFormat() === 'PDF'"
+            [disabled]="loading() || exportLoading()"
+            (click)="requestExport('PDF')"
+          >Экспорт PDF</button>
+          <button
+            type="button"
+            class="dashboard-document-export__button"
+            [class.dashboard-document-export__button--active]="exportFormat() === 'DOCX'"
+            [disabled]="loading() || exportLoading()"
+            (click)="requestExport('DOCX')"
+          >Экспорт DOCX</button>
+          <button
+            type="button"
+            class="dashboard-document-export__button dashboard-document-export__button--ghost"
+            [disabled]="!exportRequestId() || exportLoading()"
+            (click)="refreshExportStatus()"
+          >Обновить статус</button>
+          <button
+            type="button"
+            class="dashboard-document-export__button dashboard-document-export__button--download"
+            [disabled]="exportStatus() !== 'SUCCEEDED' || exportLoading()"
+            (click)="downloadExport()"
+          >Скачать файл</button>
+        </div>
+        <p class="dashboard-document-export__status" aria-live="polite">
+          Статус: <strong>{{ exportStatusLabel() }}</strong>
+        </p>
+        @if (exportMessage()) {
+          <p class="dashboard-document-export__message" aria-live="polite">{{ exportMessage() }}</p>
+        }
+      </section>
+
+      <div class="dashboard-document-edit__actions">
+        <edo-dogx-button
+          label="Сохранить"
+          appearance="primary"
+          size="m"
+          [disabled]="loading()"
+          (pressed)="saveDocument()"
+        />
+        <edo-dogx-button
+          label="К списку"
+          appearance="secondary"
+          size="m"
+          (pressed)="goBack()"
+        />
+      </div>
+
+      @if (message()) {
+        <p class="dashboard-document-edit__message" aria-live="polite">{{ message() }}</p>
+      }
+    </form>
+  </edo-dogx-card>
+</edo-dogx-page-section>
