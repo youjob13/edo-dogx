@@ -48,7 +48,7 @@ export interface DashboardApiPort {
     payload: DashboardCreateExportPayload,
   ): Observable<DashboardExportRequest>;
   getExportRequest(documentId: string, exportRequestId: string): Observable<DashboardExportRequest>;
-  downloadExportArtifact(documentId: string, exportRequestId: string): Observable<void>;
+  downloadExportArtifact(documentId: string, exportRequestId: string): Observable<Blob>;
   getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>>;
   getTaskBoard(boardId: string): Observable<KanbanBoardDetails>;
   getTaskDetails(boardId: string, taskId: string): Observable<KanbanTaskDetails>;

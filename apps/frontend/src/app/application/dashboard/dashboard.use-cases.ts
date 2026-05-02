@@ -110,7 +110,7 @@ export class DashboardUseCases {
     return this.api.getExportRequest(documentId, exportRequestId);
   }
 
-  public downloadExportArtifact(documentId: string, exportRequestId: string): Observable<void> {
+  public downloadExportArtifact(documentId: string, exportRequestId: string): Observable<Blob> {
     return this.api.downloadExportArtifact(documentId, exportRequestId);
   }
 

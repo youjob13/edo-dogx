@@ -321,17 +321,14 @@ paths:
             type: string
             format: uuid
       responses:
-        "200":
-          description: Export artifact binary stream
-          content:
-            application/pdf:
+        "302":
+          description: Redirect to presigned object-storage URL for direct download
+          headers:
+            Location:
+              description: Presigned URL of the export artifact
               schema:
                 type: string
-                format: binary
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-              schema:
-                type: string
-                format: binary
+                format: uri
         "409":
           description: Export request is not completed yet
           content:

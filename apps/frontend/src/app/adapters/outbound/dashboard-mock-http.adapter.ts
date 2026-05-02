@@ -219,6 +219,51 @@ interface MutableEditorControlProfile {
   updatedAt: string;
 }
 
+type DashboardEditorControlProfileApi = Partial<{
+  id: string;
+  contextType: DashboardEditorContextType;
+  context_type: DashboardEditorContextType;
+  contextKey: string;
+  context_key: string;
+  enabledControls: string[];
+  enabled_controls: string[];
+  disabledControls: string[];
+  disabled_controls: string[];
+  isActive: boolean;
+  is_active: boolean;
+  updatedByUserId: string;
+  updated_by_user_id: string;
+  updatedAt: string;
+  updated_at: string;
+}>;
+
+const normalizeEditorControlProfile = (
+  profile: DashboardEditorControlProfileApi,
+  fallback: Pick<DashboardEditorControlProfile, 'contextType' | 'contextKey'>,
+): DashboardEditorControlProfile => {
+  const contextType = profile.contextType ?? profile.context_type ?? fallback.contextType;
+  const contextKey = profile.contextKey ?? profile.context_key ?? fallback.contextKey;
+
+  return {
+    id: profile.id ?? `${contextType}:${contextKey}`,
+    contextType,
+    contextKey,
+    enabledControls: Array.isArray(profile.enabledControls)
+      ? [...profile.enabledControls]
+      : Array.isArray(profile.enabled_controls)
+        ? [...profile.enabled_controls]
+        : [],
+    disabledControls: Array.isArray(profile.disabledControls)
+      ? [...profile.disabledControls]
+      : Array.isArray(profile.disabled_controls)
+        ? [...profile.disabled_controls]
+        : [],
+    isActive: profile.isActive ?? profile.is_active ?? true,
+    updatedByUserId: profile.updatedByUserId ?? profile.updated_by_user_id ?? 'system',
+    updatedAt: profile.updatedAt ?? profile.updated_at ?? new Date().toISOString(),
+  };
+};
+
 interface MutableExportRequest {
   id: string;
   documentId: string;
@@ -721,8 +766,9 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     contextKey: string,
   ): Observable<DashboardEditorControlProfile> {
     return this.http
-      .get<DashboardEditorControlProfile>(`/api/editor-control-profiles/${contextType}/${contextKey}`)
+      .get<DashboardEditorControlProfileApi>(`/api/editor-control-profiles/${contextType}/${contextKey}`)
       .pipe(
+        map((profile) => normalizeEditorControlProfile(profile, { contextType, contextKey })),
         catchError(() => {
           const profile = this.editorControlProfiles.find(
             (item) => item.contextType === contextType && item.contextKey === contextKey,
@@ -743,7 +789,6 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
           };
           return of(fallback);
         }),
-        delay(LATENCY_MS),
       );
   }
 
@@ -752,8 +797,14 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     payload: DashboardUpdateEditorControlProfilePayload,
   ): Observable<DashboardEditorControlProfile> {
     return this.http
-      .put<DashboardEditorControlProfile>(`/api/editor-control-profiles/${profileId}`, payload)
+      .put<DashboardEditorControlProfileApi>(`/api/editor-control-profiles/${profileId}`, payload)
       .pipe(
+        map((profile) =>
+          normalizeEditorControlProfile(profile, {
+            contextType: payload.contextType ?? 'CATEGORY',
+            contextKey: payload.contextKey ?? 'GENERAL',
+          }),
+        ),
         catchError(() => {
           const now = new Date().toISOString();
           const existingIndex = this.editorControlProfiles.findIndex((item) => item.id === profileId);
@@ -780,7 +831,6 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
 
           return of(next as DashboardEditorControlProfile);
         }),
-        delay(LATENCY_MS),
       );
   }
 
@@ -806,7 +856,6 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
           this.exportRequests = [created, ...this.exportRequests];
           return of(created as DashboardExportRequest);
         }),
-        delay(LATENCY_MS),
       );
   }
 
@@ -836,18 +885,16 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
 
           return of(updated as DashboardExportRequest);
         }),
-        delay(LATENCY_MS),
       );
   }
 
-  public downloadExportArtifact(documentId: string, exportRequestId: string): Observable<void> {
+  public downloadExportArtifact(documentId: string, exportRequestId: string): Observable<Blob> {
     return this.http
       .get(`/api/documents/${documentId}/exports/${exportRequestId}/download`, {
-        responseType: 'blob',
+        responseType: 'blob' as const,
       })
       .pipe(
-        map(() => void 0),
-        catchError(() => {
+        catchError((): Observable<Blob> => {
           const existing = this.exportRequests.find(
             (item) => item.documentId === documentId && item.id === exportRequestId,
           );
@@ -855,9 +902,8 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
             return throwError(() => new Error('Файл экспорта пока не готов к скачиванию'));
           }
 
-          return of(void 0);
+          return of(new Blob(['Mock export content'], { type: 'application/octet-stream' }));
         }),
-        delay(LATENCY_MS),
       );
   }
 

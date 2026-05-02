@@ -7,6 +7,18 @@ import {
 
 const documentClient = new DocumentServiceClient();
 
+function tryParseHttpUrl(value: string): string | null {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 function mapGrpcError(reply: { code: (statusCode: number) => { send: (payload: { error: string; [key: string]: unknown }) => unknown } }, error: unknown) {
   if (!(error instanceof GrpcClientError)) {
     return reply.code(503).send({ error: 'document-service unavailable' });
@@ -146,10 +158,12 @@ const exportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         }
 
         const buffer = Buffer.from(response.data, 'base64');
-        reply
-          .header('Content-Type', response.mime_type || 'application/octet-stream')
-          .header('Content-Disposition', `attachment; filename="${response.file_name || 'export.bin'}"`)
-          .send(buffer);
+        const maybeUrl = tryParseHttpUrl(buffer.toString('utf8').trim());
+        if (maybeUrl) {
+          return reply.redirect(maybeUrl, 302);
+        }
+
+        return reply.code(503).send({ error: 'export artifact download URL is unavailable' });
       } catch (error) {
         request.log.error({ error }, 'document-service download export artifact failed');
         return mapGrpcError(reply, error);

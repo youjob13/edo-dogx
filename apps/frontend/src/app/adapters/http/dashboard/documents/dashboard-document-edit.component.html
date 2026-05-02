@@ -22,38 +22,26 @@
 
       <section class="dashboard-rich-editor" aria-label="Редактор содержимого">
         <div class="dashboard-rich-editor__toolbar" role="toolbar" aria-label="Панель форматирования">
-          <button
-            type="button"
-            class="dashboard-rich-editor__tool"
-            [disabled]="!activeControls().includes('bold')"
-            (click)="runToolbarAction('bold')"
-          >Жирный</button>
-          <button
-            type="button"
-            class="dashboard-rich-editor__tool"
-            [disabled]="!activeControls().includes('italic')"
-            (click)="runToolbarAction('italic')"
-          >Курсив</button>
-          <button
-            type="button"
-            class="dashboard-rich-editor__tool"
-            [disabled]="!activeControls().includes('heading')"
-            (click)="runToolbarAction('heading')"
-          >Заголовок</button>
-          <button
-            type="button"
-            class="dashboard-rich-editor__tool"
-            [disabled]="!activeControls().includes('list')"
-            (click)="runToolbarAction('bulletList')"
-          >Список</button>
-          <button
-            type="button"
-            class="dashboard-rich-editor__tool"
-            [disabled]="!activeControls().includes('list')"
-            (click)="runToolbarAction('orderedList')"
-          >Нумерация</button>
+          @for (group of toolbarGroups; track group.id) {
+            <div class="dashboard-rich-editor__toolbar-group" role="group" [attr.aria-label]="group.label">
+              @for (actionId of group.actionIds; track actionId) {
+                <button
+                  type="button"
+                  class="dashboard-rich-editor__tool"
+                  [class.dashboard-rich-editor__tool--active]="isToolbarActionActive(actionId)"
+                  [disabled]="!isToolbarActionEnabled(actionId) || loading()"
+                  (click)="runToolbarAction(actionId)"
+                >{{ getToolbarLabel(actionId) }}</button>
+              }
+            </div>
+          }
         </div>
-        <div #editorHost class="dashboard-rich-editor__host"></div>
+
+        @if (editor; as editorInstance) {
+          <tiptap-editor class="dashboard-rich-editor__host" [editor]="editorInstance" />
+        } @else {
+          <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
+        }
       </section>
 
       <section class="dashboard-document-export" aria-label="Экспорт документа">

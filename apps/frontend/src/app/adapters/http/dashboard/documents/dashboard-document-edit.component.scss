@@ -112,6 +112,25 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  border: 1px solid var(--edo-ui-border-subtle);
+  border-radius: var(--edo-ui-radius-m);
+  background: color-mix(in srgb, var(--edo-ui-surface-primary) 96%, white 4%);
+  padding: 0.45rem;
+}
+
+.dashboard-rich-editor__toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  border-right: 1px solid color-mix(in srgb, var(--edo-ui-border-subtle) 80%, transparent 20%);
+  padding-right: 0.45rem;
+  margin-right: 0.15rem;
+}
+
+.dashboard-rich-editor__toolbar-group:last-child {
+  border-right: 0;
+  padding-right: 0;
+  margin-right: 0;
 }
 
 .dashboard-rich-editor__tool {
@@ -122,6 +141,12 @@
   min-height: 2rem;
   padding: 0.2rem 0.6rem;
   cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.dashboard-rich-editor__tool--active {
+  border-color: var(--edo-ui-accent-primary);
+  background: color-mix(in srgb, var(--edo-ui-accent-primary) 18%, white 82%);
 }
 
 .dashboard-rich-editor__tool:focus-visible {
@@ -129,12 +154,41 @@
   outline-offset: 2px;
 }
 
+.dashboard-rich-editor__tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .dashboard-rich-editor__host {
   min-height: 14rem;
   border: 1px solid var(--edo-ui-border-subtle);
   border-radius: var(--edo-ui-radius-m);
   background: var(--edo-ui-surface-primary);
+}
+
+.dashboard-rich-editor__loading {
+  min-height: 14rem;
+  border: 1px solid var(--edo-ui-border-subtle);
+  border-radius: var(--edo-ui-radius-m);
+  background: var(--edo-ui-surface-primary);
+  color: var(--edo-ui-ink-muted);
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+
+:host ::ng-deep .dashboard-rich-editor__content {
+  min-height: 14rem;
+  outline: none;
   padding: 0.75rem;
+}
+
+:host ::ng-deep .dashboard-rich-editor__content p {
+  margin: 0 0 0.65rem;
+}
+
+:host ::ng-deep .dashboard-rich-editor__content p:last-child {
+  margin-bottom: 0;
 }
 
 @media (max-width: 720px) {
@@ -143,10 +197,25 @@
   }
 
   .dashboard-rich-editor__tool {
-    flex: 1 1 calc(50% - 0.4rem);
+    flex: 1 1 calc(50% - 0.35rem);
+  }
+
+  .dashboard-rich-editor__toolbar-group {
+    border-right: 0;
+    padding-right: 0;
+    margin-right: 0;
+    width: 100%;
   }
 
   .dashboard-rich-editor__host {
+    min-height: 11rem;
+  }
+
+  .dashboard-rich-editor__loading {
+    min-height: 11rem;
+  }
+
+  :host ::ng-deep .dashboard-rich-editor__content {
     min-height: 11rem;
   }
 }

@@ -28,12 +28,13 @@ const (
 )
 
 type ExportArtifact struct {
-	ID         string
-	FileName   string
-	MIMEType   string
-	SizeBytes  int64
-	DataBase64 string
-	CreatedAt  string
+	ID          string
+	FileName    string
+	MIMEType    string
+	SizeBytes   int64
+	DataBase64  string
+	DownloadURL string
+	CreatedAt   string
 }
 
 type ExportRequest struct {

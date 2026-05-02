@@ -2,7 +2,6 @@ package grpcadapter
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 
@@ -20,8 +19,12 @@ type DocumentHandler struct {
 	lifecycle *appservice.DocumentLifecycleService
 }
 
-func NewDocumentHandler() *DocumentHandler {
-	return &DocumentHandler{lifecycle: appservice.NewInMemoryDocumentLifecycleService()}
+func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService) *DocumentHandler {
+	if lifecycle == nil {
+		lifecycle = appservice.NewInMemoryDocumentLifecycleService()
+	}
+
+	return &DocumentHandler{lifecycle: lifecycle}
 }
 
 func (h *DocumentHandler) Register(server *grpc.Server) {
@@ -150,16 +153,15 @@ func (h *DocumentHandler) DownloadExportArtifact(ctx context.Context, req *pb.Do
 		return nil, toStatusError(err)
 	}
 
-	data, decodeErr := base64.StdEncoding.DecodeString(artifact.DataBase64)
-	if decodeErr != nil {
-		return nil, status.Error(codes.Internal, "failed to decode export artifact payload")
+	if artifact.DownloadURL != "" {
+		return &pb.DownloadExportArtifactResponse{
+			Data:     []byte(artifact.DownloadURL),
+			FileName: artifact.FileName,
+			MimeType: artifact.MIMEType,
+		}, nil
 	}
 
-	return &pb.DownloadExportArtifactResponse{
-		Data:     data,
-		FileName: artifact.FileName,
-		MimeType: artifact.MIMEType,
-	}, nil
+	return nil, status.Error(codes.FailedPrecondition, "export artifact presigned URL is not available")
 }
 
 func mapDocument(document model.Document) (*pb.Document, error) {

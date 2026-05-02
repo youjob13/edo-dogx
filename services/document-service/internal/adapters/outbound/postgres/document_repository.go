@@ -1,22 +1,34 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"edo/services/document-service/internal/domain/model"
 	"edo/services/document-service/internal/ports/outbound"
+
+	"github.com/minio/minio-go/v7"
 )
 
 type DocumentRepository struct {
-	db *sql.DB
+	db           *sql.DB
+	objectClient *minio.Client
+	bucketName   string
+	presignedTTL time.Duration
 }
 
-func NewDocumentRepository(db *sql.DB) *DocumentRepository {
-	return &DocumentRepository{db: db}
+func NewDocumentRepository(db *sql.DB, objectClient *minio.Client, bucketName string, presignedTTL time.Duration) *DocumentRepository {
+	if presignedTTL <= 0 {
+		presignedTTL = 15 * time.Minute
+	}
+
+	return &DocumentRepository{db: db, objectClient: objectClient, bucketName: bucketName, presignedTTL: presignedTTL}
 }
 
 func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Document) (model.Document, error) {
@@ -181,7 +193,16 @@ func (r *DocumentRepository) GetEditorControlProfileByContext(ctx context.Contex
 		&profile.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return model.EditorControlProfile{}, model.ErrDocumentNotFound
+			return model.EditorControlProfile{
+				ID:               contextType + ":" + contextKey,
+				ContextType:      contextType,
+				ContextKey:       contextKey,
+				EnabledControls:  []string{"bold", "italic", "heading", "list", "table", "link", "image"},
+				DisabledControls: []string{},
+				IsActive:         true,
+				UpdatedByUserID:  "system",
+				UpdatedAt:        "2026-01-01T00:00:00Z",
+			}, nil
 		}
 		return model.EditorControlProfile{}, err
 	}
@@ -317,11 +338,16 @@ func (r *DocumentRepository) CompleteExportRequestSuccess(ctx context.Context, i
 	}
 	defer tx.Rollback()
 
+	storageKey := fmt.Sprintf("exports/%s/%s/%s", input.DocumentID, input.ExportRequestID, input.FileName)
+	if err := r.storeArtifactPayload(ctx, storageKey, input.MIMEType, input.DataBase64); err != nil {
+		return model.ExportRequest{}, err
+	}
+
 	const artifactQuery = `
 		INSERT INTO export_artifacts (
-			export_request_id, document_id, format, storage_key, file_name, mime_type, size_bytes, checksum, payload_base64
+			export_request_id, document_id, format, storage_key, file_name, mime_type, size_bytes, checksum
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at
 	`
 
@@ -332,12 +358,11 @@ func (r *DocumentRepository) CompleteExportRequestSuccess(ctx context.Context, i
 		input.ExportRequestID,
 		input.DocumentID,
 		string(input.Format),
-		"inline://"+input.ExportRequestID,
+		storageKey,
 		input.FileName,
 		input.MIMEType,
 		input.SizeBytes,
 		input.Checksum,
-		input.DataBase64,
 	).Scan(&artifact.ID, &artifact.CreatedAt); err != nil {
 		return model.ExportRequest{}, err
 	}
@@ -384,7 +409,6 @@ func (r *DocumentRepository) CompleteExportRequestSuccess(ctx context.Context, i
 	artifact.FileName = input.FileName
 	artifact.MIMEType = input.MIMEType
 	artifact.SizeBytes = input.SizeBytes
-	artifact.DataBase64 = input.DataBase64
 	request.Format = model.ExportFormat(format)
 	request.Status = model.ExportRequestStatus(status)
 	request.Artifact = &artifact
@@ -409,8 +433,7 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 			ea.file_name,
 			ea.mime_type,
 			ea.size_bytes,
-			ea.created_at,
-			ea.payload_base64
+			ea.created_at
 		FROM export_requests er
 		LEFT JOIN export_artifacts ea ON ea.id = er.artifact_id
 		WHERE er.document_id = $1 AND er.id = $2
@@ -424,7 +447,6 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 	var artifactMIME sql.NullString
 	var artifactSize sql.NullInt64
 	var artifactCreatedAt sql.NullString
-	var artifactData sql.NullString
 	if err := r.db.QueryRowContext(ctx, query, documentID, exportRequestID).Scan(
 		&request.ID,
 		&request.DocumentID,
@@ -441,7 +463,6 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 		&artifactMIME,
 		&artifactSize,
 		&artifactCreatedAt,
-		&artifactData,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return model.ExportRequest{}, model.ErrDocumentNotFound
@@ -453,12 +474,11 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 	request.Status = model.ExportRequestStatus(status)
 	if artifactID.Valid {
 		request.Artifact = &model.ExportArtifact{
-			ID:         artifactID.String,
-			FileName:   artifactFileName.String,
-			MIMEType:   artifactMIME.String,
-			SizeBytes:  artifactSize.Int64,
-			CreatedAt:  artifactCreatedAt.String,
-			DataBase64: artifactData.String,
+			ID:        artifactID.String,
+			FileName:  artifactFileName.String,
+			MIMEType:  artifactMIME.String,
+			SizeBytes: artifactSize.Int64,
+			CreatedAt: artifactCreatedAt.String,
 		}
 	}
 	return request, nil
@@ -466,20 +486,21 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 
 func (r *DocumentRepository) GetExportArtifact(ctx context.Context, documentID string, exportRequestID string) (model.ExportArtifact, error) {
 	const query = `
-		SELECT ea.id, ea.file_name, ea.mime_type, ea.size_bytes, ea.created_at, ea.payload_base64
+		SELECT ea.id, ea.file_name, ea.mime_type, ea.size_bytes, ea.created_at, ea.storage_key
 		FROM export_artifacts ea
 		JOIN export_requests er ON er.artifact_id = ea.id
 		WHERE er.document_id = $1 AND er.id = $2
 	`
 
 	var artifact model.ExportArtifact
+	var storageKey string
 	if err := r.db.QueryRowContext(ctx, query, documentID, exportRequestID).Scan(
 		&artifact.ID,
 		&artifact.FileName,
 		&artifact.MIMEType,
 		&artifact.SizeBytes,
 		&artifact.CreatedAt,
-		&artifact.DataBase64,
+		&storageKey,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return model.ExportArtifact{}, model.ErrDocumentNotFound
@@ -487,5 +508,57 @@ func (r *DocumentRepository) GetExportArtifact(ctx context.Context, documentID s
 		return model.ExportArtifact{}, err
 	}
 
+	if storageKey == "" {
+		return model.ExportArtifact{}, fmt.Errorf("export artifact has empty storage key")
+	}
+
+	downloadURL, err := r.presignArtifactURL(ctx, storageKey, artifact.FileName, artifact.MIMEType)
+	if err != nil {
+		return model.ExportArtifact{}, err
+	}
+	artifact.DownloadURL = downloadURL
 	return artifact, nil
+
+}
+
+func (r *DocumentRepository) presignArtifactURL(ctx context.Context, storageKey string, fileName string, mimeType string) (string, error) {
+	if r.objectClient == nil {
+		return "", fmt.Errorf("object storage client is not configured")
+	}
+
+	query := make(url.Values)
+	if mimeType != "" {
+		query.Set("response-content-type", mimeType)
+	}
+	if fileName != "" {
+		query.Set("response-content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
+	}
+
+	presignedURL, err := r.objectClient.PresignedGetObject(ctx, r.bucketName, storageKey, r.presignedTTL, query)
+	if err != nil {
+		return "", err
+	}
+
+	return presignedURL.String(), nil
+}
+
+func (r *DocumentRepository) storeArtifactPayload(ctx context.Context, storageKey string, mimeType string, dataBase64 string) error {
+	if r.objectClient == nil {
+		return fmt.Errorf("object storage client is not configured")
+	}
+
+	payload, err := base64.StdEncoding.DecodeString(dataBase64)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.objectClient.PutObject(
+		ctx,
+		r.bucketName,
+		storageKey,
+		bytes.NewReader(payload),
+		int64(len(payload)),
+		minio.PutObjectOptions{ContentType: mimeType},
+	)
+	return err
 }
