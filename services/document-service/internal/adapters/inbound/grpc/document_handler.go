@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 
 	pb "edo/services/document-service/internal/adapters/inbound/grpc/pb"
 	appservice "edo/services/document-service/internal/application/service"
@@ -32,12 +34,28 @@ func (h *DocumentHandler) Register(server *grpc.Server) {
 }
 
 func (h *DocumentHandler) CreateDraft(ctx context.Context, req *pb.CreateDraftRequest) (*pb.Document, error) {
+	contentDocument, err := parseContentDocumentJSON(req.GetContentDocumentJson())
+	if err != nil {
+		slog.Error("grpc create draft failed: invalid content_document_json",
+			"actorUserId", req.GetActorUserId(),
+			"err", err,
+		)
+		return nil, status.Error(codes.InvalidArgument, "invalid content_document_json")
+	}
+
 	document, err := h.lifecycle.CreateDraft(ctx, appservice.CreateDraftInput{
-		ActorUserID: req.GetActorUserId(),
-		Title:       req.GetTitle(),
-		Category:    req.GetCategory(),
+		ActorUserID:     req.GetActorUserId(),
+		Title:           req.GetTitle(),
+		Category:        req.GetCategory(),
+		ContentDocument: contentDocument,
 	})
 	if err != nil {
+		slog.Error("grpc create draft failed",
+			"actorUserId", req.GetActorUserId(),
+			"title", req.GetTitle(),
+			"category", req.GetCategory(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -45,13 +63,31 @@ func (h *DocumentHandler) CreateDraft(ctx context.Context, req *pb.CreateDraftRe
 }
 
 func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRequest) (*pb.Document, error) {
+	contentDocument, err := parseContentDocumentJSON(req.GetContentDocumentJson())
+	if err != nil {
+		slog.Error("grpc update draft failed: invalid content_document_json",
+			"actorUserId", req.GetActorUserId(),
+			"documentId", req.GetDocumentId(),
+			"err", err,
+		)
+		return nil, status.Error(codes.InvalidArgument, "invalid content_document_json")
+	}
+
 	document, err := h.lifecycle.UpdateDraft(ctx, appservice.UpdateDraftInput{
 		ActorUserID:     req.GetActorUserId(),
 		DocumentID:      req.GetDocumentId(),
 		Title:           req.GetTitle(),
 		ExpectedVersion: req.GetExpectedVersion(),
+		ContentDocument: contentDocument,
 	})
 	if err != nil {
+		slog.Error("grpc update draft failed",
+			"actorUserId", req.GetActorUserId(),
+			"documentId", req.GetDocumentId(),
+			"title", req.GetTitle(),
+			"expectedVersion", req.GetExpectedVersion(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -64,6 +100,11 @@ func (h *DocumentHandler) GetDocument(ctx context.Context, req *pb.GetDocumentRe
 		DocumentID:  req.GetDocumentId(),
 	})
 	if err != nil {
+		slog.Error("grpc get document failed",
+			"actorUserId", req.GetActorUserId(),
+			"documentId", req.GetDocumentId(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -77,6 +118,12 @@ func (h *DocumentHandler) GetEditorControlProfile(ctx context.Context, req *pb.G
 		ContextKey:  req.GetContextKey(),
 	})
 	if err != nil {
+		slog.Error("grpc get editor control profile failed",
+			"actorUserId", req.GetActorUserId(),
+			"contextType", req.GetContextType(),
+			"contextKey", req.GetContextKey(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -101,6 +148,14 @@ func (h *DocumentHandler) UpdateEditorControlProfile(ctx context.Context, req *p
 		IsActive:         req.GetIsActive(),
 	})
 	if err != nil {
+		slog.Error("grpc update editor control profile failed",
+			"actorUserId", req.GetActorUserId(),
+			"profileId", req.GetProfileId(),
+			"enabledControlsCount", len(req.GetEnabledControls()),
+			"disabledControlsCount", len(req.GetDisabledControls()),
+			"isActive", req.GetIsActive(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -117,6 +172,13 @@ func (h *DocumentHandler) UpdateEditorControlProfile(ctx context.Context, req *p
 }
 
 func (h *DocumentHandler) CreateExportRequest(ctx context.Context, req *pb.CreateExportPayload) (*pb.ExportRequest, error) {
+	slog.Info("grpc create export request received",
+		"actorUserId", req.GetActorUserId(),
+		"documentId", req.GetDocumentId(),
+		"format", req.GetFormat(),
+		"sourceVersion", req.GetSourceVersion(),
+	)
+
 	exportRequest, err := h.lifecycle.CreateExportRequest(ctx, appservice.CreateExportRequestInput{
 		ActorUserID:   req.GetActorUserId(),
 		DocumentID:    req.GetDocumentId(),
@@ -124,8 +186,22 @@ func (h *DocumentHandler) CreateExportRequest(ctx context.Context, req *pb.Creat
 		SourceVersion: req.GetSourceVersion(),
 	})
 	if err != nil {
+		slog.Error("grpc create export request failed",
+			"actorUserId", req.GetActorUserId(),
+			"documentId", req.GetDocumentId(),
+			"format", req.GetFormat(),
+			"sourceVersion", req.GetSourceVersion(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
+
+	slog.Info("grpc create export request succeeded",
+		"exportRequestId", exportRequest.ID,
+		"documentId", exportRequest.DocumentID,
+		"format", exportRequest.Format,
+		"status", exportRequest.Status,
+	)
 
 	return mapExportRequest(exportRequest), nil
 }
@@ -137,6 +213,12 @@ func (h *DocumentHandler) GetExportRequest(ctx context.Context, req *pb.GetExpor
 		ExportRequestID: req.GetExportRequestId(),
 	})
 	if err != nil {
+		slog.Error("grpc get export request failed",
+			"actorUserId", req.GetActorUserId(),
+			"documentId", req.GetDocumentId(),
+			"exportRequestId", req.GetExportRequestId(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -150,6 +232,12 @@ func (h *DocumentHandler) DownloadExportArtifact(ctx context.Context, req *pb.Do
 		ExportRequestID: req.GetExportRequestId(),
 	})
 	if err != nil {
+		slog.Error("grpc download export artifact failed",
+			"actorUserId", req.GetActorUserId(),
+			"documentId", req.GetDocumentId(),
+			"exportRequestId", req.GetExportRequestId(),
+			"err", err,
+		)
 		return nil, toStatusError(err)
 	}
 
@@ -160,6 +248,12 @@ func (h *DocumentHandler) DownloadExportArtifact(ctx context.Context, req *pb.Do
 			MimeType: artifact.MIMEType,
 		}, nil
 	}
+
+	slog.Error("grpc download export artifact failed: presigned url unavailable",
+		"actorUserId", req.GetActorUserId(),
+		"documentId", req.GetDocumentId(),
+		"exportRequestId", req.GetExportRequestId(),
+	)
 
 	return nil, status.Error(codes.FailedPrecondition, "export artifact presigned URL is not available")
 }
@@ -233,4 +327,18 @@ func toStatusError(err error) error {
 	}
 
 	return status.Error(codes.Internal, err.Error())
+}
+
+func parseContentDocumentJSON(raw string) (map[string]any, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+
+	var contentDocument map[string]any
+	if err := json.Unmarshal([]byte(raw), &contentDocument); err != nil {
+		return nil, err
+	}
+
+	return contentDocument, nil
 }

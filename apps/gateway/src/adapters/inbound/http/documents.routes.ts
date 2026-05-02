@@ -8,6 +8,14 @@ import {
 const allowedStatuses = new Set(['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED']);
 const documentClient = new DocumentServiceClient();
 
+function toContentDocumentJSON(contentDocument: Record<string, unknown> | undefined): string | undefined {
+  if (contentDocument === undefined) {
+    return undefined;
+  }
+
+  return JSON.stringify(contentDocument);
+}
+
 function mapGrpcError(reply: { code: (statusCode: number) => { send: (payload: { error: string; [key: string]: unknown }) => unknown } }, error: unknown) {
   if (!(error instanceof GrpcClientError)) {
     return reply.code(503).send({ error: 'document-service unavailable' });
@@ -70,11 +78,12 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       }
 
       try {
+        const contentDocumentJSON = toContentDocumentJSON(contentDocument);
         const response = await documentClient.createDraft({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           title: title.trim(),
           category: category.trim(),
-          content_document_json: contentDocument,
+          content_document_json: contentDocumentJSON,
         });
         return reply.code(201).send(response);
       } catch (error) {
@@ -125,11 +134,12 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       }
 
       try {
+        const contentDocumentJSON = toContentDocumentJSON(contentDocument);
         const response = await documentClient.updateDraft({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           document_id: documentId,
           title: title.trim(),
-          content_document_json: contentDocument,
+          content_document_json: contentDocumentJSON,
           expected_version: expectedVersion,
         });
         return reply.send(response);

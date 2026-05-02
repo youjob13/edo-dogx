@@ -162,6 +162,7 @@ message CreateDraftRequest {
   string actor_user_id = 1;
   string title = 2;
   string category = 3;
+  string content_document_json = 4;
 }
 
 message UpdateDraftRequest {
@@ -169,6 +170,7 @@ message UpdateDraftRequest {
   string document_id = 2;
   string title = 3;
   int64 expected_version = 4;
+  string content_document_json = 5;
 }
 
 message GetDocumentRequest {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -44,9 +45,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	publicMinIOURL, err := getOptionalURL("MINIO_PUBLIC_BASE_URL")
+	if err != nil {
+		slog.Error("invalid MINIO_PUBLIC_BASE_URL", "err", err)
+		os.Exit(1)
+	}
+
+	publicMinIOClient, err := connectPublicMinIO(publicMinIOURL)
+	if err != nil {
+		slog.Error("invalid public minio client configuration", "err", err)
+		os.Exit(1)
+	}
+
 	documentRepository := postgresadapter.NewDocumentRepository(
 		db,
 		minioClient,
+		publicMinIOClient,
 		bucketName,
 		time.Duration(presignedExpirySeconds)*time.Second,
 	)
@@ -103,15 +117,8 @@ func connectPostgres() (*sql.DB, error) {
 
 func connectMinIO() (*minio.Client, string, error) {
 	endpoint := getEnv("MINIO_ENDPOINT", "minio:9000")
-	accessKey := getEnv("MINIO_ACCESS_KEY", "minioadmin")
-	secretKey := getEnv("MINIO_SECRET_KEY", "minioadmin")
 	bucketName := getEnv("MINIO_BUCKET", "edo-exports")
-	useSSL := getEnv("MINIO_USE_SSL", "false") == "true"
-
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: useSSL,
-	})
+	client, err := newMinIOClient(endpoint, getEnv("MINIO_USE_SSL", "false") == "true")
 	if err != nil {
 		return nil, "", err
 	}
@@ -132,10 +139,47 @@ func connectMinIO() (*minio.Client, string, error) {
 	return client, bucketName, nil
 }
 
+func connectPublicMinIO(publicURL *url.URL) (*minio.Client, error) {
+	if publicURL == nil {
+		return nil, nil
+	}
+
+	return newMinIOClient(publicURL.Host, publicURL.Scheme == "https")
+}
+
+func newMinIOClient(endpoint string, secure bool) (*minio.Client, error) {
+	accessKey := getEnv("MINIO_ACCESS_KEY", "minioadmin")
+	secretKey := getEnv("MINIO_SECRET_KEY", "minioadmin")
+	region := getEnv("MINIO_REGION", "us-east-1")
+
+	return minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure: secure,
+		Region: region,
+	})
+}
+
 func getEnv(key string, fallback string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		return fallback
 	}
 	return value
+}
+
+func getOptionalURL(key string) (*url.URL, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return nil, nil
+	}
+
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return nil, err
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return nil, fmt.Errorf("%s must include scheme and host", key)
+	}
+
+	return parsed, nil
 }

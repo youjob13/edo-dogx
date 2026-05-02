@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -163,8 +163,32 @@ func (s *DocumentLifecycleService) GetDocument(ctx context.Context, input GetDoc
 }
 
 func (s *DocumentLifecycleService) GetEditorControlProfile(ctx context.Context, input GetEditorControlProfileInput) (model.EditorControlProfile, error) {
-	_ = input.ActorUserID
-	return s.documents.GetEditorControlProfileByContext(ctx, input.ContextType, input.ContextKey)
+	slog.Info("get editor control profile requested",
+		"actorUserId", input.ActorUserID,
+		"contextType", input.ContextType,
+		"contextKey", input.ContextKey,
+	)
+
+	profile, err := s.documents.GetEditorControlProfileByContext(ctx, input.ContextType, input.ContextKey)
+	if err != nil {
+		slog.Error("get editor control profile failed",
+			"actorUserId", input.ActorUserID,
+			"contextType", input.ContextType,
+			"contextKey", input.ContextKey,
+			"err", err,
+		)
+		return model.EditorControlProfile{}, err
+	}
+
+	slog.Info("get editor control profile succeeded",
+		"actorUserId", input.ActorUserID,
+		"profileId", profile.ID,
+		"contextType", profile.ContextType,
+		"contextKey", profile.ContextKey,
+		"isActive", profile.IsActive,
+	)
+
+	return profile, nil
 }
 
 func (s *DocumentLifecycleService) UpdateEditorControlProfile(ctx context.Context, input UpdateEditorControlProfileInput) (model.EditorControlProfile, error) {
@@ -180,11 +204,29 @@ func (s *DocumentLifecycleService) UpdateEditorControlProfile(ctx context.Contex
 }
 
 func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, input CreateExportRequestInput) (model.ExportRequest, error) {
+	slog.Info("create export request started",
+		"actorUserId", input.ActorUserID,
+		"documentId", input.DocumentID,
+		"format", input.Format,
+		"sourceVersion", input.SourceVersion,
+	)
+
 	document, err := s.documents.GetByID(ctx, input.DocumentID)
 	if err != nil {
+		slog.Error("create export request failed to load document",
+			"actorUserId", input.ActorUserID,
+			"documentId", input.DocumentID,
+			"err", err,
+		)
 		return model.ExportRequest{}, err
 	}
 	if document.Version != input.SourceVersion {
+		slog.Error("create export request version conflict",
+			"actorUserId", input.ActorUserID,
+			"documentId", input.DocumentID,
+			"sourceVersion", input.SourceVersion,
+			"currentVersion", document.Version,
+		)
 		return model.ExportRequest{}, model.NewVersionConflictError(input.SourceVersion, document.Version)
 	}
 
@@ -195,15 +237,28 @@ func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, inpu
 		SourceVersion:   input.SourceVersion,
 	})
 	if err != nil {
+		slog.Error("create export request failed to persist request",
+			"actorUserId", input.ActorUserID,
+			"documentId", input.DocumentID,
+			"format", input.Format,
+			"sourceVersion", input.SourceVersion,
+			"err", err,
+		)
 		return model.ExportRequest{}, err
 	}
 
 	artifact, err := buildExportArtifact(document, input.Format)
 	if err != nil {
+		slog.Error("create export request failed to build artifact",
+			"exportRequestId", request.ID,
+			"documentId", input.DocumentID,
+			"format", input.Format,
+			"err", err,
+		)
 		return model.ExportRequest{}, err
 	}
 
-	return s.documents.CompleteExportRequestSuccess(ctx, outbound.CompleteExportRequestSuccessInput{
+	completed, err := s.documents.CompleteExportRequestSuccess(ctx, outbound.CompleteExportRequestSuccessInput{
 		ExportRequestID: request.ID,
 		DocumentID:      request.DocumentID,
 		Format:          request.Format,
@@ -213,6 +268,24 @@ func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, inpu
 		Checksum:        artifactChecksum(artifact.DataBase64),
 		DataBase64:      artifact.DataBase64,
 	})
+	if err != nil {
+		slog.Error("create export request failed to finalize request",
+			"exportRequestId", request.ID,
+			"documentId", request.DocumentID,
+			"format", request.Format,
+			"err", err,
+		)
+		return model.ExportRequest{}, err
+	}
+
+	slog.Info("create export request completed",
+		"exportRequestId", completed.ID,
+		"documentId", completed.DocumentID,
+		"format", completed.Format,
+		"status", completed.Status,
+	)
+
+	return completed, nil
 }
 
 func (s *DocumentLifecycleService) GetExportRequest(ctx context.Context, input GetExportRequestInput) (model.ExportRequest, error) {
@@ -386,16 +459,7 @@ func (r *inMemoryDocumentRepository) GetExportArtifact(_ context.Context, docume
 }
 
 func buildExportArtifact(document model.Document, format model.ExportFormat) (model.ExportArtifact, error) {
-	payload, err := json.Marshal(map[string]any{
-		"title":           document.Title,
-		"category":        document.Category,
-		"contentDocument": document.ContentDocument,
-		"sourceVersion":   document.Version,
-		"generatedAt":     time.Now().UTC().Format(time.RFC3339),
-	})
-	if err != nil {
-		return model.ExportArtifact{}, err
-	}
+	lines, images := buildExportContent(document)
 
 	safeTitle := sanitizeFileName(document.Title)
 	if safeTitle == "" {
@@ -404,20 +468,26 @@ func buildExportArtifact(document model.Document, format model.ExportFormat) (mo
 
 	switch format {
 	case model.ExportFormatDOCX:
-		bytes := []byte("DOCX_EXPORT\n" + string(payload))
+		data, err := generateDOCXExport(lines, images)
+		if err != nil {
+			return model.ExportArtifact{}, err
+		}
 		return model.ExportArtifact{
 			FileName:   safeTitle + ".docx",
 			MIMEType:   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-			SizeBytes:  int64(len(bytes)),
-			DataBase64: base64.StdEncoding.EncodeToString(bytes),
+			SizeBytes:  int64(len(data)),
+			DataBase64: base64.StdEncoding.EncodeToString(data),
 		}, nil
 	case model.ExportFormatPDF:
-		bytes := []byte("%PDF-1.4\n" + string(payload))
+		data, err := generatePDFExport(lines, images)
+		if err != nil {
+			return model.ExportArtifact{}, err
+		}
 		return model.ExportArtifact{
 			FileName:   safeTitle + ".pdf",
 			MIMEType:   "application/pdf",
-			SizeBytes:  int64(len(bytes)),
-			DataBase64: base64.StdEncoding.EncodeToString(bytes),
+			SizeBytes:  int64(len(data)),
+			DataBase64: base64.StdEncoding.EncodeToString(data),
 		}, nil
 	default:
 		return model.ExportArtifact{}, fmt.Errorf("unsupported export format: %s", format)

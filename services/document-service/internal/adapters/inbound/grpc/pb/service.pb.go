@@ -7,10 +7,11 @@
 package pb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -776,9 +777,10 @@ type CreateDraftRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActorUserId string `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
-	Title       string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Category    string `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	ActorUserId         string `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	Title               string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Category            string `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	ContentDocumentJson string `protobuf:"bytes,4,opt,name=content_document_json,json=contentDocumentJson,proto3" json:"content_document_json,omitempty"`
 }
 
 func (x *CreateDraftRequest) Reset() {
@@ -834,15 +836,23 @@ func (x *CreateDraftRequest) GetCategory() string {
 	return ""
 }
 
+func (x *CreateDraftRequest) GetContentDocumentJson() string {
+	if x != nil {
+		return x.ContentDocumentJson
+	}
+	return ""
+}
+
 type UpdateDraftRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ActorUserId     string `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
-	DocumentId      string `protobuf:"bytes,2,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
-	Title           string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	ExpectedVersion int64  `protobuf:"varint,4,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	ActorUserId         string `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	DocumentId          string `protobuf:"bytes,2,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
+	Title               string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	ExpectedVersion     int64  `protobuf:"varint,4,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	ContentDocumentJson string `protobuf:"bytes,5,opt,name=content_document_json,json=contentDocumentJson,proto3" json:"content_document_json,omitempty"`
 }
 
 func (x *UpdateDraftRequest) Reset() {
@@ -903,6 +913,13 @@ func (x *UpdateDraftRequest) GetExpectedVersion() int64 {
 		return x.ExpectedVersion
 	}
 	return 0
+}
+
+func (x *UpdateDraftRequest) GetContentDocumentJson() string {
+	if x != nil {
+		return x.ContentDocumentJson
+	}
+	return ""
 }
 
 type GetDocumentRequest struct {

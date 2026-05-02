@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -17,18 +18,28 @@ import (
 )
 
 type DocumentRepository struct {
-	db           *sql.DB
-	objectClient *minio.Client
-	bucketName   string
-	presignedTTL time.Duration
+	db            *sql.DB
+	objectClient  *minio.Client
+	presignClient *minio.Client
+	bucketName    string
+	presignedTTL  time.Duration
 }
 
-func NewDocumentRepository(db *sql.DB, objectClient *minio.Client, bucketName string, presignedTTL time.Duration) *DocumentRepository {
+func NewDocumentRepository(db *sql.DB, objectClient *minio.Client, presignClient *minio.Client, bucketName string, presignedTTL time.Duration) *DocumentRepository {
 	if presignedTTL <= 0 {
 		presignedTTL = 15 * time.Minute
 	}
+	if presignClient == nil {
+		presignClient = objectClient
+	}
 
-	return &DocumentRepository{db: db, objectClient: objectClient, bucketName: bucketName, presignedTTL: presignedTTL}
+	return &DocumentRepository{
+		db:            db,
+		objectClient:  objectClient,
+		presignClient: presignClient,
+		bucketName:    bucketName,
+		presignedTTL:  presignedTTL,
+	}
 }
 
 func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Document) (model.Document, error) {
@@ -179,6 +190,11 @@ func (r *DocumentRepository) GetEditorControlProfileByContext(ctx context.Contex
 		WHERE context_type = $1 AND context_key = $2
 	`
 
+	slog.Info("query editor control profile by context",
+		"contextType", contextType,
+		"contextKey", contextKey,
+	)
+
 	var profile model.EditorControlProfile
 	var enabledRaw []byte
 	var disabledRaw []byte
@@ -193,26 +209,60 @@ func (r *DocumentRepository) GetEditorControlProfileByContext(ctx context.Contex
 		&profile.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return model.EditorControlProfile{
-				ID:               contextType + ":" + contextKey,
-				ContextType:      contextType,
-				ContextKey:       contextKey,
-				EnabledControls:  []string{"bold", "italic", "heading", "list", "table", "link", "image"},
+			fallbackProfile := model.EditorControlProfile{
+				ID:          contextType + ":" + contextKey,
+				ContextType: contextType,
+				ContextKey:  contextKey,
+				EnabledControls: []string{"bold",
+					"italic", "heading", "list", "table", "link", "image"},
 				DisabledControls: []string{},
 				IsActive:         true,
 				UpdatedByUserID:  "system",
 				UpdatedAt:        "2026-01-01T00:00:00Z",
-			}, nil
+			}
+
+			slog.Info("editor control profile not found, using fallback",
+				"contextType", contextType,
+				"contextKey", contextKey,
+				"profileId", fallbackProfile.ID,
+			)
+
+			return fallbackProfile, nil
 		}
+
+		slog.Error("query editor control profile failed",
+			"contextType", contextType,
+			"contextKey", contextKey,
+			"err", err,
+		)
 		return model.EditorControlProfile{}, err
 	}
 
 	if err := json.Unmarshal(enabledRaw, &profile.EnabledControls); err != nil {
+		slog.Error("failed to decode enabled editor controls",
+			"profileId", profile.ID,
+			"contextType", profile.ContextType,
+			"contextKey", profile.ContextKey,
+			"err", err,
+		)
 		return model.EditorControlProfile{}, err
 	}
 	if err := json.Unmarshal(disabledRaw, &profile.DisabledControls); err != nil {
+		slog.Error("failed to decode disabled editor controls",
+			"profileId", profile.ID,
+			"contextType", profile.ContextType,
+			"contextKey", profile.ContextKey,
+			"err", err,
+		)
 		return model.EditorControlProfile{}, err
 	}
+
+	slog.Info("editor control profile loaded",
+		"profileId", profile.ID,
+		"contextType", profile.ContextType,
+		"contextKey", profile.ContextKey,
+		"isActive", profile.IsActive,
+	)
 
 	return profile, nil
 }
@@ -313,6 +363,13 @@ func (r *DocumentRepository) CreateExportRequest(ctx context.Context, input outb
 		RETURNING id, created_at, updated_at
 	`
 
+	slog.Info("insert export request started",
+		"documentId", input.DocumentID,
+		"requestedByUser", input.RequestedByUser,
+		"format", input.Format,
+		"sourceVersion", input.SourceVersion,
+	)
+
 	request := model.ExportRequest{
 		DocumentID:      input.DocumentID,
 		RequestedByUser: input.RequestedByUser,
@@ -325,8 +382,21 @@ func (r *DocumentRepository) CreateExportRequest(ctx context.Context, input outb
 		&request.CreatedAt,
 		&request.UpdatedAt,
 	); err != nil {
+		slog.Error("insert export request failed",
+			"documentId", input.DocumentID,
+			"requestedByUser", input.RequestedByUser,
+			"format", input.Format,
+			"sourceVersion", input.SourceVersion,
+			"err", err,
+		)
 		return model.ExportRequest{}, err
 	}
+
+	slog.Info("insert export request succeeded",
+		"exportRequestId", request.ID,
+		"documentId", request.DocumentID,
+		"status", request.Status,
+	)
 
 	return request, nil
 }
@@ -377,6 +447,8 @@ func (r *DocumentRepository) CompleteExportRequestSuccess(ctx context.Context, i
 	var request model.ExportRequest
 	var format string
 	var status string
+	var errorCode sql.NullString
+	var errorMessage sql.NullString
 	if err := tx.QueryRowContext(
 		ctx,
 		updateQuery,
@@ -391,8 +463,8 @@ func (r *DocumentRepository) CompleteExportRequestSuccess(ctx context.Context, i
 		&format,
 		&request.SourceVersion,
 		&status,
-		&request.ErrorCode,
-		&request.ErrorMessage,
+		&errorCode,
+		&errorMessage,
 		&request.CreatedAt,
 		&request.UpdatedAt,
 	); err != nil {
@@ -411,6 +483,8 @@ func (r *DocumentRepository) CompleteExportRequestSuccess(ctx context.Context, i
 	artifact.SizeBytes = input.SizeBytes
 	request.Format = model.ExportFormat(format)
 	request.Status = model.ExportRequestStatus(status)
+	request.ErrorCode = errorCode.String
+	request.ErrorMessage = errorMessage.String
 	request.Artifact = &artifact
 
 	return request, nil
@@ -442,6 +516,8 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 	var request model.ExportRequest
 	var format string
 	var status string
+	var errorCode sql.NullString
+	var errorMessage sql.NullString
 	var artifactID sql.NullString
 	var artifactFileName sql.NullString
 	var artifactMIME sql.NullString
@@ -454,8 +530,8 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 		&format,
 		&request.SourceVersion,
 		&status,
-		&request.ErrorCode,
-		&request.ErrorMessage,
+		&errorCode,
+		&errorMessage,
 		&request.CreatedAt,
 		&request.UpdatedAt,
 		&artifactID,
@@ -472,6 +548,8 @@ func (r *DocumentRepository) GetExportRequest(ctx context.Context, documentID st
 
 	request.Format = model.ExportFormat(format)
 	request.Status = model.ExportRequestStatus(status)
+	request.ErrorCode = errorCode.String
+	request.ErrorMessage = errorMessage.String
 	if artifactID.Valid {
 		request.Artifact = &model.ExportArtifact{
 			ID:        artifactID.String,
@@ -534,7 +612,7 @@ func (r *DocumentRepository) presignArtifactURL(ctx context.Context, storageKey 
 		query.Set("response-content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
 	}
 
-	presignedURL, err := r.objectClient.PresignedGetObject(ctx, r.bucketName, storageKey, r.presignedTTL, query)
+	presignedURL, err := r.presignClient.PresignedGetObject(ctx, r.bucketName, storageKey, r.presignedTTL, query)
 	if err != nil {
 		return "", err
 	}

@@ -3,6 +3,7 @@ module edo/services/document-service
 go 1.26
 
 require (
+	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/lib/pq v1.12.3
 	github.com/minio/minio-go/v7 v7.0.97
 	google.golang.org/grpc v1.65.0
@@ -20,7 +21,6 @@ require (
 	github.com/minio/crc64nvme v1.1.1 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/tinylib/msgp v1.6.1 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
@@ -30,6 +30,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// NOTE: Export library placeholders are tracked in specs/004-document-editor-export/research.md
-// and will be added to go.mod when concrete export adapters are implemented.
