@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
-import { Observable, delay, map, of, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, catchError, delay, map, of, throwError } from 'rxjs';
 import {
   ActivityItem,
   KanbanBoardDetails,
@@ -11,16 +12,25 @@ import {
   KanbanTaskCommentPayload,
   KanbanTaskDetails,
   KanbanTaskMovePayload,
+  DashboardCreateDocumentPayload,
+  DashboardCreateExportPayload,
+  DashboardEditableDocument,
+  DashboardEditorContextType,
+  DashboardEditorControlProfile,
+  DashboardExportRequest,
+  DashboardExportStatus,
   KanbanTaskStatus,
   DashboardDocumentStatus,
   DashboardDocumentType,
   DashboardEditDocumentPayload,
   DashboardPreviewDocument,
   DashboardQuery,
+  DashboardRichContentDocument,
   DashboardSummary,
   DocumentItem,
   PaginatedResult,
   StorageUsage,
+  DashboardUpdateEditorControlProfilePayload,
   WeeklyVolumePoint,
 } from '../../domain/dashboard/dashboard.models';
 import { DashboardApiPort } from '../../ports/outbound/dashboard-api.port';
@@ -183,6 +193,44 @@ interface MutableTaskBoard {
   readonly tasks: Array<KanbanTask>;
 }
 
+interface MutableEditableDocument {
+  id: string;
+  title: string;
+  category: 'HR' | 'FINANCE' | 'GENERAL';
+  status: DashboardDocumentStatus;
+  contentDocument: DashboardRichContentDocument;
+  version: number;
+  modifiedAtIso: string;
+}
+
+const emptyRichDocument = (): DashboardRichContentDocument => ({
+  type: 'doc',
+  content: [{ type: 'paragraph' }],
+});
+
+interface MutableEditorControlProfile {
+  id: string;
+  contextType: DashboardEditorContextType;
+  contextKey: string;
+  enabledControls: string[];
+  disabledControls: string[];
+  isActive: boolean;
+  updatedByUserId: string;
+  updatedAt: string;
+}
+
+interface MutableExportRequest {
+  id: string;
+  documentId: string;
+  format: 'PDF' | 'DOCX';
+  sourceVersion: number;
+  status: DashboardExportStatus;
+  errorCode?: string;
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const cloneComment = (comment: KanbanTaskComment): KanbanTaskComment => ({ ...comment });
 
 const cloneTask = (task: KanbanTask): KanbanTask => ({
@@ -335,8 +383,71 @@ const mockTaskBoardsSeed = (): Array<MutableTaskBoard> => {
 
 @Injectable({ providedIn: 'root' })
 export class DashboardMockHttpAdapter implements DashboardApiPort {
+  private readonly http = inject(HttpClient);
   private documents = mockDocumentsSeed();
   private taskBoards = mockTaskBoardsSeed();
+  private editableDocuments: Array<MutableEditableDocument> = [
+    {
+      id: 'd1',
+      title: 'Q3 Financial Audit v2',
+      category: 'FINANCE',
+      status: 'finalized',
+      contentDocument: {
+        type: 'doc',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Аудит финансового отчета Q3.' }] }],
+      },
+      version: 3,
+      modifiedAtIso: '2026-04-28T09:00:00.000Z',
+    },
+    {
+      id: 'd2',
+      title: 'Vendor Agreement Draft',
+      category: 'GENERAL',
+      status: 'review',
+      contentDocument: {
+        type: 'doc',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Черновик договора с поставщиком.' }] }],
+      },
+      version: 2,
+      modifiedAtIso: '2026-04-28T06:00:00.000Z',
+    },
+    {
+      id: 'd4',
+      title: 'Project Blueprint Alpha',
+      category: 'HR',
+      status: 'pending',
+      contentDocument: {
+        type: 'doc',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Описание этапов проекта Alpha.' }] }],
+      },
+      version: 1,
+      modifiedAtIso: '2026-04-27T08:10:00.000Z',
+    },
+  ];
+  private editorControlProfiles: Array<MutableEditorControlProfile> = [
+    {
+      id: 'profile-category-general',
+      contextType: 'CATEGORY',
+      contextKey: 'GENERAL',
+      enabledControls: ['bold', 'italic', 'heading', 'list', 'table', 'link', 'image'],
+      disabledControls: [],
+      isActive: true,
+      updatedByUserId: 'system',
+      updatedAt: '2026-05-02T10:00:00.000Z',
+    },
+  ];
+  private exportRequests: Array<MutableExportRequest> = [];
+
+  private toEditableDocument(item: MutableEditableDocument): DashboardEditableDocument {
+    return {
+      id: item.id,
+      title: item.title,
+      category: item.category,
+      status: item.status,
+      version: item.version,
+      contentDocument: item.contentDocument,
+    };
+  }
 
   public getDashboardSummary(query: DashboardQuery): Observable<DashboardSummary> {
     return this.getDocuments(query).pipe(
@@ -477,16 +588,97 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
     return of(void 0).pipe(delay(LATENCY_MS));
   }
 
+  public createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {
+    return this.http
+      .post<{ id: string; title: string; category: 'HR' | 'FINANCE' | 'GENERAL'; status?: string; version?: number }>(
+        '/api/documents',
+        payload,
+      )
+      .pipe(
+        map((response) => {
+          const mappedStatus: DashboardDocumentStatus =
+            response.status === 'archived' ||
+            response.status === 'review' ||
+            response.status === 'finalized'
+              ? response.status
+              : 'pending';
+
+          return {
+            id: response.id,
+            title: response.title,
+            category: response.category,
+            status: mappedStatus,
+            contentDocument: payload.contentDocument ?? emptyRichDocument(),
+            version: response.version ?? 1,
+          };
+        }),
+        catchError(() => this.createDocumentLocally(payload)),
+      );
+  }
+
+  private createDocumentLocally(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {
+    const trimmedTitle = payload.title.trim();
+    if (!trimmedTitle) {
+      return throwError(() => new Error('Название документа обязательно')).pipe(delay(LATENCY_MS));
+    }
+
+    const id = `d${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    const editable: MutableEditableDocument = {
+      id,
+      title: trimmedTitle,
+      category: payload.category,
+      status: 'pending',
+      contentDocument: payload.contentDocument ?? emptyRichDocument(),
+      version: 1,
+      modifiedAtIso: nowIso,
+    };
+
+    this.editableDocuments = [editable, ...this.editableDocuments];
+    this.documents = [
+      {
+        id,
+        filename: `${trimmedTitle}.pdf`,
+        type: 'pdf',
+        status: editable.status,
+        modifiedAtLabel: 'только что',
+        modifiedAtIso: nowIso,
+        sizeKb: 256,
+      },
+      ...this.documents,
+    ];
+
+    return of(this.toEditableDocument(editable)).pipe(delay(LATENCY_MS));
+  }
+
+  public getDocumentById(id: string): Observable<DashboardEditableDocument> {
+    const editable = this.editableDocuments.find((item) => item.id === id);
+    if (!editable) {
+      return throwError(() => new Error('Документ не найден')).pipe(delay(LATENCY_MS));
+    }
+
+    return of(this.toEditableDocument(editable)).pipe(delay(LATENCY_MS));
+  }
+
   public updateDocument(
     id: string,
     payload: DashboardEditDocumentPayload,
   ): Observable<DocumentItem> {
     const current = this.documents.find((item) => item.id === id);
+    const editable = this.editableDocuments.find((item) => item.id === id);
 
-    if (!current) {
+    if (!current || !editable) {
       return throwError(() => new Error('Документ для обновления не найден')).pipe(
         delay(LATENCY_MS),
       );
+    }
+
+    if (typeof payload.expectedVersion === 'number' && payload.expectedVersion !== editable.version) {
+      return throwError(() => {
+        const error = new Error(`VERSION_CONFLICT expected=${payload.expectedVersion} current=${editable.version}`);
+        (error as Error & { code?: string }).code = 'VERSION_CONFLICT';
+        return error;
+      }).pipe(delay(LATENCY_MS));
     }
 
     const updated: DocumentItem = {
@@ -501,7 +693,172 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
       item.id === id ? updated : item,
     );
 
+    this.editableDocuments = this.editableDocuments.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            title: payload.filename,
+            status: payload.status,
+            contentDocument: payload.contentDocument ?? item.contentDocument,
+            version: item.version + 1,
+            modifiedAtIso: updated.modifiedAtIso,
+          }
+        : item,
+    );
+
     return of(updated).pipe(delay(LATENCY_MS));
+  }
+
+  public updateDraft(
+    id: string,
+    payload: DashboardEditDocumentPayload,
+  ): Observable<DocumentItem> {
+    return this.updateDocument(id, payload);
+  }
+
+  public getEditorControlProfile(
+    contextType: DashboardEditorContextType,
+    contextKey: string,
+  ): Observable<DashboardEditorControlProfile> {
+    return this.http
+      .get<DashboardEditorControlProfile>(`/api/editor-control-profiles/${contextType}/${contextKey}`)
+      .pipe(
+        catchError(() => {
+          const profile = this.editorControlProfiles.find(
+            (item) => item.contextType === contextType && item.contextKey === contextKey,
+          );
+          if (profile) {
+            return of(profile as DashboardEditorControlProfile);
+          }
+
+          const fallback: DashboardEditorControlProfile = {
+            id: `${contextType}:${contextKey}`,
+            contextType,
+            contextKey,
+            enabledControls: ['bold', 'italic', 'heading', 'list'],
+            disabledControls: ['table', 'image'],
+            isActive: true,
+            updatedByUserId: 'system',
+            updatedAt: new Date().toISOString(),
+          };
+          return of(fallback);
+        }),
+        delay(LATENCY_MS),
+      );
+  }
+
+  public updateEditorControlProfile(
+    profileId: string,
+    payload: DashboardUpdateEditorControlProfilePayload,
+  ): Observable<DashboardEditorControlProfile> {
+    return this.http
+      .put<DashboardEditorControlProfile>(`/api/editor-control-profiles/${profileId}`, payload)
+      .pipe(
+        catchError(() => {
+          const now = new Date().toISOString();
+          const existingIndex = this.editorControlProfiles.findIndex((item) => item.id === profileId);
+          const contextType = payload.contextType ?? 'CATEGORY';
+          const contextKey = payload.contextKey ?? 'GENERAL';
+          const next: MutableEditorControlProfile = {
+            id: profileId,
+            contextType,
+            contextKey,
+            enabledControls: [...payload.enabledControls],
+            disabledControls: [...payload.disabledControls],
+            isActive: payload.isActive,
+            updatedByUserId: CURRENT_USER_ID,
+            updatedAt: now,
+          };
+
+          if (existingIndex >= 0) {
+            this.editorControlProfiles = this.editorControlProfiles.map((item, idx) =>
+              idx === existingIndex ? next : item,
+            );
+          } else {
+            this.editorControlProfiles = [next, ...this.editorControlProfiles];
+          }
+
+          return of(next as DashboardEditorControlProfile);
+        }),
+        delay(LATENCY_MS),
+      );
+  }
+
+  public createExportRequest(
+    documentId: string,
+    payload: DashboardCreateExportPayload,
+  ): Observable<DashboardExportRequest> {
+    return this.http
+      .post<DashboardExportRequest>(`/api/documents/${documentId}/exports`, payload)
+      .pipe(
+        catchError(() => {
+          const now = new Date().toISOString();
+          const created: MutableExportRequest = {
+            id: `exp-${Date.now()}`,
+            documentId,
+            format: payload.format,
+            sourceVersion: payload.sourceVersion,
+            status: 'QUEUED',
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          this.exportRequests = [created, ...this.exportRequests];
+          return of(created as DashboardExportRequest);
+        }),
+        delay(LATENCY_MS),
+      );
+  }
+
+  public getExportRequest(documentId: string, exportRequestId: string): Observable<DashboardExportRequest> {
+    return this.http
+      .get<DashboardExportRequest>(`/api/documents/${documentId}/exports/${exportRequestId}`)
+      .pipe(
+        catchError(() => {
+          const existing = this.exportRequests.find(
+            (item) => item.documentId === documentId && item.id === exportRequestId,
+          );
+          if (!existing) {
+            return throwError(() => new Error('Запрос экспорта не найден'));
+          }
+
+          const nextStatus: DashboardExportStatus =
+            existing.status === 'QUEUED' ? 'RUNNING' : existing.status === 'RUNNING' ? 'SUCCEEDED' : existing.status;
+          const updated: MutableExportRequest = {
+            ...existing,
+            status: nextStatus,
+            updatedAt: new Date().toISOString(),
+          };
+
+          this.exportRequests = this.exportRequests.map((item) =>
+            item.id === exportRequestId ? updated : item,
+          );
+
+          return of(updated as DashboardExportRequest);
+        }),
+        delay(LATENCY_MS),
+      );
+  }
+
+  public downloadExportArtifact(documentId: string, exportRequestId: string): Observable<void> {
+    return this.http
+      .get(`/api/documents/${documentId}/exports/${exportRequestId}/download`, {
+        responseType: 'blob',
+      })
+      .pipe(
+        map(() => void 0),
+        catchError(() => {
+          const existing = this.exportRequests.find(
+            (item) => item.documentId === documentId && item.id === exportRequestId,
+          );
+          if (!existing || existing.status !== 'SUCCEEDED') {
+            return throwError(() => new Error('Файл экспорта пока не готов к скачиванию'));
+          }
+
+          return of(void 0);
+        }),
+        delay(LATENCY_MS),
+      );
   }
 
   public getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>> {

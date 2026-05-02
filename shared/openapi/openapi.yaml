@@ -94,6 +94,251 @@ paths:
         "202":
           description: Workflow started
 
+  /api/documents/{documentId}:
+    patch:
+      tags: [documents]
+      summary: Update document draft
+      operationId: updateDocumentDraft
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDocumentRequest"
+      responses:
+        "200":
+          description: Draft document updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        "400":
+          description: Invalid update request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Version conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentConflictResponse"
+        "503":
+          description: Downstream service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/editor-control-profiles/{contextType}/{contextKey}:
+    get:
+      tags: [documents]
+      summary: Get effective editor control profile
+      operationId: getEditorControlProfile
+      parameters:
+        - in: path
+          name: contextType
+          required: true
+          schema:
+            $ref: "#/components/schemas/EditorContextType"
+        - in: path
+          name: contextKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Editor control profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorControlProfileResponse"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/editor-control-profiles/{profileId}:
+    put:
+      tags: [documents]
+      summary: Update editor control profile
+      operationId: updateEditorControlProfile
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEditorControlProfileRequest"
+      responses:
+        "200":
+          description: Updated editor control profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorControlProfileResponse"
+        "400":
+          description: Invalid profile request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/documents/{documentId}/exports:
+    post:
+      tags: [documents]
+      summary: Create export request
+      operationId: createExportRequest
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExportRequest"
+      responses:
+        "202":
+          description: Export request queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportRequestResponse"
+        "409":
+          description: Document version conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentConflictResponse"
+        "422":
+          description: Unsupported document content for format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/documents/{documentId}/exports/{exportRequestId}:
+    get:
+      tags: [documents]
+      summary: Get export request status
+      operationId: getExportRequest
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: exportRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Export request status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportRequestResponse"
+        "404":
+          description: Export request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/documents/{documentId}/exports/{exportRequestId}/download:
+    get:
+      tags: [documents]
+      summary: Download export artifact
+      operationId: downloadExportArtifact
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: exportRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Export artifact binary stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        "409":
+          description: Export request is not completed yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/documents/{documentId}/workflow/approve:
     post:
       tags: [documents]
@@ -364,6 +609,133 @@ components:
           type: string
           enum: [HR, FINANCE, GENERAL]
 
+    UpdateDocumentRequest:
+      type: object
+      required: [title, expectedVersion]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        expectedVersion:
+          type: integer
+          minimum: 1
+        contentDocument:
+          type: object
+          additionalProperties: true
+
+    EditorContextType:
+      type: string
+      enum: [CATEGORY, TEMPLATE]
+
+    UpdateEditorControlProfileRequest:
+      type: object
+      required: [enabledControls, disabledControls, isActive]
+      properties:
+        enabledControls:
+          type: array
+          items:
+            type: string
+        disabledControls:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+
+    EditorControlProfileResponse:
+      type: object
+      required: [id, contextType, contextKey, enabledControls, disabledControls, isActive, updatedByUserId, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contextType:
+          $ref: "#/components/schemas/EditorContextType"
+        contextKey:
+          type: string
+        enabledControls:
+          type: array
+          items:
+            type: string
+        disabledControls:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+        updatedByUserId:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    ExportFormat:
+      type: string
+      enum: [PDF, DOCX]
+
+    CreateExportRequest:
+      type: object
+      required: [format, sourceVersion]
+      properties:
+        format:
+          $ref: "#/components/schemas/ExportFormat"
+        sourceVersion:
+          type: integer
+          minimum: 1
+
+    ExportRequestStatus:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED]
+
+    ExportArtifactResponse:
+      type: object
+      required: [id, fileName, mimeType, sizeBytes, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+
+    ExportRequestResponse:
+      type: object
+      required: [id, documentId, format, sourceVersion, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        format:
+          $ref: "#/components/schemas/ExportFormat"
+        sourceVersion:
+          type: integer
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/ExportRequestStatus"
+        errorCode:
+          type: string
+        errorMessage:
+          type: string
+        artifact:
+          $ref: "#/components/schemas/ExportArtifactResponse"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     CreateSignatureRequest:
       type: object
       required: [signers]
@@ -383,7 +755,7 @@ components:
 
     DocumentResponse:
       type: object
-      required: [id, title, category, status]
+      required: [id, title, category, status, version, updatedAt]
       properties:
         id:
           type: string
@@ -394,6 +766,31 @@ components:
           type: string
         status:
           type: string
+        contentDocument:
+          type: object
+          additionalProperties: true
+        version:
+          type: integer
+          minimum: 1
+        updatedAt:
+          type: string
+          format: date-time
+
+    DocumentConflictResponse:
+      type: object
+      required: [error, code, expectedVersion, currentVersion]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          enum: [VERSION_CONFLICT]
+        expectedVersion:
+          type: integer
+          minimum: 1
+        currentVersion:
+          type: integer
+          minimum: 1
 
     AuditEventResponse:
       type: object

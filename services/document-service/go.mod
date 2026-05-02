@@ -2,12 +2,17 @@ module edo/services/document-service
 
 go 1.23
 
-require google.golang.org/grpc v1.65.0
+require (
+	google.golang.org/grpc v1.65.0
+	google.golang.org/protobuf v1.34.2
+)
 
 require (
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
-	google.golang.org/protobuf v1.34.2 // indirect
 )
+
+// NOTE: Export library placeholders are tracked in specs/004-document-editor-export/research.md
+// and will be added to go.mod when concrete export adapters are implemented.

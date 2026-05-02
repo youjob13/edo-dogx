@@ -1,24 +1,20 @@
-import { Client, credentials, loadPackageDefinition, type ServiceError } from '@grpc/grpc-js';
-import { loadSync } from '@grpc/proto-loader';
+import { Client } from '@grpc/grpc-js';
+import type { ServiceError } from '@grpc/grpc-js';
+import { callUnary, createGrpcClient } from './grpc-client.util.js';
 import { resolveServiceProtoPath } from './proto-path.js';
 
-type GrpcMethod = (request: unknown, callback: (err: ServiceError | null, response: unknown) => void) => void;
+export class GrpcClientError extends Error {
+  public readonly code: number | undefined;
+
+  constructor(message: string, code?: number) {
+    super(message);
+    this.name = 'GrpcClientError';
+    this.code = code;
+  }
+}
 
 function createClient(serviceName: string, address: string): Client {
-  const packageDefinition = loadSync(resolveServiceProtoPath(), {
-    keepCase: true,
-    longs: String,
-    enums: String,
-    defaults: true,
-    oneofs: true,
-  });
-
-  const pkg = loadPackageDefinition(packageDefinition) as unknown as {
-    service: { v1: Record<string, new (target: string, creds: ReturnType<typeof credentials.createInsecure>) => Client> };
-  };
-
-  const ctor = pkg.service.v1[serviceName];
-  return new ctor(address, credentials.createInsecure());
+  return createGrpcClient(serviceName, address, resolveServiceProtoPath());
 }
 
 export class DocumentServiceClient {
@@ -29,24 +25,45 @@ export class DocumentServiceClient {
   }
 
   private call(methodName: string, payload: unknown): Promise<unknown> {
-    const method = (this.client as unknown as Record<string, GrpcMethod>)[methodName];
-    if (!method) {
-      return Promise.resolve({ status: 'NOT_IMPLEMENTED', method: methodName, payload });
-    }
-
-    return new Promise((resolve, reject) => {
-      method(payload, (err, response) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(response);
-      });
+    return callUnary(this.client, methodName, payload).catch((err: unknown) => {
+      const serviceError = err as ServiceError | undefined;
+      throw new GrpcClientError(
+        serviceError?.details || serviceError?.message || 'gRPC request failed',
+        serviceError?.code,
+      );
     });
   }
 
   createDraft(payload: unknown): Promise<unknown> {
     return this.call('CreateDraft', payload);
+  }
+
+  updateDraft(payload: unknown): Promise<unknown> {
+    return this.call('UpdateDraft', payload);
+  }
+
+  getDocument(payload: unknown): Promise<unknown> {
+    return this.call('GetDocument', payload);
+  }
+
+  getEditorControlProfile(payload: unknown): Promise<unknown> {
+    return this.call('GetEditorControlProfile', payload);
+  }
+
+  updateEditorControlProfile(payload: unknown): Promise<unknown> {
+    return this.call('UpdateEditorControlProfile', payload);
+  }
+
+  createExportRequest(payload: unknown): Promise<unknown> {
+    return this.call('CreateExportRequest', payload);
+  }
+
+  getExportRequest(payload: unknown): Promise<unknown> {
+    return this.call('GetExportRequest', payload);
+  }
+
+  downloadExportArtifact(payload: unknown): Promise<unknown> {
+    return this.call('DownloadExportArtifact', payload);
   }
 
   searchDocuments(payload: unknown): Promise<unknown> {

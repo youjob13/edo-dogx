@@ -91,8 +91,13 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
+    ports:
+      - "50052:50052" 
     environment:
       GRPC_ADDR: :50052
+      DOCUMENT_EXPORT_TIMEOUT_SECONDS: ${DOCUMENT_EXPORT_TIMEOUT_SECONDS:-10}
+      DOCUMENT_EXPORT_MAX_CONTENT_BYTES: ${DOCUMENT_EXPORT_MAX_CONTENT_BYTES:-2097152}
+      DOCUMENT_EXPORT_MAX_RETRIES: ${DOCUMENT_EXPORT_MAX_RETRIES:-2}
     depends_on:
       postgres:
         condition: service_healthy

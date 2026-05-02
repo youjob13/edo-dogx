@@ -1,21 +1,436 @@
 package service
 
-import "context"
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
 
-type DocumentLifecycleService struct{}
+	"edo/services/document-service/internal/domain/model"
+	"edo/services/document-service/internal/ports/outbound"
+)
 
-func NewDocumentLifecycleService() *DocumentLifecycleService {
-	return &DocumentLifecycleService{}
+type DocumentLifecycleService struct {
+	documents outbound.DocumentRepository
+	versions  outbound.DocumentVersionRepository
+}
+
+func NewDocumentLifecycleService(
+	documents outbound.DocumentRepository,
+	versions outbound.DocumentVersionRepository,
+) *DocumentLifecycleService {
+	return &DocumentLifecycleService{documents: documents, versions: versions}
 }
 
 type CreateDraftInput struct {
-	ActorUserID string
-	Title       string
-	Category    string
+	ActorUserID     string
+	Title           string
+	Category        string
+	ContentDocument map[string]any
 }
 
-func (s *DocumentLifecycleService) CreateDraft(ctx context.Context, input CreateDraftInput) error {
-	_ = ctx
-	_ = input
+type UpdateDraftInput struct {
+	ActorUserID     string
+	DocumentID      string
+	Title           string
+	ExpectedVersion int64
+	ContentDocument map[string]any
+}
+
+type GetEditorControlProfileInput struct {
+	ActorUserID string
+	ContextType string
+	ContextKey  string
+}
+
+type UpdateEditorControlProfileInput struct {
+	ActorUserID      string
+	ProfileID        string
+	ContextType      string
+	ContextKey       string
+	EnabledControls  []string
+	DisabledControls []string
+	IsActive         bool
+}
+
+type CreateExportRequestInput struct {
+	ActorUserID   string
+	DocumentID    string
+	Format        model.ExportFormat
+	SourceVersion int64
+}
+
+type GetExportRequestInput struct {
+	ActorUserID     string
+	DocumentID      string
+	ExportRequestID string
+}
+
+type DownloadExportArtifactInput struct {
+	ActorUserID     string
+	DocumentID      string
+	ExportRequestID string
+}
+
+type GetDocumentInput struct {
+	ActorUserID string
+	DocumentID  string
+}
+
+func NewInMemoryDocumentLifecycleService() *DocumentLifecycleService {
+	return NewDocumentLifecycleService(
+		newInMemoryDocumentRepository(),
+		newInMemoryDocumentVersionRepository(),
+	)
+}
+
+func (s *DocumentLifecycleService) CreateDraft(ctx context.Context, input CreateDraftInput) (model.Document, error) {
+	title := strings.TrimSpace(input.Title)
+	if title == "" || len(title) > 300 {
+		return model.Document{}, model.ErrInvalidDocumentTitle
+	}
+	contentDocument := input.ContentDocument
+	if contentDocument == nil {
+		contentDocument = map[string]any{
+			"type":    "doc",
+			"content": []map[string]any{{"type": "paragraph"}},
+		}
+	}
+	if _, ok := contentDocument["type"]; !ok {
+		return model.Document{}, model.ErrInvalidDocumentContent
+	}
+
+	document := model.Document{
+		Title:           title,
+		Category:        input.Category,
+		Status:          model.DocumentStatusDraft,
+		ContentDocument: contentDocument,
+		OwnerUser:       input.ActorUserID,
+		Version:         1,
+		UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
+	}
+
+	created, err := s.documents.CreateDraft(ctx, document)
+	if err != nil {
+		return model.Document{}, err
+	}
+
+	if err := s.versions.AppendVersion(ctx, created, input.ActorUserID, "document draft created"); err != nil {
+		return model.Document{}, err
+	}
+
+	return created, nil
+}
+
+func (s *DocumentLifecycleService) UpdateDraft(ctx context.Context, input UpdateDraftInput) (model.Document, error) {
+	if input.ExpectedVersion <= 0 {
+		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, 0)
+	}
+	title := strings.TrimSpace(input.Title)
+	if title == "" || len(title) > 300 {
+		return model.Document{}, model.ErrInvalidDocumentTitle
+	}
+	if input.ContentDocument != nil {
+		if _, ok := input.ContentDocument["type"]; !ok {
+			return model.Document{}, model.ErrInvalidDocumentContent
+		}
+	}
+
+	updated, err := s.documents.UpdateDraft(ctx, outbound.UpdateDraftInput{
+		DocumentID:      input.DocumentID,
+		ExpectedVersion: input.ExpectedVersion,
+		Title:           title,
+		ContentDocument: input.ContentDocument,
+		ActorUserID:     input.ActorUserID,
+	})
+	if err != nil {
+		return model.Document{}, err
+	}
+
+	if err := s.versions.AppendVersion(ctx, updated, input.ActorUserID, "document draft updated"); err != nil {
+		return model.Document{}, err
+	}
+
+	return updated, nil
+}
+
+func (s *DocumentLifecycleService) GetDocument(ctx context.Context, input GetDocumentInput) (model.Document, error) {
+	_ = input.ActorUserID
+	return s.documents.GetByID(ctx, input.DocumentID)
+}
+
+func (s *DocumentLifecycleService) GetEditorControlProfile(ctx context.Context, input GetEditorControlProfileInput) (model.EditorControlProfile, error) {
+	_ = input.ActorUserID
+	return s.documents.GetEditorControlProfileByContext(ctx, input.ContextType, input.ContextKey)
+}
+
+func (s *DocumentLifecycleService) UpdateEditorControlProfile(ctx context.Context, input UpdateEditorControlProfileInput) (model.EditorControlProfile, error) {
+	return s.documents.UpdateEditorControlProfile(ctx, outbound.UpdateEditorControlProfileInput{
+		ProfileID:         input.ProfileID,
+		EnabledControls:   input.EnabledControls,
+		DisabledControls:  input.DisabledControls,
+		IsActive:          input.IsActive,
+		UpdatedByUserID:   input.ActorUserID,
+		FallbackType:      input.ContextType,
+		FallbackContextID: input.ContextKey,
+	})
+}
+
+func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, input CreateExportRequestInput) (model.ExportRequest, error) {
+	document, err := s.documents.GetByID(ctx, input.DocumentID)
+	if err != nil {
+		return model.ExportRequest{}, err
+	}
+	if document.Version != input.SourceVersion {
+		return model.ExportRequest{}, model.NewVersionConflictError(input.SourceVersion, document.Version)
+	}
+
+	request, err := s.documents.CreateExportRequest(ctx, outbound.CreateExportRequestInput{
+		DocumentID:      input.DocumentID,
+		RequestedByUser: input.ActorUserID,
+		Format:          input.Format,
+		SourceVersion:   input.SourceVersion,
+	})
+	if err != nil {
+		return model.ExportRequest{}, err
+	}
+
+	artifact, err := buildExportArtifact(document, input.Format)
+	if err != nil {
+		return model.ExportRequest{}, err
+	}
+
+	return s.documents.CompleteExportRequestSuccess(ctx, outbound.CompleteExportRequestSuccessInput{
+		ExportRequestID: request.ID,
+		DocumentID:      request.DocumentID,
+		Format:          request.Format,
+		FileName:        artifact.FileName,
+		MIMEType:        artifact.MIMEType,
+		SizeBytes:       artifact.SizeBytes,
+		Checksum:        artifactChecksum(artifact.DataBase64),
+		DataBase64:      artifact.DataBase64,
+	})
+}
+
+func (s *DocumentLifecycleService) GetExportRequest(ctx context.Context, input GetExportRequestInput) (model.ExportRequest, error) {
+	_ = input.ActorUserID
+	return s.documents.GetExportRequest(ctx, input.DocumentID, input.ExportRequestID)
+}
+
+func (s *DocumentLifecycleService) DownloadExportArtifact(ctx context.Context, input DownloadExportArtifactInput) (model.ExportArtifact, error) {
+	_ = input.ActorUserID
+	return s.documents.GetExportArtifact(ctx, input.DocumentID, input.ExportRequestID)
+}
+
+// In-memory repositories keep service runnable before database wiring is complete.
+type inMemoryDocumentRepository struct {
+	items           map[string]model.Document
+	exportRequests  map[string]model.ExportRequest
+	exportArtifacts map[string]model.ExportArtifact
+}
+
+func newInMemoryDocumentRepository() *inMemoryDocumentRepository {
+	return &inMemoryDocumentRepository{
+		items:           map[string]model.Document{},
+		exportRequests:  map[string]model.ExportRequest{},
+		exportArtifacts: map[string]model.ExportArtifact{},
+	}
+}
+
+func (r *inMemoryDocumentRepository) CreateDraft(_ context.Context, document model.Document) (model.Document, error) {
+	document.ID = time.Now().UTC().Format("20060102150405.000000000")
+	r.items[document.ID] = document
+	return document, nil
+}
+
+func (r *inMemoryDocumentRepository) GetByID(_ context.Context, id string) (model.Document, error) {
+	document, ok := r.items[id]
+	if !ok {
+		return model.Document{}, model.ErrDocumentNotFound
+	}
+	return document, nil
+}
+
+func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbound.UpdateDraftInput) (model.Document, error) {
+	document, ok := r.items[input.DocumentID]
+	if !ok {
+		return model.Document{}, model.ErrDocumentNotFound
+	}
+	if document.Version != input.ExpectedVersion {
+		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, document.Version)
+	}
+	if !document.Status.IsEditable() {
+		return model.Document{}, model.ErrDocumentNotEditable
+	}
+
+	document.Title = input.Title
+	if input.ContentDocument != nil {
+		document.ContentDocument = input.ContentDocument
+	}
+	document.Version++
+	document.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	r.items[input.DocumentID] = document
+
+	return document, nil
+}
+
+type inMemoryDocumentVersionRepository struct{}
+
+func newInMemoryDocumentVersionRepository() *inMemoryDocumentVersionRepository {
+	return &inMemoryDocumentVersionRepository{}
+}
+
+func (r *inMemoryDocumentVersionRepository) AppendVersion(_ context.Context, _ model.Document, _ string, _ string) error {
 	return nil
+}
+
+func (r *inMemoryDocumentRepository) GetEditorControlProfileByContext(_ context.Context, contextType string, contextKey string) (model.EditorControlProfile, error) {
+	return model.EditorControlProfile{
+		ID:               contextType + ":" + contextKey,
+		ContextType:      contextType,
+		ContextKey:       contextKey,
+		EnabledControls:  []string{"bold", "italic", "heading", "list", "table", "link", "image"},
+		DisabledControls: []string{},
+		IsActive:         true,
+		UpdatedByUserID:  "system",
+		UpdatedAt:        time.Now().UTC().Format(time.RFC3339),
+	}, nil
+}
+
+func (r *inMemoryDocumentRepository) UpdateEditorControlProfile(_ context.Context, input outbound.UpdateEditorControlProfileInput) (model.EditorControlProfile, error) {
+	contextType := input.FallbackType
+	contextKey := input.FallbackContextID
+	if contextType == "" {
+		contextType = "CATEGORY"
+	}
+	if contextKey == "" {
+		contextKey = "GENERAL"
+	}
+
+	return model.EditorControlProfile{
+		ID:               input.ProfileID,
+		ContextType:      contextType,
+		ContextKey:       contextKey,
+		EnabledControls:  input.EnabledControls,
+		DisabledControls: input.DisabledControls,
+		IsActive:         input.IsActive,
+		UpdatedByUserID:  input.UpdatedByUserID,
+		UpdatedAt:        time.Now().UTC().Format(time.RFC3339),
+	}, nil
+}
+
+func (r *inMemoryDocumentRepository) CreateExportRequest(_ context.Context, input outbound.CreateExportRequestInput) (model.ExportRequest, error) {
+	now := time.Now().UTC().Format(time.RFC3339)
+	request := model.ExportRequest{
+		ID:              time.Now().UTC().Format("20060102150405.000000000"),
+		DocumentID:      input.DocumentID,
+		RequestedByUser: input.RequestedByUser,
+		Format:          input.Format,
+		SourceVersion:   input.SourceVersion,
+		Status:          model.ExportRequestStatusQueued,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	r.exportRequests[request.ID] = request
+	return request, nil
+}
+
+func (r *inMemoryDocumentRepository) CompleteExportRequestSuccess(_ context.Context, input outbound.CompleteExportRequestSuccessInput) (model.ExportRequest, error) {
+	request, ok := r.exportRequests[input.ExportRequestID]
+	if !ok {
+		return model.ExportRequest{}, model.ErrDocumentNotFound
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	artifact := model.ExportArtifact{
+		ID:         "artifact-" + input.ExportRequestID,
+		FileName:   input.FileName,
+		MIMEType:   input.MIMEType,
+		SizeBytes:  input.SizeBytes,
+		DataBase64: input.DataBase64,
+		CreatedAt:  now,
+	}
+
+	request.Status = model.ExportRequestStatusSucceeded
+	request.UpdatedAt = now
+	request.Artifact = &artifact
+	r.exportRequests[input.ExportRequestID] = request
+	r.exportArtifacts[input.ExportRequestID] = artifact
+
+	return request, nil
+}
+
+func (r *inMemoryDocumentRepository) GetExportRequest(_ context.Context, documentID string, exportRequestID string) (model.ExportRequest, error) {
+	request, ok := r.exportRequests[exportRequestID]
+	if !ok || request.DocumentID != documentID {
+		return model.ExportRequest{}, model.ErrDocumentNotFound
+	}
+	return request, nil
+}
+
+func (r *inMemoryDocumentRepository) GetExportArtifact(_ context.Context, documentID string, exportRequestID string) (model.ExportArtifact, error) {
+	request, ok := r.exportRequests[exportRequestID]
+	if !ok || request.DocumentID != documentID {
+		return model.ExportArtifact{}, model.ErrDocumentNotFound
+	}
+
+	artifact, ok := r.exportArtifacts[exportRequestID]
+	if !ok {
+		return model.ExportArtifact{}, model.ErrDocumentNotFound
+	}
+
+	return artifact, nil
+}
+
+func buildExportArtifact(document model.Document, format model.ExportFormat) (model.ExportArtifact, error) {
+	payload, err := json.Marshal(map[string]any{
+		"title":           document.Title,
+		"category":        document.Category,
+		"contentDocument": document.ContentDocument,
+		"sourceVersion":   document.Version,
+		"generatedAt":     time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		return model.ExportArtifact{}, err
+	}
+
+	safeTitle := sanitizeFileName(document.Title)
+	if safeTitle == "" {
+		safeTitle = "document"
+	}
+
+	switch format {
+	case model.ExportFormatDOCX:
+		bytes := []byte("DOCX_EXPORT\n" + string(payload))
+		return model.ExportArtifact{
+			FileName:   safeTitle + ".docx",
+			MIMEType:   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+			SizeBytes:  int64(len(bytes)),
+			DataBase64: base64.StdEncoding.EncodeToString(bytes),
+		}, nil
+	case model.ExportFormatPDF:
+		bytes := []byte("%PDF-1.4\n" + string(payload))
+		return model.ExportArtifact{
+			FileName:   safeTitle + ".pdf",
+			MIMEType:   "application/pdf",
+			SizeBytes:  int64(len(bytes)),
+			DataBase64: base64.StdEncoding.EncodeToString(bytes),
+		}, nil
+	default:
+		return model.ExportArtifact{}, fmt.Errorf("unsupported export format: %s", format)
+	}
+}
+
+func sanitizeFileName(value string) string {
+	trimmed := strings.TrimSpace(value)
+	replacer := strings.NewReplacer("\\", "_", "/", "_", ":", "_", "*", "_", "?", "_", "\"", "_", "<", "_", ">", "_", "|", "_")
+	return strings.ReplaceAll(replacer.Replace(trimmed), " ", "-")
+}
+
+func artifactChecksum(dataBase64 string) string {
+	sum := sha256.Sum256([]byte(dataBase64))
+	return fmt.Sprintf("%x", sum)
 }

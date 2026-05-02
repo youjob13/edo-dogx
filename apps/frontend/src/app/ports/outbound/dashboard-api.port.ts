@@ -9,7 +9,14 @@ import {
   KanbanTaskCommentPayload,
   KanbanTaskDetails,
   KanbanTaskMovePayload,
+  DashboardCreateDocumentPayload,
+  DashboardEditableDocument,
   DashboardEditDocumentPayload,
+  DashboardEditorControlProfile,
+  DashboardEditorContextType,
+  DashboardUpdateEditorControlProfilePayload,
+  DashboardCreateExportPayload,
+  DashboardExportRequest,
   DashboardPreviewDocument,
   DashboardQuery,
   DashboardSummary,
@@ -27,7 +34,21 @@ export interface DashboardApiPort {
   getStorageUsage(): Observable<StorageUsage>;
   previewDocument(id: string): Observable<DashboardPreviewDocument>;
   downloadDocument(id: string): Observable<void>;
+  createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument>;
+  getDocumentById(id: string): Observable<DashboardEditableDocument>;
+  updateDraft(id: string, payload: DashboardEditDocumentPayload): Observable<DocumentItem>;
   updateDocument(id: string, payload: DashboardEditDocumentPayload): Observable<DocumentItem>;
+  getEditorControlProfile(contextType: DashboardEditorContextType, contextKey: string): Observable<DashboardEditorControlProfile>;
+  updateEditorControlProfile(
+    profileId: string,
+    payload: DashboardUpdateEditorControlProfilePayload,
+  ): Observable<DashboardEditorControlProfile>;
+  createExportRequest(
+    documentId: string,
+    payload: DashboardCreateExportPayload,
+  ): Observable<DashboardExportRequest>;
+  getExportRequest(documentId: string, exportRequestId: string): Observable<DashboardExportRequest>;
+  downloadExportArtifact(documentId: string, exportRequestId: string): Observable<void>;
   getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>>;
   getTaskBoard(boardId: string): Observable<KanbanBoardDetails>;
   getTaskDetails(boardId: string, taskId: string): Observable<KanbanTaskDetails>;

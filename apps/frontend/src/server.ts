@@ -16,16 +16,24 @@ export function app(): express.Express {
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 
-  // Proxy all /api/* requests to the BFF gateway before Angular handles anything.
-  // Without this, Angular's catch-all would serve index.html for /api/* routes,
-  // which would cause an infinite redirect loop in the auth guard.
-  const apiTarget = process.env['API_BASE_URL'] ?? 'http://localhost:3000';
+  // Proxy auth and API requests to the BFF gateway before Angular handles anything.
+  // /api/auth is rewritten to /auth for gateway auth routes, while the rest of
+  // /api/* is forwarded as-is because gateway API routes are registered with /api.
+  const apiTarget = (process.env['API_BASE_URL'] ?? 'http://localhost:3000').replace(/\/api\/?$/, '');
+  server.use(
+    '/api/auth',
+    createProxyMiddleware({
+      target: apiTarget,
+      changeOrigin: true,
+      pathRewrite: (path) => `/auth${path}`,
+    }),
+  );
   server.use(
     '/api',
     createProxyMiddleware({
       target: apiTarget,
       changeOrigin: true,
-      pathRewrite: { '^/api': '' },
+      pathRewrite: (path) => `/api${path}`,
     }),
   );
 
