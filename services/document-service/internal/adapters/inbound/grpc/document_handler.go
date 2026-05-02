@@ -2,14 +2,21 @@ package grpcadapter
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 
+	pb "edo/services/document-service/internal/adapters/inbound/grpc/pb"
 	appservice "edo/services/document-service/internal/application/service"
 	"edo/services/document-service/internal/domain/model"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type DocumentHandler struct {
+	pb.UnimplementedDocumentWorkflowServiceServer
 	lifecycle *appservice.DocumentLifecycleService
 }
 
@@ -17,247 +24,211 @@ func NewDocumentHandler() *DocumentHandler {
 	return &DocumentHandler{lifecycle: appservice.NewInMemoryDocumentLifecycleService()}
 }
 
-// CompatibilityEnvelope keeps additive fields isolated for incremental cutover.
-type CompatibilityEnvelope struct {
-	SchemaVersion string
-	Metadata      map[string]string
-}
-
-type CreateDraftRequest struct {
-	ActorUserID     string
-	Title           string
-	Category        string
-	ContentDocument map[string]any
-	Compat          CompatibilityEnvelope
-}
-
-type UpdateDraftRequest struct {
-	ActorUserID     string
-	DocumentID      string
-	Title           string
-	ContentDocument map[string]any
-	ExpectedVersion int64
-}
-
-type GetDocumentRequest struct {
-	ActorUserID string
-	DocumentID  string
-}
-
-type GetEditorControlProfileRequest struct {
-	ActorUserID string
-	ContextType string
-	ContextKey  string
-}
-
-type UpdateEditorControlProfileRequest struct {
-	ActorUserID      string
-	ProfileID        string
-	ContextType      string
-	ContextKey       string
-	EnabledControls  []string
-	DisabledControls []string
-	IsActive         bool
-}
-
-type CreateExportRequest struct {
-	ActorUserID   string
-	DocumentID    string
-	Format        string
-	SourceVersion int64
-}
-
-type GetExportRequest struct {
-	ActorUserID     string
-	DocumentID      string
-	ExportRequestID string
-}
-
-type DownloadExportArtifactRequest struct {
-	ActorUserID     string
-	DocumentID      string
-	ExportRequestID string
-}
-
 func (h *DocumentHandler) Register(server *grpc.Server) {
-	_ = server
+	pb.RegisterDocumentWorkflowServiceServer(server, h)
 }
 
-func (h *DocumentHandler) CreateDraft(ctx context.Context, req CreateDraftRequest) (map[string]any, error) {
+func (h *DocumentHandler) CreateDraft(ctx context.Context, req *pb.CreateDraftRequest) (*pb.Document, error) {
 	document, err := h.lifecycle.CreateDraft(ctx, appservice.CreateDraftInput{
-		ActorUserID:     req.ActorUserID,
-		Title:           req.Title,
-		Category:        req.Category,
-		ContentDocument: req.ContentDocument,
+		ActorUserID: req.GetActorUserId(),
+		Title:       req.GetTitle(),
+		Category:    req.GetCategory(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, toStatusError(err)
 	}
 
-	return documentToResponse(document), nil
+	return mapDocument(document)
 }
 
-func (h *DocumentHandler) UpdateDraft(ctx context.Context, req UpdateDraftRequest) (map[string]any, error) {
+func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRequest) (*pb.Document, error) {
 	document, err := h.lifecycle.UpdateDraft(ctx, appservice.UpdateDraftInput{
-		ActorUserID:     req.ActorUserID,
-		DocumentID:      req.DocumentID,
-		Title:           req.Title,
-		ContentDocument: req.ContentDocument,
-		ExpectedVersion: req.ExpectedVersion,
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		Title:           req.GetTitle(),
+		ExpectedVersion: req.GetExpectedVersion(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, toStatusError(err)
 	}
 
-	return documentToResponse(document), nil
+	return mapDocument(document)
 }
 
-func (h *DocumentHandler) GetDocument(ctx context.Context, req GetDocumentRequest) (map[string]any, error) {
+func (h *DocumentHandler) GetDocument(ctx context.Context, req *pb.GetDocumentRequest) (*pb.Document, error) {
 	document, err := h.lifecycle.GetDocument(ctx, appservice.GetDocumentInput{
-		ActorUserID: req.ActorUserID,
-		DocumentID:  req.DocumentID,
+		ActorUserID: req.GetActorUserId(),
+		DocumentID:  req.GetDocumentId(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, toStatusError(err)
 	}
 
-	return documentToResponse(document), nil
+	return mapDocument(document)
 }
 
-func (h *DocumentHandler) GetEditorControlProfile(ctx context.Context, req GetEditorControlProfileRequest) (map[string]any, error) {
+func (h *DocumentHandler) GetEditorControlProfile(ctx context.Context, req *pb.GetEditorControlProfileRequest) (*pb.EditorControlProfile, error) {
 	profile, err := h.lifecycle.GetEditorControlProfile(ctx, appservice.GetEditorControlProfileInput{
-		ActorUserID: req.ActorUserID,
-		ContextType: req.ContextType,
-		ContextKey:  req.ContextKey,
+		ActorUserID: req.GetActorUserId(),
+		ContextType: req.GetContextType(),
+		ContextKey:  req.GetContextKey(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, toStatusError(err)
 	}
 
-	return map[string]any{
-		"id":                 profile.ID,
-		"context_type":       profile.ContextType,
-		"context_key":        profile.ContextKey,
-		"enabled_controls":   profile.EnabledControls,
-		"disabled_controls":  profile.DisabledControls,
-		"is_active":          profile.IsActive,
-		"updated_by_user_id": profile.UpdatedByUserID,
-		"updated_at":         profile.UpdatedAt,
+	return &pb.EditorControlProfile{
+		Id:               profile.ID,
+		ContextType:      profile.ContextType,
+		ContextKey:       profile.ContextKey,
+		EnabledControls:  profile.EnabledControls,
+		DisabledControls: profile.DisabledControls,
+		IsActive:         profile.IsActive,
+		UpdatedByUserId:  profile.UpdatedByUserID,
+		UpdatedAt:        profile.UpdatedAt,
 	}, nil
 }
 
-func (h *DocumentHandler) UpdateEditorControlProfile(ctx context.Context, req UpdateEditorControlProfileRequest) (map[string]any, error) {
+func (h *DocumentHandler) UpdateEditorControlProfile(ctx context.Context, req *pb.UpdateEditorControlProfileRequest) (*pb.EditorControlProfile, error) {
 	profile, err := h.lifecycle.UpdateEditorControlProfile(ctx, appservice.UpdateEditorControlProfileInput{
-		ActorUserID:      req.ActorUserID,
-		ProfileID:        req.ProfileID,
-		ContextType:      req.ContextType,
-		ContextKey:       req.ContextKey,
-		EnabledControls:  req.EnabledControls,
-		DisabledControls: req.DisabledControls,
-		IsActive:         req.IsActive,
+		ActorUserID:      req.GetActorUserId(),
+		ProfileID:        req.GetProfileId(),
+		EnabledControls:  req.GetEnabledControls(),
+		DisabledControls: req.GetDisabledControls(),
+		IsActive:         req.GetIsActive(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, toStatusError(err)
 	}
 
-	return map[string]any{
-		"id":                 profile.ID,
-		"context_type":       profile.ContextType,
-		"context_key":        profile.ContextKey,
-		"enabled_controls":   profile.EnabledControls,
-		"disabled_controls":  profile.DisabledControls,
-		"is_active":          profile.IsActive,
-		"updated_by_user_id": profile.UpdatedByUserID,
-		"updated_at":         profile.UpdatedAt,
+	return &pb.EditorControlProfile{
+		Id:               profile.ID,
+		ContextType:      profile.ContextType,
+		ContextKey:       profile.ContextKey,
+		EnabledControls:  profile.EnabledControls,
+		DisabledControls: profile.DisabledControls,
+		IsActive:         profile.IsActive,
+		UpdatedByUserId:  profile.UpdatedByUserID,
+		UpdatedAt:        profile.UpdatedAt,
 	}, nil
 }
 
-func (h *DocumentHandler) CreateExportRequest(ctx context.Context, req CreateExportRequest) (map[string]any, error) {
+func (h *DocumentHandler) CreateExportRequest(ctx context.Context, req *pb.CreateExportPayload) (*pb.ExportRequest, error) {
 	exportRequest, err := h.lifecycle.CreateExportRequest(ctx, appservice.CreateExportRequestInput{
-		ActorUserID:   req.ActorUserID,
-		DocumentID:    req.DocumentID,
-		Format:        model.ExportFormat(req.Format),
-		SourceVersion: req.SourceVersion,
+		ActorUserID:   req.GetActorUserId(),
+		DocumentID:    req.GetDocumentId(),
+		Format:        model.ExportFormat(req.GetFormat()),
+		SourceVersion: req.GetSourceVersion(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, toStatusError(err)
 	}
 
-	return map[string]any{
-		"id":             exportRequest.ID,
-		"document_id":    exportRequest.DocumentID,
-		"format":         exportRequest.Format,
-		"source_version": exportRequest.SourceVersion,
-		"status":         exportRequest.Status,
-		"created_at":     exportRequest.CreatedAt,
-		"updated_at":     exportRequest.UpdatedAt,
+	return mapExportRequest(exportRequest), nil
+}
+
+func (h *DocumentHandler) GetExportRequest(ctx context.Context, req *pb.GetExportRequestRequest) (*pb.ExportRequest, error) {
+	exportRequest, err := h.lifecycle.GetExportRequest(ctx, appservice.GetExportRequestInput{
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		ExportRequestID: req.GetExportRequestId(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	return mapExportRequest(exportRequest), nil
+}
+
+func (h *DocumentHandler) DownloadExportArtifact(ctx context.Context, req *pb.DownloadExportArtifactRequest) (*pb.DownloadExportArtifactResponse, error) {
+	artifact, err := h.lifecycle.DownloadExportArtifact(ctx, appservice.DownloadExportArtifactInput{
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		ExportRequestID: req.GetExportRequestId(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	data, decodeErr := base64.StdEncoding.DecodeString(artifact.DataBase64)
+	if decodeErr != nil {
+		return nil, status.Error(codes.Internal, "failed to decode export artifact payload")
+	}
+
+	return &pb.DownloadExportArtifactResponse{
+		Data:     data,
+		FileName: artifact.FileName,
+		MimeType: artifact.MIMEType,
 	}, nil
 }
 
-func (h *DocumentHandler) GetExportRequest(ctx context.Context, req GetExportRequest) (map[string]any, error) {
-	exportRequest, err := h.lifecycle.GetExportRequest(ctx, appservice.GetExportRequestInput{
-		ActorUserID:     req.ActorUserID,
-		DocumentID:      req.DocumentID,
-		ExportRequestID: req.ExportRequestID,
-	})
-	if err != nil {
-		return nil, err
+func mapDocument(document model.Document) (*pb.Document, error) {
+	contentJSON := ""
+	if document.ContentDocument != nil {
+		payload, err := json.Marshal(document.ContentDocument)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to marshal document content")
+		}
+		contentJSON = string(payload)
 	}
 
-	response := map[string]any{
-		"id":             exportRequest.ID,
-		"document_id":    exportRequest.DocumentID,
-		"format":         exportRequest.Format,
-		"source_version": exportRequest.SourceVersion,
-		"status":         exportRequest.Status,
-		"error_code":     exportRequest.ErrorCode,
-		"error_message":  exportRequest.ErrorMessage,
-		"created_at":     exportRequest.CreatedAt,
-		"updated_at":     exportRequest.UpdatedAt,
+	return &pb.Document{
+		Id:                  document.ID,
+		Title:               document.Title,
+		Category:            document.Category,
+		Status:              string(document.Status),
+		OwnerUserId:         document.OwnerUser,
+		Version:             document.Version,
+		UpdatedAt:           document.UpdatedAt,
+		ContentDocumentJson: contentJSON,
+	}, nil
+}
+
+func mapExportRequest(exportRequest model.ExportRequest) *pb.ExportRequest {
+	response := &pb.ExportRequest{
+		Id:            exportRequest.ID,
+		DocumentId:    exportRequest.DocumentID,
+		Format:        string(exportRequest.Format),
+		SourceVersion: exportRequest.SourceVersion,
+		Status:        string(exportRequest.Status),
+		ErrorCode:     exportRequest.ErrorCode,
+		ErrorMessage:  exportRequest.ErrorMessage,
+		CreatedAt:     exportRequest.CreatedAt,
+		UpdatedAt:     exportRequest.UpdatedAt,
 	}
 
 	if exportRequest.Artifact != nil {
-		response["artifact"] = map[string]any{
-			"id":         exportRequest.Artifact.ID,
-			"file_name":  exportRequest.Artifact.FileName,
-			"mime_type":  exportRequest.Artifact.MIMEType,
-			"size_bytes": exportRequest.Artifact.SizeBytes,
-			"created_at": exportRequest.Artifact.CreatedAt,
+		response.Artifact = &pb.ExportArtifact{
+			Id:        exportRequest.Artifact.ID,
+			FileName:  exportRequest.Artifact.FileName,
+			MimeType:  exportRequest.Artifact.MIMEType,
+			SizeBytes: exportRequest.Artifact.SizeBytes,
+			CreatedAt: exportRequest.Artifact.CreatedAt,
 		}
 	}
 
-	return response, nil
+	return response
 }
 
-func (h *DocumentHandler) DownloadExportArtifact(ctx context.Context, req DownloadExportArtifactRequest) (map[string]any, error) {
-	artifact, err := h.lifecycle.DownloadExportArtifact(ctx, appservice.DownloadExportArtifactInput{
-		ActorUserID:     req.ActorUserID,
-		DocumentID:      req.DocumentID,
-		ExportRequestID: req.ExportRequestID,
-	})
-	if err != nil {
-		return nil, err
+func toStatusError(err error) error {
+	if err == nil {
+		return nil
 	}
 
-	return map[string]any{
-		"artifact_id":  artifact.ID,
-		"file_name":    artifact.FileName,
-		"mime_type":    artifact.MIMEType,
-		"size_bytes":   artifact.SizeBytes,
-		"data_base64":  artifact.DataBase64,
-		"generated_at": artifact.CreatedAt,
-	}, nil
-}
-
-func documentToResponse(document model.Document) map[string]any {
-	return map[string]any{
-		"id":                    document.ID,
-		"title":                 document.Title,
-		"category":              document.Category,
-		"status":                document.Status,
-		"content_document_json": document.ContentDocument,
-		"owner_user_id":         document.OwnerUser,
-		"version":               document.Version,
-		"updated_at":            document.UpdatedAt,
+	if errors.Is(err, model.ErrDocumentNotFound) {
+		return status.Error(codes.NotFound, err.Error())
 	}
+	if errors.Is(err, model.ErrInvalidDocumentTitle) || errors.Is(err, model.ErrInvalidDocumentContent) {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if errors.Is(err, model.ErrDocumentNotEditable) {
+		return status.Error(codes.FailedPrecondition, err.Error())
+	}
+
+	var versionConflict model.VersionConflictError
+	if errors.As(err, &versionConflict) {
+		return status.Error(codes.Aborted, versionConflict.Error())
+	}
+
+	return status.Error(codes.Internal, err.Error())
 }

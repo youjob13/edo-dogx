@@ -91,7 +91,7 @@
 - [ ] T031 [US2] Implement GET/PUT editor-control-profile endpoints in apps/gateway/src/adapters/inbound/http/editor-control-profiles.routes.ts
 - [ ] T032 [US2] Register editor-control-profile routes in apps/gateway/src/adapters/inbound/http/app.ts
 - [ ] T033 [US2] Implement profile resolution/update methods in services/document-service/internal/application/service/document_lifecycle.go
-- [ ] T034 [US2] Add gRPC handling for profile retrieval/update in services/document-service/internal/adapters/inbound/grpc/document_handler.go
+- [X] T034 [US2] Add gRPC handling for profile retrieval/update in services/document-service/internal/adapters/inbound/grpc/document_handler.go
 - [ ] T035 [US2] Apply resolved control profile to toolbar configuration in apps/frontend/src/app/adapters/http/dashboard/documents/dashboard-document-create.component.ts and apps/frontend/src/app/adapters/http/dashboard/documents/dashboard-document-edit.component.ts
 - [ ] T036 [US2] Add profile-management UI section in apps/frontend/src/app/adapters/http/dashboard/settings/dashboard-settings.component.ts and apps/frontend/src/app/adapters/http/dashboard/settings/dashboard-settings.component.html
 

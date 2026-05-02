@@ -28,6 +28,10 @@ function mapGrpcError(reply: { code: (statusCode: number) => { send: (payload: {
     return reply.code(401).send({ error: 'unauthorized' });
   }
 
+  if (error.code === 12) {
+    return reply.code(501).send({ error: 'document-service rpc not implemented' });
+  }
+
   return reply.code(503).send({ error: 'document-service unavailable' });
 }
 
@@ -58,7 +62,14 @@ const editorControlProfilesRoutes: FastifyPluginAsync = async (fastify: FastifyI
         });
         return reply.send(response);
       } catch (error) {
-        request.log.error({ error }, 'document-service get editor control profile failed');
+        if (error instanceof GrpcClientError) {
+          request.log.error(
+            { grpcCode: error.code, grpcMessage: error.message },
+            'document-service get editor control profile failed',
+          );
+        } else {
+          request.log.error({ error }, 'document-service get editor control profile failed');
+        }
         return mapGrpcError(reply, error);
       }
     },
@@ -108,7 +119,14 @@ const editorControlProfilesRoutes: FastifyPluginAsync = async (fastify: FastifyI
         });
         return reply.send(response);
       } catch (error) {
-        request.log.error({ error }, 'document-service update editor control profile failed');
+        if (error instanceof GrpcClientError) {
+          request.log.error(
+            { grpcCode: error.code, grpcMessage: error.message },
+            'document-service update editor control profile failed',
+          );
+        } else {
+          request.log.error({ error }, 'document-service update editor control profile failed');
+        }
         return mapGrpcError(reply, error);
       }
     },

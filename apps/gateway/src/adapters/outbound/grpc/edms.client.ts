@@ -1,7 +1,6 @@
-import { credentials, Client } from '@grpc/grpc-js';
-import { loadPackageDefinition } from '@grpc/grpc-js';
-import { loadSync } from '@grpc/proto-loader';
-import path from 'node:path';
+import { Client } from '@grpc/grpc-js';
+import { createGrpcClient } from './grpc-client.util.js';
+import { resolveServiceProtoPath } from './proto-path.js';
 
 interface EdmsGrpcClients {
   documentService: Client;
@@ -31,40 +30,25 @@ export class EdmsGrpcClientBootstrap {
   }
 
   build(): EdmsGrpcClients {
-    const packageDefinition = loadSync(
-      path.resolve(process.cwd(), '../../shared/proto/service.proto'),
-      {
-        keepCase: true,
-        longs: String,
-        enums: String,
-        defaults: true,
-        oneofs: true,
-      },
-    );
-
-    const pkg = loadPackageDefinition(packageDefinition) as unknown as {
-      service: {
-        v1: Record<string, new (address: string, creds: ReturnType<typeof credentials.createInsecure>) => Client>;
-      };
-    };
-
-    const ns = pkg.service.v1;
-    const creds = credentials.createInsecure();
+    const protoPath = resolveServiceProtoPath();
 
     return {
-      documentService: new ns['DocumentService'](this.documentAddress, creds),
-      documentWorkflowService: new ns['DocumentWorkflowService'](
+      documentService: createGrpcClient('DocumentService', this.documentAddress, protoPath),
+      documentWorkflowService: createGrpcClient(
+        'DocumentWorkflowService',
         this.documentAddress,
-        creds,
+        protoPath,
       ),
-      signatureService: new ns['SignatureService'](this.signatureAddress, creds),
-      authorizationAuditService: new ns['AuthorizationAuditService'](
+      signatureService: createGrpcClient('SignatureService', this.signatureAddress, protoPath),
+      authorizationAuditService: createGrpcClient(
+        'AuthorizationAuditService',
         this.authAuditAddress,
-        creds,
+        protoPath,
       ),
-      searchNotificationService: new ns['SearchNotificationService'](
+      searchNotificationService: createGrpcClient(
+        'SearchNotificationService',
         this.searchNotificationAddress,
-        creds,
+        protoPath,
       ),
     };
   }

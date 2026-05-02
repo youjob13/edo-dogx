@@ -19,13 +19,13 @@ export function app(): express.Express {
   // Proxy auth and API requests to the BFF gateway before Angular handles anything.
   // /api/auth is rewritten to /auth for gateway auth routes, while the rest of
   // /api/* is forwarded as-is because gateway API routes are registered with /api.
-  const apiTarget = process.env['API_BASE_URL'] ?? 'http://localhost:3000';
+  const apiTarget = (process.env['API_BASE_URL'] ?? 'http://localhost:3000').replace(/\/api\/?$/, '');
   server.use(
     '/api/auth',
     createProxyMiddleware({
       target: apiTarget,
       changeOrigin: true,
-      pathRewrite: { '^/api': '' },
+      pathRewrite: (path) => `/auth${path}`,
     }),
   );
   server.use(
@@ -33,6 +33,7 @@ export function app(): express.Express {
     createProxyMiddleware({
       target: apiTarget,
       changeOrigin: true,
+      pathRewrite: (path) => `/api${path}`,
     }),
   );
 

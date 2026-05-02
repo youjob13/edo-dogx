@@ -30,7 +30,38 @@
   "roles": {
     "realm": [
       { "name": "user", "description": "Regular authenticated user" },
-      { "name": "admin", "description": "System administrator" }
+      { "name": "admin", "description": "System administrator" },
+      { "name": "edms.user", "description": "EDMS base user permissions" },
+      { "name": "edms.approver", "description": "EDMS approval and configuration permissions" },
+      { "name": "edms.admin", "description": "EDMS full access" },
+      { "name": "edms.hr", "description": "EDMS HR category scope" },
+      { "name": "edms.finance", "description": "EDMS Finance category scope" }
     ]
-  }
+  },
+  "users": [
+    {
+      "username": "edo-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "EDO",
+      "lastName": "Administrator",
+      "email": "edo-admin@localhost",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "EdoAdmin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin",
+        "user",
+        "edms.user",
+        "edms.approver",
+        "edms.admin",
+        "edms.hr",
+        "edms.finance"
+      ]
+    }
+  ]
 }

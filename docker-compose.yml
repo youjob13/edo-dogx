@@ -91,6 +91,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
+    ports:
+      - "50052:50052" 
     environment:
       GRPC_ADDR: :50052
       DOCUMENT_EXPORT_TIMEOUT_SECONDS: ${DOCUMENT_EXPORT_TIMEOUT_SECONDS:-10}

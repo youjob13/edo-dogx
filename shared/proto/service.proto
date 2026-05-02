@@ -15,7 +15,7 @@ service DocumentWorkflowService {
   rpc GetDocument(GetDocumentRequest) returns (Document);
   rpc GetEditorControlProfile(GetEditorControlProfileRequest) returns (EditorControlProfile);
   rpc UpdateEditorControlProfile(UpdateEditorControlProfileRequest) returns (EditorControlProfile);
-  rpc CreateExportRequest(CreateExportRequest) returns (ExportRequest);
+  rpc CreateExportRequest(CreateExportPayload) returns (ExportRequest);
   rpc GetExportRequest(GetExportRequestRequest) returns (ExportRequest);
   rpc DownloadExportArtifact(DownloadExportArtifactRequest) returns (DownloadExportArtifactResponse);
   rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
@@ -45,7 +45,7 @@ service DocumentService {
   rpc GetDocument(GetDocumentRequest) returns (Document);
   rpc GetEditorControlProfile(GetEditorControlProfileRequest) returns (EditorControlProfile);
   rpc UpdateEditorControlProfile(UpdateEditorControlProfileRequest) returns (EditorControlProfile);
-  rpc CreateExportRequest(CreateExportRequest) returns (ExportRequest);
+  rpc CreateExportRequest(CreateExportPayload) returns (ExportRequest);
   rpc GetExportRequest(GetExportRequestRequest) returns (ExportRequest);
   rpc DownloadExportArtifact(DownloadExportArtifactRequest) returns (DownloadExportArtifactResponse);
   rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
@@ -190,7 +190,7 @@ message UpdateEditorControlProfileRequest {
   bool is_active = 5;
 }
 
-message CreateExportRequest {
+message CreateExportPayload {
   string actor_user_id = 1;
   string document_id = 2;
   string format = 3;
