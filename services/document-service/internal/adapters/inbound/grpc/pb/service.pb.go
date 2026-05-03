@@ -7,12 +7,11 @@
 package pb
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -120,6 +119,7 @@ type Document struct {
 	Version             int64                  `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty"`
 	UpdatedAt           string                 `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ContentDocumentJson string                 `protobuf:"bytes,8,opt,name=content_document_json,json=contentDocumentJson,proto3" json:"content_document_json,omitempty"`
+	OwnerUserName       string                 `protobuf:"bytes,9,opt,name=owner_user_name,json=ownerUserName,proto3" json:"owner_user_name,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -206,6 +206,13 @@ func (x *Document) GetUpdatedAt() string {
 func (x *Document) GetContentDocumentJson() string {
 	if x != nil {
 		return x.ContentDocumentJson
+	}
+	return ""
+}
+
+func (x *Document) GetOwnerUserName() string {
+	if x != nil {
+		return x.OwnerUserName
 	}
 	return ""
 }
@@ -2495,7 +2502,7 @@ const file_service_proto_rawDesc = "" +
 	"\vPingRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"(\n" +
 	"\fPingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\xf5\x01\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\x9d\x02\n" +
 	"\bDocument\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
@@ -2505,7 +2512,8 @@ const file_service_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\x03R\aversion\x12\x1d\n" +
 	"\n" +
 	"updated_at\x18\a \x01(\tR\tupdatedAt\x122\n" +
-	"\x15content_document_json\x18\b \x01(\tR\x13contentDocumentJson\"\xab\x02\n" +
+	"\x15content_document_json\x18\b \x01(\tR\x13contentDocumentJson\x12&\n" +
+	"\x0fowner_user_name\x18\t \x01(\tR\rownerUserName\"\xab\x02\n" +
 	"\x14EditorControlProfile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fcontext_type\x18\x02 \x01(\tR\vcontextType\x12\x1f\n" +

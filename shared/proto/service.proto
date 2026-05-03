@@ -80,6 +80,7 @@ message Document {
   int64 version = 6;
   string updated_at = 7;
   string content_document_json = 8;
+  string owner_user_name = 9;
 }
 
 message EditorControlProfile {

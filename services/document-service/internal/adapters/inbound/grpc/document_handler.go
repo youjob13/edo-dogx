@@ -159,6 +159,7 @@ func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDoc
 			Category:            document.Category,
 			Status:              string(document.Status),
 			OwnerUserId:         document.OwnerUser,
+			OwnerUserName:       document.OwnerUserName,
 			Version:             document.Version,
 			UpdatedAt:           document.UpdatedAt,
 			ContentDocumentJson: contentJSON,
