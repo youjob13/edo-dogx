@@ -40,6 +40,7 @@ type Document struct {
 	Status          DocumentStatus
 	ContentDocument map[string]any
 	OwnerUser       string
+	OwnerUserName   string
 	Version         int64
 	UpdatedAt       string
 }

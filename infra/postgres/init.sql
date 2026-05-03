@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS documents (
     category VARCHAR(32) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
     owner_user_id TEXT NOT NULL,
+    owner_user_name TEXT NOT NULL,
     version BIGINT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS document_versions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_documents_owner_name ON documents(owner_user_name);
 CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
 CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id);
 

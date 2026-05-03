@@ -44,6 +44,7 @@ export class AuthService implements AuthPort {
   getCurrentUser(session: AuthSession): UserProfile {
     return {
       userId: session.userId,
+      userName: session.email, // temporary use email instead of name
       email: session.email,
       roles: session.roles,
     };

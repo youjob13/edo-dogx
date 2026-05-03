@@ -12,7 +12,6 @@ import {
   DashboardExportRequest,
   DashboardPreviewDocument,
   DashboardQuery,
-  DashboardSummary,
   DocumentItem,
   PaginatedResult,
   StorageUsage,
@@ -20,7 +19,6 @@ import {
 } from '../../domain/dashboard/dashboard.models';
 
 export interface DocumentApiPort {
-  getDashboardSummary(query: DashboardQuery): Observable<DashboardSummary>;
   getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>>;
   getDocumentsData(query?: DashboardQuery): Observable<PaginatedResult<DocumentItem>>;
   getActivity(query: DashboardQuery): Observable<Array<ActivityItem>>;

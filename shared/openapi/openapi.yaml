@@ -541,11 +541,14 @@ components:
 
     UserProfile:
       type: object
-      required: [userId, email, roles]
+      required: [userName, userId, email, roles]
       properties:
         userId:
           type: string
           example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        userName:
+          type: string
+          example: "Alex Petrov"
         email:
           type: string
           format: email

@@ -13,7 +13,6 @@ import {
   DashboardUpdateEditorControlProfilePayload,
   DashboardPreviewDocument,
   DashboardQuery,
-  DashboardSummary,
   DocumentItem,
   PaginatedResult,
   StorageUsage,
@@ -27,10 +26,6 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DocumentUseCases {
   private readonly api: DocumentApiPort = inject(DOCUMENT_API_PORT);
-
-  public getDashboardSummary(query: DashboardQuery): Observable<DashboardSummary> {
-    return this.api.getDashboardSummary(query);
-  }
 
   public getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>> {
     return this.api.getWeeklyVolume();

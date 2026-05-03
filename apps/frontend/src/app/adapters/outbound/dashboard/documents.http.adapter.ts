@@ -16,7 +16,6 @@ import {
   DashboardQuery,
   DashboardRichContentDocument,
   DashboardRichContentNode,
-  DashboardSummary,
   DocumentItem,
   PaginatedResult,
   StorageUsage,
@@ -78,6 +77,7 @@ interface GatewayDocumentResponse {
   status: DashboardDocumentStatus;
   ownerUserId?: string;
   owner_user_id?: string;
+  owner_user_name?: string;
   version?: number | string;
   updatedAt?: string;
   updated_at?: string;
@@ -136,6 +136,8 @@ const normalizeDocumentItem = (response: GatewayDocumentResponse): DocumentItem 
   updatedAt: response.updatedAt ?? response.updated_at ?? '',
   sizeKb: 0,
   version: typeof response.version === 'string' ? Number(response.version) : response.version,
+  ownerUserId: response.ownerUserId ?? response.owner_user_id,
+  ownerUserName: response.owner_user_name,
 });
 
 const extractRichContentText = (document: DashboardRichContentDocument | undefined): string => {
@@ -176,6 +178,7 @@ const normalizePreviewDocument = (response: GatewayDocumentResponse): DashboardP
     contentDocument,
     contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
     ownerUserId: response.ownerUserId ?? response.owner_user_id,
+    ownerUserName: response.owner_user_name,
   };
 };
 
@@ -229,27 +232,6 @@ const normalizeEditorControlProfile = (
 @Injectable({ providedIn: 'root' })
 export class DashboardHttpAdapter implements DocumentApiPort {
   private readonly http = inject(HttpClient);
-
-  public getDashboardSummary(query: DashboardQuery): Observable<DashboardSummary> {
-    return this.getDocumentsData(query).pipe(
-      map((result) => {
-        const pendingApprovalCount = result.items.filter(
-          (documentItem) => documentItem.status === 'DRAFT',
-        ).length;
-
-        const actionItemsCount = result.items.filter(
-          (documentItem) => documentItem.status === 'IN_REVIEW',
-        ).length;
-
-        return {
-          pendingApprovalCount,
-          pendingApprovalDelta: 2,
-          actionItemsCount,
-          overdueNoticesCount: 3,
-        };
-      }),
-    );
-  }
 
    getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>> {
     return of(MOCK_WEEKLY_VOLUME)

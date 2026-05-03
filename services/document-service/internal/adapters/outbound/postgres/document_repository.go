@@ -50,12 +50,12 @@ func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Doc
 	}
 
 	const query = `
-		INSERT INTO documents (title, category, status, content_document_json, owner_user_id, version)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO documents (title, category, status, content_document_json, owner_user_id, owner_user_name, version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, updated_at
 	`
 
-	row := r.db.QueryRowContext(ctx, query, document.Title, document.Category, string(document.Status), content, document.OwnerUser, document.Version)
+	row := r.db.QueryRowContext(ctx, query, document.Title, document.Category, string(document.Status), content, document.OwnerUser, document.OwnerUserName, document.Version)
 	if err := row.Scan(&document.ID, &document.UpdatedAt); err != nil {
 		return model.Document{}, err
 	}
@@ -65,7 +65,7 @@ func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Doc
 
 func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Document, error) {
 	const query = `
-		SELECT id, title, category, status, content_document_json, owner_user_id, version, updated_at
+		SELECT id, title, category, status, content_document_json, owner_user_id, owner_user_name, version, updated_at
 		FROM documents
 		WHERE id = $1
 	`
@@ -80,6 +80,7 @@ func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Docu
 		&status,
 		&contentRaw,
 		&document.OwnerUser,
+		&document.OwnerUserName,
 		&document.Version,
 		&document.UpdatedAt,
 	); err != nil {
@@ -106,7 +107,7 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 	defer tx.Rollback()
 
 	const selectQuery = `
-		SELECT id, title, category, status, content_document_json, owner_user_id, version, updated_at
+		SELECT id, title, category, status, content_document_json, owner_user_id, owner_user_name, version, updated_at
 		FROM documents
 		WHERE id = $1
 		FOR UPDATE
@@ -122,6 +123,7 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		&status,
 		&contentRaw,
 		&current.OwnerUser,
+		&current.OwnerUserName,
 		&current.Version,
 		&current.UpdatedAt,
 	); err != nil {
@@ -255,7 +257,7 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, title, category, status, content_document_json, owner_user_id, version, updated_at
+		SELECT id, title, category, status, content_document_json, owner_user_id, owner_user_name, version, updated_at
 		FROM documents
 		%s
 		ORDER BY updated_at DESC
@@ -281,6 +283,7 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 			&statusValue,
 			&contentRaw,
 			&document.OwnerUser,
+			&document.OwnerUserName,
 			&document.Version,
 			&document.UpdatedAt,
 		); err != nil {

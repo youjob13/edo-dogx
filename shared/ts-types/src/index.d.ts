@@ -3,6 +3,7 @@ export interface HealthResponse {
 }
 export interface UserProfile {
     userId: string;
+    userName: string;
     email: string;
     roles: string[];
 }

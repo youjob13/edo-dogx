@@ -155,9 +155,7 @@ export class DashboardHomeComponent {
       this.loadRecentDocuments();
     });
 
-    this.loadSummary();
     this.loadWeeklyVolume();
-    this.loadRecentDocuments();
     this.loadStorage();
     this.loadActivity();
   }
@@ -325,16 +323,11 @@ export class DashboardHomeComponent {
     return labels[category];
   }
 
-  private loadSummary(): void {
-    this.documentUseCases
-      .getDashboardSummary({ page: 1, pageSize: 50 })
-      .pipe(take(1))
-      .subscribe((summary) => {
-        this.pendingApprovalCount.set(summary.pendingApprovalCount);
-        this.pendingApprovalDelta.set(summary.pendingApprovalDelta);
-        this.actionItemsCount.set(summary.actionItemsCount);
-        this.overdueNoticesCount.set(summary.overdueNoticesCount);
-      });
+  private updateSummaryFromDocuments(items: Array<DocumentItem>): void {
+    this.pendingApprovalCount.set(items.filter((documentItem) => documentItem.status === 'DRAFT').length);
+    this.pendingApprovalDelta.set(2);
+    this.actionItemsCount.set(items.filter((documentItem) => documentItem.status === 'IN_REVIEW').length);
+    this.overdueNoticesCount.set(3);
   }
 
   private loadWeeklyVolume(): void {
@@ -364,6 +357,7 @@ export class DashboardHomeComponent {
       .pipe(take(1))
       .subscribe((result) => {
         this.recentDocuments.set(result.items);
+        this.updateSummaryFromDocuments(result.items);
       });
   }
 

@@ -6,13 +6,6 @@ export type DashboardDocumentStatus =
 
 export type DashboardDocumentCategory = 'HR' | 'FINANCE' | 'GENERAL';
 
-export interface DashboardSummary {
-  readonly pendingApprovalCount: number;
-  readonly pendingApprovalDelta: number;
-  readonly actionItemsCount: number;
-  readonly overdueNoticesCount: number;
-}
-
 export interface WeeklyVolumePoint {
   readonly day: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
   readonly value: number;
@@ -26,6 +19,8 @@ export interface DocumentItem {
   readonly updatedAt: string;
   readonly sizeKb: number;
   readonly version?: number;
+  readonly ownerUserId?: string;
+  readonly ownerUserName?: string;
 }
 
 export interface ActivityItem {
@@ -166,6 +161,7 @@ export interface DashboardPreviewDocument {
   readonly contentDocument?: DashboardRichContentDocument;
   readonly contentDocumentJson?: string;
   readonly ownerUserId?: string;
+  readonly ownerUserName?: string;
 }
 
 export type KanbanTaskStatus = 'todo' | 'inProgress' | 'review' | 'done';

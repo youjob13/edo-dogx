@@ -62,6 +62,7 @@ export class DashboardDocumentsComponent {
     { key: 'title', label: 'Документ', sortable: true },
     { key: 'categoryLabel', label: 'Категория', sortable: true },
     { key: 'statusLabel', label: 'Статус', sortable: true },
+    { key: 'ownerUserName', label: 'Владелец', sortable: false },
     { key: 'modifiedAtLabel', label: 'Изменен', sortable: true },
   ];
 
@@ -112,6 +113,7 @@ export class DashboardDocumentsComponent {
       title: item.title,
       categoryLabel: this.getCategoryLabel(item.category),
       statusLabel: this.getStatusLabel(item.status),
+      ownerUserName: item.ownerUserName ?? '-',
       modifiedAtLabel: item.updatedAt,
     })),
   );
