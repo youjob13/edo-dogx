@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -350,11 +352,13 @@ func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbou
 	if !ok {
 		return model.Document{}, model.ErrDocumentNotFound
 	}
-	if document.Version != input.ExpectedVersion {
-		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, document.Version)
-	}
-	if !document.Status.IsEditable() {
+	titleChanged := document.Title != input.Title
+	contentChanged := input.ContentDocument != nil && !documentContentEqual(document.ContentDocument, input.ContentDocument)
+	if (titleChanged || contentChanged) && !document.Status.IsEditable() {
 		return model.Document{}, model.ErrDocumentNotEditable
+	}
+	if (titleChanged || contentChanged) && document.Version != input.ExpectedVersion {
+		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, document.Version)
 	}
 
 	document.Title = input.Title
@@ -363,9 +367,6 @@ func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbou
 	}
 	document.Status = input.Status
 
-	// Only increment version if title or content changed
-	titleChanged := document.Title != input.Title
-	contentChanged := input.ContentDocument != nil
 	if titleChanged || contentChanged {
 		document.Version++
 	}
@@ -561,6 +562,16 @@ func buildExportArtifact(document model.Document, format model.ExportFormat) (mo
 	default:
 		return model.ExportArtifact{}, fmt.Errorf("unsupported export format: %s", format)
 	}
+}
+
+func documentContentEqual(left map[string]any, right map[string]any) bool {
+	leftJSON, leftErr := json.Marshal(left)
+	rightJSON, rightErr := json.Marshal(right)
+	if leftErr != nil || rightErr != nil {
+		return reflect.DeepEqual(left, right)
+	}
+
+	return string(leftJSON) == string(rightJSON)
 }
 
 func sanitizeFileName(value string) string {

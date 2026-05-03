@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"reflect"
 	"time"
 
 	"edo/services/document-service/internal/domain/model"
@@ -136,13 +137,6 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		}
 	}
 
-	if current.Version != input.ExpectedVersion {
-		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, current.Version)
-	}
-	if !current.Status.IsEditable() {
-		return model.Document{}, model.ErrDocumentNotEditable
-	}
-
 	newContent := current.ContentDocument
 	if input.ContentDocument != nil {
 		newContent = input.ContentDocument
@@ -152,10 +146,19 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		return model.Document{}, err
 	}
 
-	// Check if title or content changed
+	// Document versions track content revisions. Status-only updates do not
+	// create a new document version and must not fail on a stale version token.
 	titleChanged := current.Title != input.Title
-	contentChanged := input.ContentDocument != nil
+	contentChanged := input.ContentDocument != nil && !documentsContentEqual(current.ContentDocument, input.ContentDocument)
 	shouldIncrementVersion := titleChanged || contentChanged
+
+	if shouldIncrementVersion && !current.Status.IsEditable() {
+		return model.Document{}, model.ErrDocumentNotEditable
+	}
+
+	if shouldIncrementVersion && current.Version != input.ExpectedVersion {
+		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, current.Version)
+	}
 
 	newVersion := current.Version
 	if shouldIncrementVersion {
@@ -203,6 +206,16 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		current.Version = newVersion
 	}
 	return current, nil
+}
+
+func documentsContentEqual(left map[string]any, right map[string]any) bool {
+	leftJSON, leftErr := json.Marshal(left)
+	rightJSON, rightErr := json.Marshal(right)
+	if leftErr != nil || rightErr != nil {
+		return reflect.DeepEqual(left, right)
+	}
+
+	return bytes.Equal(leftJSON, rightJSON)
 }
 
 func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound.SearchDocumentsInput) ([]model.Document, int64, error) {
