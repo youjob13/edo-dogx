@@ -26,4 +26,4 @@ export const appConfig: ApplicationConfig = {
       useExisting: DashboardHttpAdapter,
     },
     ],
-};DashboardHttpAdapter
+};

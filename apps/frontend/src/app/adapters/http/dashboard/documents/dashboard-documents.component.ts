@@ -13,6 +13,7 @@ import {
   StatusChipComponent,
   TableToolbarComponent,
   ToolbarSearchComponent,
+  UiKitChipTone,
   UiKitDropdownItem,
   UiKitPaginationState,
   UiKitSortState,
@@ -21,8 +22,8 @@ import {
 import {
   DashboardEditDocumentPayload,
   DashboardPreviewDocument,
+  DashboardDocumentCategory,
   DashboardDocumentStatus,
-  DashboardDocumentType,
   DocumentItem,
 } from '../../../../domain/dashboard/dashboard.models';
 import { debounceTime, finalize, merge, take } from 'rxjs';
@@ -56,36 +57,35 @@ export class DashboardDocumentsComponent {
 
   protected readonly columns: Array<UiKitTableColumn> = [
     { key: 'title', label: 'Документ', sortable: true },
-    { key: 'typeLabel', label: 'Тип', sortable: true },
+    { key: 'categoryLabel', label: 'Категория', sortable: true },
     { key: 'statusLabel', label: 'Статус', sortable: true },
     { key: 'modifiedAtLabel', label: 'Изменен', sortable: true },
   ];
 
   protected readonly statusOptions: Array<{ value: DashboardDocumentStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Все статусы' },
-    { value: 'pending', label: 'Ожидает' },
-    { value: 'review', label: 'На проверке' },
-    { value: 'finalized', label: 'Утвержден' },
-    { value: 'archived', label: 'В архиве' },
+    { value: 'DRAFT', label: 'Ожидает' },
+    { value: 'IN_REVIEW', label: 'На проверке' },
+    { value: 'APPROVED', label: 'Утвержден' },
+    { value: 'ARCHIVED', label: 'В архиве' },
   ];
 
-  protected readonly typeOptions: Array<{ value: DashboardDocumentType | 'all'; label: string }> = [
-    { value: 'all', label: 'Все типы' },
-    { value: 'pdf', label: 'PDF' },
-    { value: 'legal', label: 'Юридический' },
-    { value: 'spreadsheet', label: 'Таблица' },
-    { value: 'image', label: 'Изображение' },
+  protected readonly categoryOptions: Array<{ value: DashboardDocumentCategory | 'all'; label: string }> = [
+    { value: 'all', label: 'Все категории' },
+    { value: 'HR', label: 'HR' },
+    { value: 'FINANCE', label: 'Финансы' },
+    { value: 'GENERAL', label: 'Общее' },
   ];
 
   protected readonly statusFilterControl = new FormControl<DashboardDocumentStatus | 'all'>('all', {
     nonNullable: true,
   });
-  protected readonly typeFilterControl = new FormControl<DashboardDocumentType | 'all'>('all', {
+  protected readonly categoryFilterControl = new FormControl<DashboardDocumentCategory | 'all'>('all', {
     nonNullable: true,
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly editFilenameControl = new FormControl('', { nonNullable: true });
-  protected readonly editStatusControl = new FormControl<DashboardDocumentStatus>('pending', {
+  protected readonly editStatusControl = new FormControl<DashboardDocumentStatus>('DRAFT', {
     nonNullable: true,
   });
 
@@ -107,9 +107,9 @@ export class DashboardDocumentsComponent {
     this.documents().map((item) => ({
       id: item.id,
       title: item.title,
-      typeLabel: this.getTypeLabel(item.type),
+      categoryLabel: this.getCategoryLabel(item.category),
       statusLabel: this.getStatusLabel(item.status),
-      // modifiedAtLabel: item.modifiedAtLabel,
+      modifiedAtLabel: item.updatedAt,
     })),
   );
 
@@ -136,7 +136,7 @@ export class DashboardDocumentsComponent {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const query = params.get('q')?.trim() ?? '';
       const status = params.get('status');
-      const type = params.get('type');
+      const category = params.get('category');
       const sort = params.get('sort');
       const dir = params.get('dir');
       const page = Number(params.get('page') ?? '1');
@@ -151,9 +151,9 @@ export class DashboardDocumentsComponent {
         this.statusFilterControl.setValue(normalizedStatus, { emitEvent: false });
       }
 
-      const normalizedType = this.isType(type) ? type : 'all';
-      if (this.typeFilterControl.value !== normalizedType) {
-        this.typeFilterControl.setValue(normalizedType, { emitEvent: false });
+      const normalizedCategory = this.isCategory(category) ? category : 'all';
+      if (this.categoryFilterControl.value !== normalizedCategory) {
+        this.categoryFilterControl.setValue(normalizedCategory, { emitEvent: false });
       }
 
       const normalizedSortKey = this.isSortKey(sort) ? sort : this.defaultSort.key;
@@ -167,7 +167,7 @@ export class DashboardDocumentsComponent {
       this.loadDocuments();
     });
 
-    merge(this.statusFilterControl.valueChanges, this.typeFilterControl.valueChanges, this.searchControl.valueChanges)
+    merge(this.statusFilterControl.valueChanges, this.categoryFilterControl.valueChanges, this.searchControl.valueChanges)
       .pipe(debounceTime(150), takeUntilDestroyed())
       .subscribe(() => {
         this.pagination.update((state) => ({ ...state, page: 1 }));
@@ -279,8 +279,8 @@ export class DashboardDocumentsComponent {
       });
   }
 
-  protected getStatusTone(status: DashboardDocumentStatus): DashboardDocumentStatus {
-    return status;
+  protected getStatusTone(status: DashboardDocumentStatus): UiKitChipTone {
+    return status.toLowerCase() as UiKitChipTone;
   }
 
   private loadDocuments(): void {
@@ -290,23 +290,21 @@ export class DashboardDocumentsComponent {
 
     this.loading.set(true);
     this.documentUseCases
-      .getDocuments(
-      //   {
-      //   text: this.searchControl.value,
-      //   status:
-      //     this.statusFilterControl.value === 'all'
-      //       ? undefined
-      //       : this.statusFilterControl.value,
-      //   type:
-      //     this.typeFilterControl.value === 'all'
-      //       ? undefined
-      //       : this.typeFilterControl.value,
-      //   sortBy,
-      //   sortDirection: sort.direction,
-      //   page: pagination.page,
-      //   pageSize: pagination.pageSize,
-      // }
-    )
+      .getDocuments({
+        text: this.searchControl.value,
+        status:
+          this.statusFilterControl.value === 'all'
+            ? undefined
+            : this.statusFilterControl.value,
+        category:
+          this.categoryFilterControl.value === 'all'
+            ? undefined
+            : this.categoryFilterControl.value,
+        sortBy,
+        sortDirection: sort.direction,
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+      })
       .pipe(
         take(1),
         finalize(() => this.loading.set(false)),
@@ -317,41 +315,39 @@ export class DashboardDocumentsComponent {
       });
   }
 
-  private toDomainSortKey(key: string): 'title' | 'type' | 'status' | 'updated_at' {
-    if (key === 'title' || key === 'typeLabel' || key === 'statusLabel') {
-      const mapped: Record<string, 'title' | 'type' | 'status'> = {
+  private toDomainSortKey(key: string): 'title' | 'category' | 'status' | 'updatedAt' {
+    if (key === 'title' || key === 'categoryLabel' || key === 'statusLabel') {
+      const mapped: Record<string, 'title' | 'category' | 'status'> = {
         title: 'title',
-        typeLabel: 'type',
+        categoryLabel: 'category',
         statusLabel: 'status',
       };
 
       return mapped[key];
     }
 
-    return 'updated_at';
+    return 'updatedAt';
   }
 
   protected getStatusLabel(status: DashboardDocumentStatus): string {
     const labels: Record<DashboardDocumentStatus, string> = {
-      draft: 'Драфт',
-      pending: 'Ожидает',
-      review: 'На проверке',
-      finalized: 'Утвержден',
-      archived: 'В архиве',
+      DRAFT: 'Ожидает',
+      IN_REVIEW: 'На проверке',
+      APPROVED: 'Утвержден',
+      ARCHIVED: 'В архиве',
     };
 
-    return labels[status.toLowerCase() as keyof typeof labels];
+    return labels[status];
   }
 
-  private getTypeLabel(type: DashboardDocumentType): string {
-    const labels: Record<DashboardDocumentType, string> = {
-      pdf: 'PDF',
-      legal: 'Юридический',
-      spreadsheet: 'Таблица',
-      image: 'Изображение',
+  private getCategoryLabel(category: DashboardDocumentCategory): string {
+    const labels: Record<DashboardDocumentCategory, string> = {
+      HR: 'HR',
+      FINANCE: 'Финансы',
+      GENERAL: 'Общее',
     };
 
-    return labels[type];
+    return labels[category];
   }
 
   private syncQueryParams(): void {
@@ -364,7 +360,7 @@ export class DashboardDocumentsComponent {
       queryParams: {
         q: q || null,
         status: this.statusFilterControl.value === 'all' ? null : this.statusFilterControl.value,
-        type: this.typeFilterControl.value === 'all' ? null : this.typeFilterControl.value,
+        category: this.categoryFilterControl.value === 'all' ? null : this.categoryFilterControl.value,
         sort: sort.key === this.defaultSort.key ? null : sort.key,
         dir: sort.direction === this.defaultSort.direction ? null : sort.direction,
         page: pagination.page === 1 ? null : pagination.page,
@@ -376,14 +372,14 @@ export class DashboardDocumentsComponent {
   }
 
   private isStatus(value: string | null): value is DashboardDocumentStatus {
-    return value === 'pending' || value === 'review' || value === 'finalized' || value === 'archived';
+    return value === 'DRAFT' || value === 'IN_REVIEW' || value === 'APPROVED' || value === 'ARCHIVED';
   }
 
-  private isType(value: string | null): value is DashboardDocumentType {
-    return value === 'pdf' || value === 'legal' || value === 'spreadsheet' || value === 'image';
+  private isCategory(value: string | null): value is DashboardDocumentCategory {
+    return value === 'HR' || value === 'FINANCE' || value === 'GENERAL';
   }
 
   private isSortKey(value: string | null): value is UiKitSortState['key'] {
-    return value === 'title' || value === 'typeLabel' || value === 'statusLabel' || value === 'modifiedAtLabel';
+    return value === 'title' || value === 'categoryLabel' || value === 'statusLabel' || value === 'modifiedAtLabel';
   }
 }

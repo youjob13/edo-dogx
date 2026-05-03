@@ -2,13 +2,6 @@ import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   ActivityItem,
-  KanbanBoardDetails,
-  KanbanBoardSummary,
-  KanbanTask,
-  KanbanTaskAssignPayload,
-  KanbanTaskCommentPayload,
-  KanbanTaskDetails,
-  KanbanTaskMovePayload,
   DashboardCreateDocumentPayload,
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
@@ -36,7 +29,6 @@ export interface DocumentApiPort {
   downloadDocument(id: string): Observable<void>;
   createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument>;
   getDocumentById(id: string): Observable<DashboardEditableDocument>;
-  updateDraft(id: string, payload: DashboardEditDocumentPayload): Observable<DocumentItem>;
   updateDocument(id: string, payload: DashboardEditDocumentPayload): Observable<DocumentItem>;
   getEditorControlProfile(contextType: DashboardEditorContextType, contextKey: string): Observable<DashboardEditorControlProfile>;
   updateEditorControlProfile(

@@ -22,29 +22,29 @@ import { DocumentUseCases } from '../../../application/dashboard/document.use-ca
             <article class="lifecycle-card">
               <h3>{{ doc.title }}</h3>
               <p>Текущий статус: <strong>{{ labelFor(doc.status) }}</strong></p>
-              <p>Обновлен: {{ doc.updated_at | date: 'medium' }}</p>
+              <p>Обновлен: {{ doc.updatedAt | date: 'medium' }}</p>
 
               <div class="actions">
                 <edo-dogx-button
                   label="Отправить на проверку"
                   size="s"
                   appearance="secondary"
-                  [disabled]="doc.status !== 'pending'"
-                  (pressed)="setStatus(doc, 'review')"
+                  [disabled]="doc.status !== 'DRAFT'"
+                  (pressed)="setStatus(doc, 'IN_REVIEW')"
                 />
                 <edo-dogx-button
                   label="Утвердить"
                   size="s"
                   appearance="primary"
-                  [disabled]="doc.status !== 'review'"
-                  (pressed)="setStatus(doc, 'finalized')"
+                  [disabled]="doc.status !== 'IN_REVIEW'"
+                  (pressed)="setStatus(doc, 'APPROVED')"
                 />
                 <edo-dogx-button
                   label="Архивировать"
                   size="s"
                   appearance="secondary"
-                  [disabled]="doc.status !== 'finalized'"
-                  (pressed)="setStatus(doc, 'archived')"
+                  [disabled]="doc.status !== 'APPROVED'"
+                  (pressed)="setStatus(doc, 'ARCHIVED')"
                 />
               </div>
             </article>
@@ -115,21 +115,20 @@ export class DashboardComponent {
 
   constructor() {
     this.documentUseCases
-      .getDocuments({ page: 1, pageSize: 6, sortBy: 'updated_at', sortDirection: 'desc' })
+      .getDocuments({ page: 1, pageSize: 6, sortBy: 'updatedAt', sortDirection: 'desc' })
       .pipe(takeUntilDestroyed())
       .subscribe((result) => this.items.set(result.items));
   }
 
   protected labelFor(status: DashboardDocumentStatus): string {
     const labels: Record<DashboardDocumentStatus, string> = {
-      pending: 'Черновик',
-      draft: 'Драфт',
-      review: 'На проверке',
-      finalized: 'Утвержден',
-      archived: 'Архив',
+      DRAFT: 'Черновик',
+      IN_REVIEW: 'На проверке',
+      APPROVED: 'Утвержден',
+      ARCHIVED: 'Архив',
     };
 
-    return labels[status.toLowerCase() as keyof typeof labels];
+    return labels[status];
   }
 
   protected setStatus(document: DocumentItem, nextStatus: DashboardDocumentStatus): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 
 type ThemeMode = 'light' | 'dark';
 

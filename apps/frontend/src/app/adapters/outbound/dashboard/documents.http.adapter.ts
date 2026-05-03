@@ -9,8 +9,8 @@ import {
   DashboardEditorContextType,
   DashboardEditorControlProfile,
   DashboardExportRequest,
+  DashboardDocumentCategory,
   DashboardDocumentStatus,
-  DashboardDocumentType,
   DashboardEditDocumentPayload,
   DashboardPreviewDocument,
   DashboardQuery,
@@ -73,27 +73,20 @@ const emptyRichDocument = (): DashboardRichContentDocument => ({
 interface GatewayDocumentResponse {
   id: string;
   title: string;
-  category: 'HR' | 'FINANCE' | 'GENERAL';
-  status: string;
+  category: DashboardDocumentCategory;
+  status: DashboardDocumentStatus;
   version?: number | string;
-  updated_at: string;
+  updatedAt?: string;
+  updated_at?: string;
   contentDocument?: DashboardRichContentDocument;
   content_document_json?: string;
   contentDocumentJson?: string;
 }
 
-const mapGatewayStatus = (status: string): DashboardDocumentStatus => {
-  switch (status) {
-    case 'IN_REVIEW':
-      return 'review';
-    case 'APPROVED':
-      return 'finalized';
-    case 'ARCHIVED':
-      return 'archived';
-    default:
-      return 'pending';
-  }
-};
+interface GatewaySearchDocumentsResponse {
+  items: Array<GatewayDocumentResponse>;
+  total: number;
+}
 
 const parseGatewayContentDocument = (
   value: unknown,
@@ -123,13 +116,23 @@ const normalizeGatewayDocument = (
   id: response.id,
   title: response.title,
   category: response.category,
-  status: mapGatewayStatus(response.status),
+  status: response.status,
   version: typeof response.version === 'string' ? Number(response.version) : response.version ?? 1,
   contentDocument:
     parseGatewayContentDocument(response.contentDocument) ??
     parseGatewayContentDocument(response.content_document_json) ??
     parseGatewayContentDocument(response.contentDocumentJson) ??
     undefined,
+});
+
+const normalizeDocumentItem = (response: GatewayDocumentResponse): DocumentItem => ({
+  id: response.id,
+  title: response.title,
+  category: response.category,
+  status: response.status,
+  updatedAt: response.updatedAt ?? response.updated_at ?? '',
+  sizeKb: 0,
+  version: typeof response.version === 'string' ? Number(response.version) : response.version,
 });
 
 type DashboardEditorControlProfileApi = Partial<{
@@ -187,11 +190,11 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     return this.getDocumentsData(query).pipe(
       map((result) => {
         const pendingApprovalCount = result.items.filter(
-          (documentItem) => documentItem.status === 'pending',
+          (documentItem) => documentItem.status === 'DRAFT',
         ).length;
 
         const actionItemsCount = result.items.filter(
-          (documentItem) => documentItem.status === 'review',
+          (documentItem) => documentItem.status === 'IN_REVIEW',
         ).length;
 
         return {
@@ -208,11 +211,33 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     return of(MOCK_WEEKLY_VOLUME)
   }
 
-  getDocumentsData(query: Params): Observable<PaginatedResult<DocumentItem>> {
-   return this.http
-      .get<PaginatedResult<DocumentItem>>(`/api/documents`, {
-        params: query
-      })
+  getDocumentsData(query: DashboardQuery = {}): Observable<PaginatedResult<DocumentItem>> {
+    const page = query.page && query.page > 0 ? Math.floor(query.page) : 1;
+    const pageSize = query.pageSize && query.pageSize > 0 ? Math.floor(query.pageSize) : 20;
+    const params: Params = {
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    };
+    if (query.text) {
+      params['q'] = query.text;
+    }
+    if (query.status) {
+      params['status'] = query.status;
+    }
+    if (query.category) {
+      params['category'] = query.category;
+    }
+
+    return this.http
+      .get<GatewaySearchDocumentsResponse>(`/api/documents`, { params })
+      .pipe(
+        map((response) => ({
+          items: response.items.map(normalizeDocumentItem),
+          total: response.total,
+          page,
+          pageSize,
+        })),
+      );
   } 
 
    getActivity(query: DashboardQuery): Observable<Array<ActivityItem>> {
@@ -261,24 +286,17 @@ export class DashboardHttpAdapter implements DocumentApiPort {
 
   public createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {
     return this.http
-      .post<{ id: string; title: string; category: 'HR' | 'FINANCE' | 'GENERAL'; status?: string; version?: number }>(
+      .post<{ id: string; title: string; category: DashboardDocumentCategory; status: DashboardDocumentStatus; version?: number }>(
         '/api/documents',
         payload,
       )
       .pipe(
         map((response) => {
-          const mappedStatus: DashboardDocumentStatus =
-            response.status === 'archived' ||
-            response.status === 'review' ||
-            response.status === 'finalized'
-              ? response.status
-              : 'pending';
-
-          return {
+                  return {
             id: response.id,
             title: response.title,
             category: response.category,
-            status: mappedStatus,
+            status: response.status,
             contentDocument: payload.contentDocument ?? emptyRichDocument(),
             version: response.version ?? 1,
           };
@@ -292,7 +310,7 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     );
   }
 
-  public updateDocument(
+   updateDocument(
     id: string,
     payload: DashboardEditDocumentPayload,
   ): Observable<DocumentItem> {
@@ -300,26 +318,20 @@ export class DashboardHttpAdapter implements DocumentApiPort {
       .patch<GatewayDocumentResponse>(`/api/documents/${id}`, {
         title: payload.title,
         expectedVersion: payload.expectedVersion ?? 1,
+        status: payload.status,
         contentDocument: payload.contentDocument,
       })
       .pipe(
         map((response) => ({
           id: response.id,
           title: response.title,
-          status: mapGatewayStatus(response.status),
-          updated_at: response.updated_at,
-          type: 'pdf' as DashboardDocumentType, // current?.type ?? 'pdf',
-          sizeKb: 0, // current?.sizeKb ?? 0,
+          status: response.status,
+          category: response.category,
+          updatedAt: response.updatedAt ?? response.updated_at ?? '',
+          sizeKb: 0,
           version: typeof response.version === 'string' ? parseInt(response.version, 10) : response.version,
         })),
       );
-  }
-
-  public updateDraft(
-    id: string,
-    payload: DashboardEditDocumentPayload,
-  ): Observable<DocumentItem> {
-    return this.updateDocument(id, payload);
   }
 
   public getEditorControlProfile(

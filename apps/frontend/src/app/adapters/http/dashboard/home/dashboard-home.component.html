@@ -9,7 +9,7 @@
       [fullHeight]="true"
       [hint]="'Изменение: +' + pendingApprovalDelta().toString()"
       icon="pending"
-      (pressed)="onMetricPressed('pending')"
+      (pressed)="onMetricPressed('DRAFT')"
     />
 
     <edo-dogx-metric-card
@@ -18,7 +18,7 @@
       [fullHeight]="true"
       [hint]="'Просрочено: ' + overdueNoticesCount().toString()"
       icon="warning"
-      (pressed)="onMetricPressed('review')"
+      (pressed)="onMetricPressed('IN_REVIEW')"
     />
 
     <edo-dogx-card title="Недельный объем" subtitle="Клик по столбцу выбирает день">
@@ -80,7 +80,7 @@
         <p>{{ preview.body }}</p>
         @if (selectedDocument(); as doc) {
           <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
-          <p class="dashboard-home__text">Изменен: {{ doc.updated_at }}</p>
+          <p class="dashboard-home__text">Изменен: {{ doc.updatedAt }}</p>
         }
       </div>
     }
@@ -102,10 +102,10 @@
         <label>
           <span>Статус</span>
           <select [formControl]="editStatusControl">
-            <option value="pending">Ожидает</option>
-            <option value="review">На проверке</option>
-            <option value="finalized">Утвержден</option>
-            <option value="archived">В архиве</option>
+            <option value="DRAFT">Ожидает</option>
+            <option value="IN_REVIEW">На проверке</option>
+            <option value="APPROVED">Утвержден</option>
+            <option value="ARCHIVED">В архиве</option>
           </select>
         </label>
 

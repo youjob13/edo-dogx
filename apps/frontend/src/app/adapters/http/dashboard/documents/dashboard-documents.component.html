@@ -25,9 +25,9 @@
       </label>
 
       <label>
-        <span>Тип</span>
-        <select [formControl]="typeFilterControl">
-          @for (option of typeOptions; track option.value) {
+        <span>Категория</span>
+        <select [formControl]="categoryFilterControl">
+          @for (option of categoryOptions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
           }
         </select>
@@ -74,7 +74,7 @@
           @if (selectedDocument(); as doc) {
             <p><strong>Статус:</strong></p>
             <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
-            <p><strong>Изменен:</strong> {{ doc.updated_at }}</p>
+            <p><strong>Изменен:</strong> {{ doc.updatedAt }}</p>
           }
         </div>
       }

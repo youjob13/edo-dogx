@@ -71,13 +71,6 @@ export class DocumentUseCases {
     return this.api.updateDocument(id, payload);
   }
 
-  public updateDraft(
-    id: string,
-    payload: DashboardEditDocumentPayload,
-  ): Observable<DocumentItem> {
-    return this.api.updateDraft(id, payload);
-  }
-
   public getEditorControlProfile(
     contextType: DashboardEditorContextType,
     contextKey: string,

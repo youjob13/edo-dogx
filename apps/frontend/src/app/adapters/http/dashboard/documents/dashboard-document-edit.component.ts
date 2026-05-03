@@ -50,7 +50,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(300)],
   });
-  protected readonly statusControl = new FormControl<DashboardDocumentStatus>('pending', {
+  protected readonly statusControl = new FormControl<DashboardDocumentStatus>('DRAFT', {
     nonNullable: true,
   });
 
@@ -270,7 +270,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     this.message.set('');
 
     this.documentUseCases
-      .updateDraft(this.documentId(), {
+      .updateDocument(this.documentId(), {
         title: this.titleControl.value.trim(),
         status: this.statusControl.value,
         contentDocument: this.editor?.getJSON() as DashboardRichContentDocument,

@@ -13,10 +13,10 @@
       <label class="dashboard-document-edit__field">
         <span>Статус</span>
         <select [formControl]="statusControl">
-          <option value="pending">Ожидает</option>
-          <option value="review">На проверке</option>
-          <option value="finalized">Утвержден</option>
-          <option value="archived">В архиве</option>
+          <option value="DRAFT">Ожидает</option>
+          <option value="IN_REVIEW">На проверке</option>
+          <option value="APPROVED">Утвержден</option>
+          <option value="ARCHIVED">В архиве</option>
         </select>
       </label>
 

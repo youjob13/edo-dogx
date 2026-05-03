@@ -5,8 +5,10 @@ import {
   GrpcClientError,
 } from '../../outbound/grpc/document.client.js';
 
-const allowedStatuses = new Set(['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED']);
+const allowedStatuses = new Set<DocumentStatus>(['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED']);
 const documentClient = new DocumentServiceClient();
+
+type DocumentStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
 
 function toContentDocumentJSON(contentDocument: Record<string, unknown> | undefined): string | undefined {
   if (contentDocument === undefined) {
@@ -95,7 +97,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
   fastify.patch<{
     Params: { documentId: string };
-    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown>; status?: string };
+    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown>; status?: DocumentStatus };
   }>(
     '/:documentId',
     {
@@ -188,7 +190,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
   fastify.get<{
     Querystring: {
       q?: string;
-      status?: 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
+      status?: DocumentStatus;
       category?: string;
       limit?: number;
       offset?: number;

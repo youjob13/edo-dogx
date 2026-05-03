@@ -653,7 +653,7 @@ components:
 
     ExportRequestStatus:
       type: string
-      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED]
+      enum: [DRAFT, IN_REVIEW, APPROVED, ARCHIVED]
 
     ExportArtifactResponse:
       type: object

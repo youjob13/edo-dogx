@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  ActivityItem,
   KanbanBoardDetails,
   KanbanBoardSummary,
   KanbanTask,
@@ -10,21 +9,6 @@ import {
   KanbanTaskDetails,
   KanbanTaskMovePayload,
   DashboardConflictError,
-  DashboardCreateDocumentPayload,
-  DashboardCreateExportPayload,
-  DashboardEditableDocument,
-  DashboardEditDocumentPayload,
-  DashboardEditorContextType,
-  DashboardEditorControlProfile,
-  DashboardExportRequest,
-  DashboardUpdateEditorControlProfilePayload,
-  DashboardPreviewDocument,
-  DashboardQuery,
-  DashboardSummary,
-  DocumentItem,
-  PaginatedResult,
-  StorageUsage,
-  WeeklyVolumePoint,
 } from '../../domain/dashboard/dashboard.models';
 import { DashboardApiPort, DASHBOARD_API_PORT } from '../../ports/outbound/dashboard-api.port';
 

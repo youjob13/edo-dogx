@@ -20,6 +20,7 @@ import {
   UiKitTableColumn,
   UiKitActivityItem,
   UiKitChartBar,
+  UiKitChipTone,
 } from '../../../../design-system/ui-kit';
 import {
   DashboardDocumentStatus,
@@ -72,7 +73,7 @@ export class DashboardHomeComponent {
   protected readonly editOpen = signal(false);
   protected readonly storageDetailsOpen = signal(false);
   protected readonly editFilenameControl = new FormControl('', { nonNullable: true });
-  protected readonly editStatusControl = new FormControl<DashboardDocumentStatus>('pending', {
+  protected readonly editStatusControl = new FormControl<DashboardDocumentStatus>('DRAFT', {
     nonNullable: true,
   });
 
@@ -109,7 +110,7 @@ export class DashboardHomeComponent {
       id: item.id,
       title: item.title,
       statusLabel: this.getStatusLabel(item.status),
-      modifiedAtLabel: item.updated_at,
+      modifiedAtLabel: item.updatedAt,
     })),
   );
 
@@ -127,7 +128,7 @@ export class DashboardHomeComponent {
         return true;
       }
 
-      return this.weekdayFromIso(item.updated_at) === selectedDay;
+      return this.weekdayFromIso(item.updatedAt) === selectedDay;
     });
   });
 
@@ -154,10 +155,10 @@ export class DashboardHomeComponent {
     this.loadActivity();
   }
 
-  protected onMetricPressed(metric: 'pending' | 'review'): void {
-    this.quickStatusFilter.set(metric === 'pending' ? 'pending' : 'review');
+  protected onMetricPressed(metric: 'DRAFT' | 'IN_REVIEW'): void {
+    this.quickStatusFilter.set(metric === 'DRAFT' ? 'DRAFT' : 'IN_REVIEW');
     this.message.set(
-      metric === 'pending'
+      metric === 'DRAFT'
         ? 'Быстрый фильтр: ожидают подтверждения.'
         : 'Быстрый фильтр: требуют внимания.',
     );
@@ -283,20 +284,19 @@ export class DashboardHomeComponent {
     this.message.set('Быстрые фильтры сброшены.');
   }
 
-  protected getStatusTone(status: DashboardDocumentStatus): DashboardDocumentStatus {
-    return status;
+  protected getStatusTone(status: DashboardDocumentStatus): UiKitChipTone {
+    return status.toLowerCase() as UiKitChipTone;
   }
 
   protected getStatusLabel(status: DashboardDocumentStatus): string {
     const labels: Record<DashboardDocumentStatus, string> = {
-      pending: 'Ожидает',
-      review: 'На проверке',
-      finalized: 'Утвержден',
-      draft: 'Драфт',
-      archived: 'В архиве',
+      DRAFT: 'Ожидает',
+      IN_REVIEW: 'На проверке',
+      APPROVED: 'Утвержден',
+      ARCHIVED: 'В архиве',
     };
 
-    return labels[status.toLowerCase() as keyof typeof labels];
+    return labels[status];
   }
 
   private loadSummary(): void {
