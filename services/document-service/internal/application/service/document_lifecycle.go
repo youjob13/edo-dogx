@@ -160,10 +160,6 @@ func (s *DocumentLifecycleService) UpdateDraft(ctx context.Context, input Update
 		return model.Document{}, err
 	}
 
-	if err := s.versions.AppendVersion(ctx, updated, input.ActorUserID, "document draft updated"); err != nil {
-		return model.Document{}, err
-	}
-
 	return updated, nil
 }
 

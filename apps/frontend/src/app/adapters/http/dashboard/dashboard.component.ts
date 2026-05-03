@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../design-system/ui-kit';
-import { DashboardUseCases } from '../../../application/dashboard/dashboard.use-cases';
 import { DashboardDocumentStatus, DocumentItem } from '../../../domain/dashboard/dashboard.models';
+import { DatePipe } from '@angular/common';
+import { DocumentUseCases } from '../../../application/dashboard/document.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-document-lifecycle',
-  imports: [PageSectionComponent, CardComponent, ButtonComponent],
+  imports: [PageSectionComponent, CardComponent, ButtonComponent, DatePipe],
   template: `
     <edo-dogx-page-section
       title="Жизненный цикл документа"
@@ -19,9 +20,9 @@ import { DashboardDocumentStatus, DocumentItem } from '../../../domain/dashboard
         <div class="lifecycle-grid">
           @for (doc of documents(); track doc.id) {
             <article class="lifecycle-card">
-              <h3>{{ doc.filename }}</h3>
+              <h3>{{ doc.title }}</h3>
               <p>Текущий статус: <strong>{{ labelFor(doc.status) }}</strong></p>
-              <p>Обновлен: {{ doc.modifiedAtLabel }}</p>
+              <p>Обновлен: {{ doc.updated_at | date: 'medium' }}</p>
 
               <div class="actions">
                 <edo-dogx-button
@@ -106,15 +107,15 @@ import { DashboardDocumentStatus, DocumentItem } from '../../../domain/dashboard
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly documentUseCases = inject(DocumentUseCases);
 
   protected readonly message = signal('');
   private readonly items = signal<Array<DocumentItem>>([]);
   protected readonly documents = computed(() => this.items());
 
   constructor() {
-    this.useCases
-      .getDocuments({ page: 1, pageSize: 6, sortBy: 'modifiedAtIso', sortDirection: 'desc' })
+    this.documentUseCases
+      .getDocuments({ page: 1, pageSize: 6, sortBy: 'updated_at', sortDirection: 'desc' })
       .pipe(takeUntilDestroyed())
       .subscribe((result) => this.items.set(result.items));
   }
@@ -122,21 +123,22 @@ export class DashboardComponent {
   protected labelFor(status: DashboardDocumentStatus): string {
     const labels: Record<DashboardDocumentStatus, string> = {
       pending: 'Черновик',
+      draft: 'Драфт',
       review: 'На проверке',
       finalized: 'Утвержден',
       archived: 'Архив',
     };
 
-    return labels[status];
+    return labels[status.toLowerCase() as keyof typeof labels];
   }
 
   protected setStatus(document: DocumentItem, nextStatus: DashboardDocumentStatus): void {
-    this.useCases
-      .updateDocument(document.id, { filename: document.filename, status: nextStatus })
+    this.documentUseCases
+      .updateDocument(document.id, { title: document.title, status: nextStatus })
       .pipe(takeUntilDestroyed())
       .subscribe((updated) => {
         this.items.update((items) => items.map((item) => (item.id === updated.id ? updated : item)));
-        this.message.set(`Статус документа ${updated.filename} обновлен.`);
+        this.message.set(`Статус документа ${updated.title} обновлен.`);
       });
   }
 }

@@ -263,7 +263,7 @@ app.addHook('onSend', async (request, reply) => {
 
 // Per-route headers
 app.get('/download', async (request, reply) => {
-  reply.header('Content-Disposition', 'attachment; filename="file.pdf"');
+  reply.header('Content-Disposition', 'attachment; title="file.pdf"');
   reply.header('X-Download-Options', 'noopen');
   return reply.send(fileStream);
 });

@@ -25,8 +25,8 @@ import {
   DashboardDocumentType,
   DocumentItem,
 } from '../../../../domain/dashboard/dashboard.models';
-import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import { debounceTime, finalize, merge, take } from 'rxjs';
+import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-documents',
@@ -48,14 +48,14 @@ import { debounceTime, finalize, merge, take } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardDocumentsComponent {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly documentUseCases = inject(DocumentUseCases);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly defaultSort: UiKitSortState = { key: 'modifiedAtLabel', direction: 'desc' };
   private readonly defaultPageSize = 5;
 
   protected readonly columns: Array<UiKitTableColumn> = [
-    { key: 'filename', label: 'Документ', sortable: true },
+    { key: 'title', label: 'Документ', sortable: true },
     { key: 'typeLabel', label: 'Тип', sortable: true },
     { key: 'statusLabel', label: 'Статус', sortable: true },
     { key: 'modifiedAtLabel', label: 'Изменен', sortable: true },
@@ -106,7 +106,7 @@ export class DashboardDocumentsComponent {
   protected readonly rowView = computed<Array<Record<string, string>>>(() =>
     this.documents().map((item) => ({
       id: item.id,
-      filename: item.title,
+      title: item.title,
       typeLabel: this.getTypeLabel(item.type),
       statusLabel: this.getStatusLabel(item.status),
       // modifiedAtLabel: item.modifiedAtLabel,
@@ -218,7 +218,7 @@ export class DashboardDocumentsComponent {
     }
 
     if (actionId === 'preview') {
-      this.useCases
+      this.documentUseCases
         .previewDocument(selectedId)
         .pipe(take(1))
         .subscribe((preview) => {
@@ -239,7 +239,7 @@ export class DashboardDocumentsComponent {
     }
 
     if (actionId === 'download') {
-      this.useCases
+      this.documentUseCases
         .downloadDocument(selectedId)
         .pipe(take(1))
         .subscribe(() => {
@@ -264,12 +264,12 @@ export class DashboardDocumentsComponent {
     }
 
     const payload: DashboardEditDocumentPayload = {
-      filename: this.editFilenameControl.value,
+      title: this.editFilenameControl.value,
       status: this.editStatusControl.value,
       expectedVersion: 1,
     };
 
-    this.useCases
+    this.documentUseCases
       .updateDocument(selectedId, payload)
       .pipe(take(1))
       .subscribe((result) => {
@@ -289,7 +289,7 @@ export class DashboardDocumentsComponent {
     const sortBy = this.toDomainSortKey(sort.key);
 
     this.loading.set(true);
-    this.useCases
+    this.documentUseCases
       .getDocuments(
       //   {
       //   text: this.searchControl.value,
@@ -317,10 +317,10 @@ export class DashboardDocumentsComponent {
       });
   }
 
-  private toDomainSortKey(key: string): 'filename' | 'type' | 'status' | 'modifiedAtIso' {
-    if (key === 'filename' || key === 'typeLabel' || key === 'statusLabel') {
-      const mapped: Record<string, 'filename' | 'type' | 'status'> = {
-        filename: 'filename',
+  private toDomainSortKey(key: string): 'title' | 'type' | 'status' | 'updated_at' {
+    if (key === 'title' || key === 'typeLabel' || key === 'statusLabel') {
+      const mapped: Record<string, 'title' | 'type' | 'status'> = {
+        title: 'title',
         typeLabel: 'type',
         statusLabel: 'status',
       };
@@ -328,18 +328,19 @@ export class DashboardDocumentsComponent {
       return mapped[key];
     }
 
-    return 'modifiedAtIso';
+    return 'updated_at';
   }
 
   protected getStatusLabel(status: DashboardDocumentStatus): string {
     const labels: Record<DashboardDocumentStatus, string> = {
+      draft: 'Драфт',
       pending: 'Ожидает',
       review: 'На проверке',
       finalized: 'Утвержден',
       archived: 'В архиве',
     };
 
-    return labels[status];
+    return labels[status.toLowerCase() as keyof typeof labels];
   }
 
   private getTypeLabel(type: DashboardDocumentType): string {
@@ -383,6 +384,6 @@ export class DashboardDocumentsComponent {
   }
 
   private isSortKey(value: string | null): value is UiKitSortState['key'] {
-    return value === 'filename' || value === 'typeLabel' || value === 'statusLabel' || value === 'modifiedAtLabel';
+    return value === 'title' || value === 'typeLabel' || value === 'statusLabel' || value === 'modifiedAtLabel';
   }
 }

@@ -27,6 +27,7 @@ import {
   DashboardEditorToolbarActionId,
   isToolbarControlEnabled,
 } from './dashboard-rich-editor-toolbar';
+import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-document-edit',
@@ -37,6 +38,7 @@ import {
 })
 export class DashboardDocumentEditComponent implements UnsavedChangesAware, AfterViewInit, OnDestroy {
   private readonly useCases = inject(DashboardUseCases);
+  private readonly documentUseCases = inject(DocumentUseCases);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
@@ -75,6 +77,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     const documentId = this.route.snapshot.paramMap.get('id') ?? '';
     const autoOpenExport = this.route.snapshot.queryParamMap.get('autoOpenExport') === '1';
     this.documentId.set(documentId);
+
     if (documentId) {
       this.loadDocument(documentId);
     }
@@ -266,9 +269,9 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     this.loading.set(true);
     this.message.set('');
 
-    this.useCases
+    this.documentUseCases
       .updateDraft(this.documentId(), {
-        filename: this.titleControl.value.trim(),
+        title: this.titleControl.value.trim(),
         status: this.statusControl.value,
         contentDocument: this.editor?.getJSON() as DashboardRichContentDocument,
         expectedVersion: this.version(),
@@ -278,8 +281,12 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
         finalize(() => this.loading.set(false)),
       )
       .subscribe({
-        next: () => {
-          this.version.update((value) => value + 1);
+        next: (updatedDocument) => {
+          if (updatedDocument.version !== undefined) {
+            this.version.set(updatedDocument.version);
+          } else {
+            this.version.update((value) => value + 1);
+          }
           this.initialEditorSnapshot = this.editor
             ? JSON.stringify(this.editor.getJSON())
             : this.initialEditorSnapshot;
@@ -312,7 +319,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     this.exportMessage.set('');
     this.exportFormat.set(format);
 
-    this.useCases
+    this.documentUseCases
       .createExportRequest(this.documentId(), {
         format,
         sourceVersion: this.version(),
@@ -341,7 +348,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     }
 
     this.exportLoading.set(true);
-    this.useCases
+    this.documentUseCases
       .getExportRequest(this.documentId(), this.exportRequestId())
       .pipe(
         take(1),
@@ -401,7 +408,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
   private loadDocument(documentId: string): void {
     this.loading.set(true);
 
-    this.useCases
+    this.documentUseCases
       .getDocumentById(documentId)
       .pipe(
         take(1),
@@ -431,7 +438,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
   }
 
   private loadEditorControlProfile(category: 'HR' | 'FINANCE' | 'GENERAL'): void {
-    this.useCases
+    this.documentUseCases
       .getEditorControlProfile('CATEGORY', category)
       .pipe(take(1))
       .subscribe({

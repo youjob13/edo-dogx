@@ -150,7 +150,7 @@ import Piscina from 'piscina';
 import { join } from 'node:path';
 
 const piscina = new Piscina({
-  filename: join(import.meta.dirname, 'workers', 'compute.js'),
+  title: join(import.meta.dirname, 'workers', 'compute.js'),
 });
 
 app.post('/compute', async (request) => {

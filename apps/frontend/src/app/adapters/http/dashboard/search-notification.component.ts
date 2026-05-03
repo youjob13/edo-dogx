@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../design-system/ui-kit';
+import { DatePipe } from '@angular/common';
 
 type SearchCategory = 'ALL' | 'HR' | 'FINANCE' | 'GENERAL';
 type SearchStatus = 'ALL' | 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
@@ -22,7 +23,7 @@ interface NotificationCenterItem {
 
 @Component({
   selector: 'edo-dogx-search-notification',
-  imports: [ReactiveFormsModule, PageSectionComponent, CardComponent, ButtonComponent],
+  imports: [ReactiveFormsModule, PageSectionComponent, CardComponent, ButtonComponent, DatePipe],
   template: `
     <edo-dogx-page-section
       title="Поиск и уведомления"
@@ -69,7 +70,7 @@ interface NotificationCenterItem {
               <p>ID: {{ item.documentId }}</p>
               <p>Категория: {{ item.category }}</p>
               <p>Статус: {{ item.status }}</p>
-              <p>Обновлен: {{ item.updatedAtLabel }}</p>
+              <p>Обновлен: {{ item.updatedAtLabel | date: 'medium' }}</p>
             </li>
           }
         </ul>

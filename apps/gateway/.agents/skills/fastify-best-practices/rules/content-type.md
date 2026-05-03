@@ -133,7 +133,7 @@ app.post('/upload', async (request, reply) => {
   const buffer = await data.toBuffer();
 
   return {
-    filename: data.filename,
+    title: data.title,
     mimetype: data.mimetype,
     size: buffer.length,
   };
@@ -146,7 +146,7 @@ app.post('/upload-multiple', async (request) => {
   for await (const part of request.files()) {
     const buffer = await part.toBuffer();
     files.push({
-      filename: part.filename,
+      title: part.title,
       mimetype: part.mimetype,
       size: buffer.length,
     });
@@ -164,7 +164,7 @@ app.post('/form', async (request) => {
   for await (const part of parts) {
     if (part.type === 'file') {
       const buffer = await part.toBuffer();
-      files.push({ name: part.filename, size: buffer.length });
+      files.push({ name: part.title, size: buffer.length });
     } else {
       fields[part.fieldname] = part.value as string;
     }

@@ -13,7 +13,6 @@ import StarterKit from '@tiptap/starter-kit';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { finalize, take } from 'rxjs';
 import { ButtonComponent, CardComponent, InputComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
-import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import { DashboardEditorControlProfile, DashboardRichContentDocument } from '../../../../domain/dashboard/dashboard.models';
 import {
   DASHBOARD_EDITOR_TOOLBAR_ACTIONS,
@@ -21,6 +20,7 @@ import {
   DashboardEditorToolbarActionId,
   isToolbarControlEnabled,
 } from './dashboard-rich-editor-toolbar';
+import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-document-create',
@@ -30,7 +30,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestroy {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly documentUseCases = inject(DocumentUseCases);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly destroyRef = inject(DestroyRef);
@@ -241,7 +241,7 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
     this.loading.set(true);
     this.message.set('');
 
-    this.useCases
+    this.documentUseCases
       .createDocument({
         title: this.titleControl.value.trim(),
         category: this.categoryControl.value,
@@ -265,7 +265,7 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
   }
 
   private loadEditorControlProfile(category: 'HR' | 'FINANCE' | 'GENERAL'): void {
-    this.useCases
+    this.documentUseCases
       .getEditorControlProfile('CATEGORY', category)
       .pipe(take(1))
       .subscribe({

@@ -21,7 +21,6 @@ import {
   UiKitActivityItem,
   UiKitChartBar,
 } from '../../../../design-system/ui-kit';
-import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import {
   DashboardDocumentStatus,
   DashboardEditDocumentPayload,
@@ -30,6 +29,7 @@ import {
   WeeklyVolumePoint,
 } from '../../../../domain/dashboard/dashboard.models';
 import { take } from 'rxjs';
+import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-home',
@@ -53,11 +53,11 @@ import { take } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHomeComponent {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly documentUseCases = inject(DocumentUseCases);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly recentDocumentColumns: Array<UiKitTableColumn> = [
-    { key: 'filename', label: 'Документ', sortable: true },
+    { key: 'title', label: 'Документ', sortable: true },
     { key: 'statusLabel', label: 'Статус', sortable: true },
     { key: 'modifiedAtLabel', label: 'Обновлен', sortable: true },
   ];
@@ -107,7 +107,7 @@ export class DashboardHomeComponent {
   protected readonly recentDocumentRows = computed<Array<Record<string, string>>>(() =>
     this.filteredRecentDocuments().map((item) => ({
       id: item.id,
-      filename: item.title,
+      title: item.title,
       statusLabel: this.getStatusLabel(item.status),
       modifiedAtLabel: item.updated_at,
     })),
@@ -189,7 +189,7 @@ export class DashboardHomeComponent {
     }
 
     if (actionId === 'preview') {
-      this.useCases
+      this.documentUseCases
         .previewDocument(id)
         .pipe(take(1))
         .subscribe((preview) => {
@@ -212,7 +212,7 @@ export class DashboardHomeComponent {
     }
 
     if (actionId === 'download') {
-      this.useCases
+      this.documentUseCases
         .downloadDocument(id)
         .pipe(take(1))
         .subscribe(() => {
@@ -237,11 +237,11 @@ export class DashboardHomeComponent {
     }
 
     const payload: DashboardEditDocumentPayload = {
-      filename: this.editFilenameControl.value,
+      title: this.editFilenameControl.value,
       status: this.editStatusControl.value,
     };
 
-    this.useCases
+    this.documentUseCases
       .updateDocument(id, payload)
       .pipe(take(1))
       .subscribe((updated) => {
@@ -267,7 +267,7 @@ export class DashboardHomeComponent {
     }
 
     this.selectedDocumentId.set(documentId);
-    this.useCases
+    this.documentUseCases
       .previewDocument(documentId)
       .pipe(take(1))
       .subscribe((preview) => {
@@ -292,14 +292,15 @@ export class DashboardHomeComponent {
       pending: 'Ожидает',
       review: 'На проверке',
       finalized: 'Утвержден',
+      draft: 'Драфт',
       archived: 'В архиве',
     };
 
-    return labels[status];
+    return labels[status.toLowerCase() as keyof typeof labels];
   }
 
   private loadSummary(): void {
-    this.useCases
+    this.documentUseCases
       .getDashboardSummary({ page: 1, pageSize: 50 })
       .pipe(take(1))
       .subscribe((summary) => {
@@ -311,14 +312,14 @@ export class DashboardHomeComponent {
   }
 
   private loadWeeklyVolume(): void {
-    this.useCases
+    this.documentUseCases
       .getWeeklyVolume()
       .pipe(take(1))
       .subscribe((volume) => this.weeklyVolume.set(volume));
   }
 
   private loadStorage(): void {
-    this.useCases
+    this.documentUseCases
       .getStorageUsage()
       .pipe(take(1))
       .subscribe((storage) => {
@@ -328,7 +329,7 @@ export class DashboardHomeComponent {
   }
 
   private loadRecentDocuments(): void {
-    this.useCases
+    this.documentUseCases
       .getDocuments({
         text: this.globalSearch(),
         page: 1,
@@ -341,7 +342,7 @@ export class DashboardHomeComponent {
   }
 
   private loadActivity(): void {
-    this.useCases
+    this.documentUseCases
       .getActivity({ page: 1, pageSize: 6 })
       .pipe(take(1))
       .subscribe((items) => {

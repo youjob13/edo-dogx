@@ -1,6 +1,7 @@
 export type DashboardDocumentStatus =
   | 'finalized'
   | 'review'
+  | 'draft'
   | 'archived'
   | 'pending';
 
@@ -25,8 +26,9 @@ export interface DocumentItem {
   readonly status: DashboardDocumentStatus;
   readonly updated_at: string;
   // readonly modifiedAtLabel: string;
-  // readonly modifiedAtIso: string;
+  // readonly updated_at: string;
   readonly sizeKb: number;
+  readonly version?: number;
 }
 
 export interface ActivityItem {
@@ -47,7 +49,7 @@ export interface DashboardQuery {
   readonly text?: string;
   readonly status?: DashboardDocumentStatus;
   readonly type?: DashboardDocumentType;
-  readonly sortBy?: 'filename' | 'type' | 'status' | 'modifiedAtIso';
+  readonly sortBy?: 'title' | 'type' | 'status' | 'updated_at';
   readonly sortDirection?: 'asc' | 'desc';
   readonly page?: number;
   readonly pageSize?: number;
@@ -61,7 +63,7 @@ export interface PaginatedResult<T> {
 }
 
 export interface DashboardEditDocumentPayload {
-  readonly filename: string;
+  readonly title: string;
   readonly status: DashboardDocumentStatus;
   readonly contentDocument?: DashboardRichContentDocument;
   readonly expectedVersion?: number;
