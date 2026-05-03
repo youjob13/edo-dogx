@@ -32,6 +32,7 @@ type UpdateDraftInput struct {
 	ExpectedVersion int64
 	Title           string
 	ContentDocument map[string]any
+	Status          model.DocumentStatus
 	ActorUserID     string
 }
 

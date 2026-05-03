@@ -39,6 +39,7 @@ type UpdateDraftInput struct {
 	Title           string
 	ExpectedVersion int64
 	ContentDocument map[string]any
+	Status          model.DocumentStatus
 }
 
 type GetEditorControlProfileInput struct {
@@ -154,6 +155,7 @@ func (s *DocumentLifecycleService) UpdateDraft(ctx context.Context, input Update
 		ExpectedVersion: input.ExpectedVersion,
 		Title:           title,
 		ContentDocument: input.ContentDocument,
+		Status:          input.Status,
 		ActorUserID:     input.ActorUserID,
 	})
 	if err != nil {
@@ -359,7 +361,15 @@ func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbou
 	if input.ContentDocument != nil {
 		document.ContentDocument = input.ContentDocument
 	}
-	document.Version++
+	document.Status = input.Status
+
+	// Only increment version if title or content changed
+	titleChanged := document.Title != input.Title
+	contentChanged := input.ContentDocument != nil
+	if titleChanged || contentChanged {
+		document.Version++
+	}
+
 	document.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	r.items[input.DocumentID] = document
 

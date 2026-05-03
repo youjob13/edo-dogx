@@ -95,7 +95,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
   fastify.patch<{
     Params: { documentId: string };
-    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown> };
+    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown>; status?: string };
   }>(
     '/:documentId',
     {
@@ -115,13 +115,14 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
             title: { type: 'string', minLength: 1 },
             expectedVersion: { type: 'integer', minimum: 1 },
             contentDocument: { type: 'object', additionalProperties: true },
+            status: { type: 'string', enum: ['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED'] },
           },
         },
       },
     },
     async (request, reply) => {
       const { documentId } = request.params;
-      const { title, expectedVersion, contentDocument } = request.body;
+      const { title, expectedVersion, contentDocument, status } = request.body;
 
       if (typeof documentId !== 'string' || documentId.trim() === '') {
         return reply.code(400).send({ error: 'documentId is required' });
@@ -141,6 +142,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           title: title.trim(),
           content_document_json: contentDocumentJSON,
           expected_version: expectedVersion,
+          status: status || 'DRAFT',
         });
         return reply.send(response);
       } catch (error) {

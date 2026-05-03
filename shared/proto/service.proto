@@ -144,6 +144,7 @@ message UpdateDraftRequest {
   string title = 3;
   int64 expected_version = 4;
   string content_document_json = 5;
+  string status = 6;
 }
 
 message GetDocumentRequest {

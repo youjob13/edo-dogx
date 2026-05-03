@@ -152,25 +152,44 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		return model.Document{}, err
 	}
 
-	newVersion := current.Version + 1
+	// Check if title or content changed
+	titleChanged := current.Title != input.Title
+	contentChanged := input.ContentDocument != nil
+	shouldIncrementVersion := titleChanged || contentChanged
+
+	newVersion := current.Version
+	if shouldIncrementVersion {
+		newVersion = current.Version + 1
+	}
+
 	const updateQuery = `
 		UPDATE documents
-		SET title = $2, content_document_json = $3, version = $4, updated_at = $5
+		SET title = $2, status = $3, content_document_json = $4, version = $5, updated_at = $6
 		WHERE id = $1
 		RETURNING updated_at
 	`
 
 	updatedAt := time.Now().UTC().Format(time.RFC3339)
-	if err := tx.QueryRowContext(ctx, updateQuery, current.ID, input.Title, content, newVersion, updatedAt).Scan(&current.UpdatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, updateQuery, current.ID, input.Title, string(input.Status), content, newVersion, updatedAt).Scan(&current.UpdatedAt); err != nil {
 		return model.Document{}, err
 	}
 
-	const versionQuery = `
-		INSERT INTO document_versions (document_id, version_number, title, category, status, changed_by_user_id, change_summary, content_document_json)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`
-	if _, err := tx.ExecContext(ctx, versionQuery, current.ID, newVersion, input.Title, current.Category, string(current.Status), input.ActorUserID, fmt.Sprintf("title updated by %s", input.ActorUserID), content); err != nil {
-		return model.Document{}, err
+	if shouldIncrementVersion {
+		const versionQuery = `
+			INSERT INTO document_versions (document_id, version_number, title, category, status, changed_by_user_id, change_summary, content_document_json)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		`
+		changeSummary := "updated by " + input.ActorUserID
+		if titleChanged && contentChanged {
+			changeSummary = "title and content updated by " + input.ActorUserID
+		} else if titleChanged {
+			changeSummary = "title updated by " + input.ActorUserID
+		} else if contentChanged {
+			changeSummary = "content updated by " + input.ActorUserID
+		}
+		if _, err := tx.ExecContext(ctx, versionQuery, current.ID, newVersion, input.Title, current.Category, string(input.Status), input.ActorUserID, changeSummary, content); err != nil {
+			return model.Document{}, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -179,7 +198,10 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 
 	current.Title = input.Title
 	current.ContentDocument = newContent
-	current.Version = newVersion
+	current.Status = input.Status
+	if shouldIncrementVersion {
+		current.Version = newVersion
+	}
 	return current, nil
 }
 

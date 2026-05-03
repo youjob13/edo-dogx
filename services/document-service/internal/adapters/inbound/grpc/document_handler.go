@@ -73,12 +73,18 @@ func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRe
 		return nil, status.Error(codes.InvalidArgument, "invalid content_document_json")
 	}
 
+	status := model.DocumentStatus(req.GetStatus())
+	if status == "" {
+		status = model.DocumentStatusDraft // default
+	}
+
 	document, err := h.lifecycle.UpdateDraft(ctx, appservice.UpdateDraftInput{
 		ActorUserID:     req.GetActorUserId(),
 		DocumentID:      req.GetDocumentId(),
 		Title:           req.GetTitle(),
 		ExpectedVersion: req.GetExpectedVersion(),
 		ContentDocument: contentDocument,
+		Status:          status,
 	})
 	if err != nil {
 		slog.Error("grpc update draft failed",
@@ -86,6 +92,7 @@ func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRe
 			"documentId", req.GetDocumentId(),
 			"title", req.GetTitle(),
 			"expectedVersion", req.GetExpectedVersion(),
+			"status", req.GetStatus(),
 			"err", err,
 		)
 		return nil, toStatusError(err)
