@@ -3,8 +3,8 @@ export type UiKitChipTone =
   | 'warning'
   | 'draft'
   | 'error'
-  | 'finalized'
   | 'in_review'
+  | 'approved'
   | 'archived'
   | 'pending';
 

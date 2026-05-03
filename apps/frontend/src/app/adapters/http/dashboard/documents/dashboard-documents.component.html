@@ -38,9 +38,11 @@
       [columns]="columns"
       [rows]="rowView()"
       [sort]="sortState()"
+      [actionMenuItems]="menuItems"
       rowActionLabel="Действия"
       (sortChanged)="onSortChanged($event)"
       (rowAction)="onRowAction($event)"
+      (rowMenuAction)="onRowMenuAction($event)"
     />
 
     <edo-dogx-table-toolbar
@@ -55,12 +57,6 @@
       <p class="dashboard-page__message">Обновляем список...</p>
     }
 
-    @if (selectedDocument()) {
-      <div class="dashboard-documents__menu">
-        <edo-dogx-dropdown-menu [items]="menuItems" (itemPressed)="onMenuAction($event)" />
-      </div>
-    }
-
     <edo-dogx-drawer
       [open]="previewOpen()"
       [title]="'Предпросмотр: ' + (selectedDocument()?.title ?? '')"
@@ -69,12 +65,51 @@
     >
       @if (previewDocument(); as preview) {
         <div class="dashboard-documents__preview">
-          <p><strong>{{ preview.title }}</strong></p>
-          <p>{{ preview.body }}</p>
-          @if (selectedDocument(); as doc) {
-            <p><strong>Статус:</strong></p>
-            <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
-            <p><strong>Изменен:</strong> {{ doc.updatedAt }}</p>
+          <dl class="dashboard-documents__preview-fields">
+            <div>
+              <dt>ID</dt>
+              <dd>{{ preview.id }}</dd>
+            </div>
+            <div>
+              <dt>Название</dt>
+              <dd>{{ preview.title }}</dd>
+            </div>
+            <div>
+              <dt>Категория</dt>
+              <dd>{{ getCategoryLabel(preview.category) }}</dd>
+            </div>
+            <div>
+              <dt>Статус</dt>
+              <dd>
+                <edo-dogx-status-chip [label]="getStatusLabel(preview.status)" [tone]="getStatusTone(preview.status)" />
+              </dd>
+            </div>
+            <div>
+              <dt>Версия</dt>
+              <dd>{{ preview.version }}</dd>
+            </div>
+            <div>
+              <dt>Изменен</dt>
+              <dd>{{ preview.updatedAt }}</dd>
+            </div>
+            @if (preview.ownerUserId) {
+              <div>
+                <dt>Владелец</dt>
+                <dd>{{ preview.ownerUserId }}</dd>
+              </div>
+            }
+          </dl>
+
+          <section class="dashboard-documents__preview-section">
+            <h3>Содержимое</h3>
+            <p>{{ preview.body }}</p>
+          </section>
+
+          @if (preview.contentDocumentJson) {
+            <section class="dashboard-documents__preview-section">
+              <h3>contentDocument</h3>
+              <pre>{{ preview.contentDocumentJson }}</pre>
+            </section>
           }
         </div>
       }

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of, throwError } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import {
   ActivityItem,
   DashboardCreateDocumentPayload,
@@ -15,6 +15,7 @@ import {
   DashboardPreviewDocument,
   DashboardQuery,
   DashboardRichContentDocument,
+  DashboardRichContentNode,
   DashboardSummary,
   DocumentItem,
   PaginatedResult,
@@ -75,6 +76,8 @@ interface GatewayDocumentResponse {
   title: string;
   category: DashboardDocumentCategory;
   status: DashboardDocumentStatus;
+  ownerUserId?: string;
+  owner_user_id?: string;
   version?: number | string;
   updatedAt?: string;
   updated_at?: string;
@@ -134,6 +137,47 @@ const normalizeDocumentItem = (response: GatewayDocumentResponse): DocumentItem 
   sizeKb: 0,
   version: typeof response.version === 'string' ? Number(response.version) : response.version,
 });
+
+const extractRichContentText = (document: DashboardRichContentDocument | undefined): string => {
+  if (!document) {
+    return 'Содержимое документа не передано.';
+  }
+
+  const collectText = (nodes: Array<{ text?: string; content?: Array<DashboardRichContentNode> }> | undefined): Array<string> => {
+    if (!nodes) {
+      return [];
+    }
+
+    return nodes.flatMap((node) => [
+      ...(node.text ? [node.text] : []),
+      ...collectText(node.content),
+    ]);
+  };
+
+  const text = collectText(document.content).join(' ').replace(/\s+/g, ' ').trim();
+
+  return text || 'Содержимое документа пустое.';
+};
+
+const normalizePreviewDocument = (response: GatewayDocumentResponse): DashboardPreviewDocument => {
+  const contentDocument =
+    parseGatewayContentDocument(response.contentDocument) ??
+    parseGatewayContentDocument(response.content_document_json) ??
+    parseGatewayContentDocument(response.contentDocumentJson);
+
+  return {
+    id: response.id,
+    title: response.title,
+    category: response.category,
+    status: response.status,
+    version: typeof response.version === 'string' ? Number(response.version) : response.version ?? 1,
+    updatedAt: response.updatedAt ?? response.updated_at ?? '',
+    body: extractRichContentText(contentDocument),
+    contentDocument,
+    contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
+    ownerUserId: response.ownerUserId ?? response.owner_user_id,
+  };
+};
 
 type DashboardEditorControlProfileApi = Partial<{
   id: string;
@@ -264,16 +308,9 @@ export class DashboardHttpAdapter implements DocumentApiPort {
   }
 
   public previewDocument(id: string): Observable<DashboardPreviewDocument> {
-    const documentItem = [{id: 'asdasd', title: 'asdasd'}].find((item) => item.id === id);
-    if (!documentItem) {
-      return throwError(() => new Error('Документ не найден'))
-    }
-
-    return of({
-      id: documentItem.id,
-      title: documentItem.title,
-      body: `Предпросмотр документа ${documentItem.title} (мок-данные).`,
-    })
+    return this.http
+      .get<GatewayDocumentResponse>(`/api/documents/${id}`)
+      .pipe(map((response) => normalizePreviewDocument(response)));
   }
 
   public downloadDocument(id: string): Observable<void> {

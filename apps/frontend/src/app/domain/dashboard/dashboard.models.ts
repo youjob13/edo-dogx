@@ -158,7 +158,14 @@ export interface DashboardConflictError {
 export interface DashboardPreviewDocument {
   readonly id: string;
   readonly title: string;
+  readonly category: DashboardDocumentCategory;
+  readonly status: DashboardDocumentStatus;
+  readonly version: number;
+  readonly updatedAt: string;
   readonly body: string;
+  readonly contentDocument?: DashboardRichContentDocument;
+  readonly contentDocumentJson?: string;
+  readonly ownerUserId?: string;
 }
 
 export type KanbanTaskStatus = 'todo' | 'inProgress' | 'review' | 'done';

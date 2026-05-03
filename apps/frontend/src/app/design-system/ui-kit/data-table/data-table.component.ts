@@ -1,12 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TuiButton } from '@taiga-ui/core/components/button';
-import { UiKitSortDirection, UiKitSortState, UiKitTableColumn } from '../ui-kit.models';
+import { TuiDropdown } from '@taiga-ui/core/portals/dropdown';
+import { DropdownMenuComponent } from '../dropdown-menu/dropdown-menu.component';
+import { UiKitDropdownItem, UiKitSortDirection, UiKitSortState, UiKitTableColumn } from '../ui-kit.models';
 
 type TableRow = Record<string, string | number | null | undefined>;
 
 @Component({
   selector: 'edo-dogx-data-table',
-  imports: [TuiButton],
+  imports: [TuiButton, TuiDropdown, DropdownMenuComponent],
   template: `
     <div class="edo-ui-kit-table-shell">
       @if (caption()) {
@@ -62,15 +64,39 @@ type TableRow = Record<string, string | number | null | undefined>;
 
                 @if (rowActionLabel()) {
                   <td class="edo-ui-kit-table__action">
-                    <button
-                      tuiButton
-                      appearance="secondary"
-                      size="s"
-                      type="button"
-                      (click)="rowAction.emit(row)"
-                    >
-                      {{ rowActionLabel() }}
-                    </button>
+                    @if (actionMenuItems().length > 0) {
+                      <button
+                        tuiButton
+                        appearance="secondary"
+                        size="s"
+                        type="button"
+                        [tuiDropdown]="actionMenu"
+                        [tuiDropdownOpen]="isActionMenuOpen(row)"
+                        tuiDropdownAlign="end"
+                        tuiDropdownDirection="bottom"
+                        tuiDropdownLimitWidth="min"
+                        (tuiDropdownOpenChange)="onActionMenuOpenChange(row, $event)"
+                      >
+                        {{ rowActionLabel() }}
+                      </button>
+
+                      <ng-template #actionMenu>
+                        <edo-dogx-dropdown-menu
+                          [items]="actionMenuItems()"
+                          (itemPressed)="onActionMenuItemPressed(row, $event)"
+                        />
+                      </ng-template>
+                    } @else {
+                      <button
+                        tuiButton
+                        appearance="secondary"
+                        size="s"
+                        type="button"
+                        (click)="rowAction.emit(row)"
+                      >
+                        {{ rowActionLabel() }}
+                      </button>
+                    }
                   </td>
                 }
               </tr>
@@ -94,8 +120,10 @@ export class DataTableComponent {
   public readonly columns = input.required<Array<UiKitTableColumn>>();
   public readonly rows = input<Array<TableRow>>([]);
   public readonly rowActionLabel = input('');
+  public readonly actionMenuItems = input<Array<UiKitDropdownItem>>([]);
   public readonly emptyText = input('No data available.');
   public readonly sort = input<UiKitSortState | null>(null);
+  private readonly openActionMenuRowKey = signal<string | null>(null);
 
   protected readonly activeSortDirection = computed<UiKitSortDirection>(() => {
     return this.sort()?.direction ?? 'asc';
@@ -153,6 +181,26 @@ export class DataTableComponent {
     });
   }
 
+  protected isActionMenuOpen(row: TableRow): boolean {
+    return this.openActionMenuRowKey() === this.getRowKey(row);
+  }
+
+  protected onActionMenuOpenChange(row: TableRow, open: boolean): void {
+    this.openActionMenuRowKey.set(open ? this.getRowKey(row) : null);
+    if (open) {
+      this.rowAction.emit(row);
+    }
+  }
+
+  protected onActionMenuItemPressed(row: TableRow, actionId: string): void {
+    this.openActionMenuRowKey.set(null);
+    this.rowMenuAction.emit({ row, actionId });
+  }
+
+  private getRowKey(row: TableRow): string {
+    return String(row['id'] ?? this.sortedRows().indexOf(row));
+  }
+
   protected getAriaSort(column: UiKitTableColumn): 'none' | 'ascending' | 'descending' | null {
     if (!column.sortable) {
       return null;
@@ -179,5 +227,6 @@ export class DataTableComponent {
   }
 
   public readonly rowAction = output<TableRow>();
+  public readonly rowMenuAction = output<{ row: TableRow; actionId: string }>();
   public readonly sortChanged = output<UiKitSortState>();
 }

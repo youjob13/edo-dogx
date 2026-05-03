@@ -9,7 +9,6 @@ import {
   CardComponent,
   DataTableComponent,
   DrawerComponent,
-  DropdownMenuComponent,
   MetricCardComponent,
   ModalComponent,
   PageSectionComponent,
@@ -23,13 +22,15 @@ import {
   UiKitChipTone,
 } from '../../../../design-system/ui-kit';
 import {
+  DashboardDocumentCategory,
   DashboardDocumentStatus,
+  DashboardEditableDocument,
   DashboardEditDocumentPayload,
   DashboardPreviewDocument,
   DocumentItem,
   WeeklyVolumePoint,
 } from '../../../../domain/dashboard/dashboard.models';
-import { take } from 'rxjs';
+import { switchMap, take } from 'rxjs';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
@@ -41,7 +42,6 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
     MetricCardComponent,
     BarMiniChartComponent,
     DataTableComponent,
-    DropdownMenuComponent,
     DrawerComponent,
     ModalComponent,
     StatusChipComponent,
@@ -69,6 +69,7 @@ export class DashboardHomeComponent {
   protected readonly recentDocuments = signal<Array<DocumentItem>>([]);
   protected readonly selectedDocumentId = signal<string | null>(null);
   protected readonly previewDocument = signal<DashboardPreviewDocument | null>(null);
+  protected readonly editableDocument = signal<DashboardEditableDocument | null>(null);
   protected readonly previewOpen = signal(false);
   protected readonly editOpen = signal(false);
   protected readonly storageDetailsOpen = signal(false);
@@ -183,6 +184,11 @@ export class DashboardHomeComponent {
     this.selectedDocumentId.set(String(row['id'] ?? ''));
   }
 
+  protected onRecentDocumentMenuAction(event: { row: Record<string, unknown>; actionId: string }): void {
+    this.selectedDocumentId.set(String(event.row['id'] ?? ''));
+    this.onDocumentMenuAction(event.actionId);
+  }
+
   protected onDocumentMenuAction(actionId: string): void {
     const id = this.selectedDocumentId();
     if (!id) {
@@ -206,9 +212,15 @@ export class DashboardHomeComponent {
         return;
       }
 
-      this.editFilenameControl.setValue(selected.title);
-      this.editStatusControl.setValue(selected.status);
-      this.editOpen.set(true);
+      this.documentUseCases
+        .getDocumentById(selected.id)
+        .pipe(take(1))
+        .subscribe((document) => {
+          this.editableDocument.set(document);
+          this.editFilenameControl.setValue(document.title);
+          this.editStatusControl.setValue(document.status);
+          this.editOpen.set(true);
+        });
       return;
     }
 
@@ -229,6 +241,7 @@ export class DashboardHomeComponent {
 
   protected closeEdit(): void {
     this.editOpen.set(false);
+    this.editableDocument.set(null);
   }
 
   protected saveEdit(): void {
@@ -237,17 +250,19 @@ export class DashboardHomeComponent {
       return;
     }
 
-    const payload: DashboardEditDocumentPayload = {
-      title: this.editFilenameControl.value,
-      status: this.editStatusControl.value,
-    };
+    const currentDocument = this.editableDocument();
+    const document$ = currentDocument?.id === id
+      ? this.documentUseCases.updateDocument(id, this.createEditPayload(currentDocument))
+      : this.documentUseCases.getDocumentById(id).pipe(
+          switchMap((document) => this.documentUseCases.updateDocument(id, this.createEditPayload(document))),
+        );
 
-    this.documentUseCases
-      .updateDocument(id, payload)
+    document$
       .pipe(take(1))
       .subscribe((updated) => {
         this.message.set(`Документ ${updated.title} обновлен.`);
         this.editOpen.set(false);
+        this.editableDocument.set(null);
         this.loadRecentDocuments();
       });
   }
@@ -297,6 +312,16 @@ export class DashboardHomeComponent {
     };
 
     return labels[status];
+  }
+
+  protected getCategoryLabel(category: DashboardDocumentCategory): string {
+    const labels: Record<DashboardDocumentCategory, string> = {
+      HR: 'HR',
+      FINANCE: 'Финансы',
+      GENERAL: 'Общее',
+    };
+
+    return labels[category];
   }
 
   private loadSummary(): void {
@@ -363,6 +388,15 @@ export class DashboardHomeComponent {
           }, {}),
         );
       });
+  }
+
+  private createEditPayload(document: DashboardEditableDocument): DashboardEditDocumentPayload {
+    return {
+      title: this.editFilenameControl.value,
+      status: this.editStatusControl.value,
+      contentDocument: document.contentDocument,
+      expectedVersion: document.version,
+    };
   }
 
   private weekdayFromIso(value: string): WeeklyVolumePoint['day'] {

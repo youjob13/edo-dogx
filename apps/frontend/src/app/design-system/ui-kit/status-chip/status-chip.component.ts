@@ -10,7 +10,7 @@ import { UiKitChipTone } from '../ui-kit.models';
       [class.edo-ui-kit-chip--warning]="tone() === 'warning'"
       [class.edo-ui-kit-chip--draft]="tone() === 'draft'"
       [class.edo-ui-kit-chip--error]="tone() === 'error'"
-      [class.edo-ui-kit-chip--finalized]="tone() === 'finalized'"
+      [class.edo-ui-kit-chip--approved]="tone() === 'approved'"
       [class.edo-ui-kit-chip--in_review]="tone() === 'in_review'"
       [class.edo-ui-kit-chip--archived]="tone() === 'archived'"
       [class.edo-ui-kit-chip--pending]="tone() === 'pending'"

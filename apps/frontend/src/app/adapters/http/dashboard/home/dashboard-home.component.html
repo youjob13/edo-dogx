@@ -32,17 +32,13 @@
         [columns]="recentDocumentColumns"
         [rows]="recentDocumentRows()"
         [sort]="documentSort()"
+        [actionMenuItems]="documentMenuItems"
         rowActionLabel="Открыть"
         emptyText="Документы не найдены"
         (sortChanged)="onRecentDocumentSortChanged($event)"
         (rowAction)="onRecentDocumentAction($event)"
+        (rowMenuAction)="onRecentDocumentMenuAction($event)"
       />
-
-      @if (selectedDocument()) {
-        <div class="dashboard-home__document-menu">
-          <edo-dogx-dropdown-menu [items]="documentMenuItems" (itemPressed)="onDocumentMenuAction($event)" />
-        </div>
-      }
     </edo-dogx-card>
 
     <edo-dogx-card title="Системная активность" subtitle="Последние события" [fullHeight]="true">
@@ -77,10 +73,51 @@
   >
     @if (previewDocument(); as preview) {
       <div class="dashboard-home__preview">
-        <p>{{ preview.body }}</p>
-        @if (selectedDocument(); as doc) {
-          <edo-dogx-status-chip [label]="getStatusLabel(doc.status)" [tone]="getStatusTone(doc.status)" />
-          <p class="dashboard-home__text">Изменен: {{ doc.updatedAt }}</p>
+        <dl class="dashboard-home__preview-fields">
+          <div>
+            <dt>ID</dt>
+            <dd>{{ preview.id }}</dd>
+          </div>
+          <div>
+            <dt>Название</dt>
+            <dd>{{ preview.title }}</dd>
+          </div>
+          <div>
+            <dt>Категория</dt>
+            <dd>{{ getCategoryLabel(preview.category) }}</dd>
+          </div>
+          <div>
+            <dt>Статус</dt>
+            <dd>
+              <edo-dogx-status-chip [label]="getStatusLabel(preview.status)" [tone]="getStatusTone(preview.status)" />
+            </dd>
+          </div>
+          <div>
+            <dt>Версия</dt>
+            <dd>{{ preview.version }}</dd>
+          </div>
+          <div>
+            <dt>Изменен</dt>
+            <dd>{{ preview.updatedAt }}</dd>
+          </div>
+          @if (preview.ownerUserId) {
+            <div>
+              <dt>Владелец</dt>
+              <dd>{{ preview.ownerUserId }}</dd>
+            </div>
+          }
+        </dl>
+
+        <section class="dashboard-home__preview-section">
+          <h3>Содержимое</h3>
+          <p>{{ preview.body }}</p>
+        </section>
+
+        @if (preview.contentDocumentJson) {
+          <section class="dashboard-home__preview-section">
+            <h3>contentDocument</h3>
+            <pre>{{ preview.contentDocumentJson }}</pre>
+          </section>
         }
       </div>
     }

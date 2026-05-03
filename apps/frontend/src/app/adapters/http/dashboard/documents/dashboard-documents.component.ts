@@ -7,7 +7,6 @@ import {
   CardComponent,
   DataTableComponent,
   DrawerComponent,
-  DropdownMenuComponent,
   ModalComponent,
   PageSectionComponent,
   StatusChipComponent,
@@ -38,7 +37,6 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
     DataTableComponent,
     TableToolbarComponent,
     ToolbarSearchComponent,
-    DropdownMenuComponent,
     DrawerComponent,
     ModalComponent,
     ButtonComponent,
@@ -211,6 +209,11 @@ export class DashboardDocumentsComponent {
     this.selectedDocumentId.set(String(row['id'] ?? ''));
   }
 
+  protected onRowMenuAction(event: { row: Record<string, unknown>; actionId: string }): void {
+    this.selectedDocumentId.set(String(event.row['id'] ?? ''));
+    this.onMenuAction(event.actionId);
+  }
+
   protected onMenuAction(actionId: string): void {
     const selectedId = this.selectedDocumentId();
     if (!selectedId) {
@@ -340,7 +343,7 @@ export class DashboardDocumentsComponent {
     return labels[status];
   }
 
-  private getCategoryLabel(category: DashboardDocumentCategory): string {
+  protected getCategoryLabel(category: DashboardDocumentCategory): string {
     const labels: Record<DashboardDocumentCategory, string> = {
       HR: 'HR',
       FINANCE: 'Финансы',
