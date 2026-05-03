@@ -64,9 +64,12 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
   protected readonly exportLoading = signal(false);
   protected readonly exportRequestId = signal<string>('');
   protected readonly exportStatus = signal<DashboardExportStatus | null>(null);
-  protected readonly exportFormat = signal<DashboardExportFormat>('PDF');
+  protected readonly exportFormatControl = new FormControl<DashboardExportFormat>('PDF', {
+    nonNullable: true,
+  });
   protected readonly exportMessage = signal('');
   protected readonly category = signal<'HR' | 'FINANCE' | 'GENERAL'>('GENERAL');
+  private exportPollTimer: ReturnType<typeof setTimeout> | null = null;
   private initialContent: DashboardRichContentDocument = {
     type: 'doc',
     content: [{ type: 'paragraph' }],
@@ -97,6 +100,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
   }
 
   public ngOnDestroy(): void {
+    this.clearExportPollTimer();
     this.editor?.destroy();
     this.editor = null;
   }
@@ -310,14 +314,17 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     this.router.navigate(['/dashboard/documents']);
   }
 
-  protected requestExport(format: DashboardExportFormat): void {
+  protected downloadSelectedFormat(): void {
     if (!this.documentId()) {
       return;
     }
 
+    const format = this.exportFormatControl.value;
+    this.clearExportPollTimer();
     this.exportLoading.set(true);
-    this.exportMessage.set('');
-    this.exportFormat.set(format);
+    this.exportRequestId.set('');
+    this.exportStatus.set(null);
+    this.exportMessage.set(`Готовим ${format}. Скачивание начнется автоматически.`);
 
     this.documentUseCases
       .createExportRequest(this.documentId(), {
@@ -326,55 +333,43 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       })
       .pipe(
         take(1),
-        finalize(() => this.exportLoading.set(false)),
       )
       .subscribe({
         next: (request) => {
           this.exportRequestId.set(request.id);
           this.exportStatus.set(request.status);
-          this.exportMessage.set('Экспорт запрошен. Файл готовится к скачиванию.');
-          this.refreshExportStatus();
+          this.handleExportStatus(request.status, request.errorMessage);
         },
         error: (error: unknown) => {
           const message = error instanceof Error ? error.message : 'Не удалось запустить экспорт';
           this.exportMessage.set(message);
+          this.exportLoading.set(false);
         },
       });
   }
 
-  protected refreshExportStatus(): void {
+  private refreshExportStatus(): void {
     if (!this.documentId() || !this.exportRequestId()) {
       return;
     }
 
-    this.exportLoading.set(true);
     this.documentUseCases
       .getExportRequest(this.documentId(), this.exportRequestId())
-      .pipe(
-        take(1),
-        finalize(() => this.exportLoading.set(false)),
-      )
+      .pipe(take(1))
       .subscribe({
         next: (request) => {
           this.exportStatus.set(request.status);
-          if (request.status === 'SUCCEEDED') {
-            this.exportMessage.set('Экспорт завершен. Нажмите кнопку скачивания.');
-            return;
-          }
-          if (request.status === 'FAILED') {
-            this.exportMessage.set(request.errorMessage ?? 'Экспорт завершился с ошибкой.');
-            return;
-          }
-          this.exportMessage.set('Экспорт в обработке. Обновите статус через несколько секунд.');
+          this.handleExportStatus(request.status, request.errorMessage);
         },
         error: (error: unknown) => {
           const message = error instanceof Error ? error.message : 'Не удалось обновить статус экспорта';
           this.exportMessage.set(message);
+          this.exportLoading.set(false);
         },
       });
   }
 
-  protected downloadExport(): void {
+  private downloadExport(): void {
     if (!this.documentId() || !this.exportRequestId() || this.exportStatus() !== 'SUCCEEDED') {
       return;
     }
@@ -384,8 +379,15 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     }
 
     const downloadUrl = `/api/documents/${this.documentId()}/exports/${this.exportRequestId()}/download`;
-    globalThis.location.assign(downloadUrl);
-    this.exportMessage.set('Подготовлен переход к скачиванию файла.');
+    const link = globalThis.document.createElement('a');
+    link.href = downloadUrl;
+    link.download = '';
+    link.rel = 'noopener';
+    globalThis.document.body.append(link);
+    link.click();
+    link.remove();
+    this.exportMessage.set('Файл готов. Скачивание началось.');
+    this.exportLoading.set(false);
   }
 
   protected exportStatusLabel(): string {
@@ -403,6 +405,29 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       return 'Ошибка';
     }
     return 'Не запускался';
+  }
+
+  private handleExportStatus(status: DashboardExportStatus, errorMessage?: string): void {
+    if (status === 'SUCCEEDED') {
+      this.downloadExport();
+      return;
+    }
+
+    if (status === 'FAILED') {
+      this.exportMessage.set(errorMessage ?? 'Экспорт завершился с ошибкой.');
+      this.exportLoading.set(false);
+      return;
+    }
+
+    this.exportMessage.set(`Готовим ${this.exportFormatControl.value}. Скачивание начнется автоматически.`);
+    this.exportPollTimer = setTimeout(() => this.refreshExportStatus(), 1500);
+  }
+
+  private clearExportPollTimer(): void {
+    if (this.exportPollTimer) {
+      clearTimeout(this.exportPollTimer);
+      this.exportPollTimer = null;
+    }
   }
 
   private loadDocument(documentId: string): void {

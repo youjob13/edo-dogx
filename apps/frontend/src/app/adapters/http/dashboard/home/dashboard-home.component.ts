@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { isPlatformBrowser } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -26,11 +27,12 @@ import {
   DashboardDocumentStatus,
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
+  DashboardExportFormat,
   DashboardPreviewDocument,
   DocumentItem,
   WeeklyVolumePoint,
 } from '../../../../domain/dashboard/dashboard.models';
-import { switchMap, take } from 'rxjs';
+import { filter, switchMap, take, throwError, timer } from 'rxjs';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
@@ -56,6 +58,9 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
 export class DashboardHomeComponent {
   private readonly documentUseCases = inject(DocumentUseCases);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   protected readonly recentDocumentColumns: Array<UiKitTableColumn> = [
     { key: 'title', label: 'Документ', sortable: true },
@@ -93,7 +98,8 @@ export class DashboardHomeComponent {
   protected readonly documentMenuItems: Array<UiKitDropdownItem> = [
     { id: 'preview', label: 'Предпросмотр', icon: 'preview' },
     { id: 'edit', label: 'Редактировать', icon: 'edit' },
-    { id: 'download', label: 'Скачать', icon: 'download' },
+    { id: 'download-pdf', label: 'Скачать PDF', icon: 'download' },
+    { id: 'download-docx', label: 'Скачать DOCX', icon: 'download' },
   ];
 
   protected readonly chartBars = computed<Array<UiKitChartBar>>(() => {
@@ -224,13 +230,8 @@ export class DashboardHomeComponent {
       return;
     }
 
-    if (actionId === 'download') {
-      this.documentUseCases
-        .downloadDocument(id)
-        .pipe(take(1))
-        .subscribe(() => {
-          this.message.set('Скачивание документа запущено (мок-режим).');
-        });
+    if (actionId === 'download' || actionId === 'download-pdf' || actionId === 'download-docx') {
+      this.downloadDocumentExport(id, actionId === 'download-docx' ? 'DOCX' : 'PDF');
     }
   }
 
@@ -397,6 +398,61 @@ export class DashboardHomeComponent {
       contentDocument: document.contentDocument,
       expectedVersion: document.version,
     };
+  }
+
+  private downloadDocumentExport(documentId: string, format: DashboardExportFormat): void {
+    this.message.set(`Готовим ${format}. Скачивание начнется автоматически.`);
+
+    this.documentUseCases
+      .getDocumentById(documentId)
+      .pipe(
+        switchMap((document) =>
+          this.documentUseCases.createExportRequest(documentId, {
+            format,
+            sourceVersion: document.version,
+          }),
+        ),
+        switchMap((request) => this.waitForExport(documentId, request.id)),
+        take(1),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (request) => {
+          this.startExportDownload(documentId, request.id);
+          this.message.set('Файл готов. Скачивание началось.');
+        },
+        error: (error: unknown) => {
+          const message = error instanceof Error ? error.message : 'Не удалось скачать документ';
+          this.message.set(message);
+        },
+      });
+  }
+
+  private waitForExport(documentId: string, exportRequestId: string) {
+    return timer(0, 1500).pipe(
+      switchMap(() => this.documentUseCases.getExportRequest(documentId, exportRequestId)),
+      filter((request) => request.status === 'SUCCEEDED' || request.status === 'FAILED'),
+      take(1),
+      switchMap((request) =>
+        request.status === 'FAILED'
+          ? throwError(() => new Error(request.errorMessage ?? 'Экспорт завершился с ошибкой.'))
+          : [request],
+      ),
+    );
+  }
+
+  private startExportDownload(documentId: string, exportRequestId: string): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    const link = globalThis.document.createElement('a');
+    link.href = `/api/documents/${documentId}/exports/${exportRequestId}/download`;
+    link.download = '';
+    link.rel = 'noopener';
+    globalThis.document.body.append(link);
+    link.click();
+    link.remove();
   }
 
   private weekdayFromIso(value: string): WeeklyVolumePoint['day'] {

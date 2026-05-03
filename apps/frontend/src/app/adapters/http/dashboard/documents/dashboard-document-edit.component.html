@@ -47,35 +47,22 @@
       <section class="dashboard-document-export" aria-label="Экспорт документа">
         <div class="dashboard-document-export__header">
           <h3>Экспорт</h3>
-          <p>Сформируйте текущую версию документа в PDF или DOCX.</p>
+          <p>Выберите формат и скачайте текущую версию документа.</p>
         </div>
         <div class="dashboard-document-export__actions">
-          <button
-            type="button"
-            class="dashboard-document-export__button"
-            [class.dashboard-document-export__button--active]="exportFormat() === 'PDF'"
-            [disabled]="loading() || exportLoading()"
-            (click)="requestExport('PDF')"
-          >Экспорт PDF</button>
-          <button
-            type="button"
-            class="dashboard-document-export__button"
-            [class.dashboard-document-export__button--active]="exportFormat() === 'DOCX'"
-            [disabled]="loading() || exportLoading()"
-            (click)="requestExport('DOCX')"
-          >Экспорт DOCX</button>
-          <button
-            type="button"
-            class="dashboard-document-export__button dashboard-document-export__button--ghost"
-            [disabled]="!exportRequestId() || exportLoading()"
-            (click)="refreshExportStatus()"
-          >Обновить статус</button>
+          <label class="dashboard-document-export__format">
+            <span>Формат</span>
+            <select [formControl]="exportFormatControl" [disabled]="loading() || exportLoading()">
+              <option value="PDF">PDF</option>
+              <option value="DOCX">DOCX</option>
+            </select>
+          </label>
           <button
             type="button"
             class="dashboard-document-export__button dashboard-document-export__button--download"
-            [disabled]="exportStatus() !== 'SUCCEEDED' || exportLoading()"
-            (click)="downloadExport()"
-          >Скачать файл</button>
+            [disabled]="loading() || exportLoading()"
+            (click)="downloadSelectedFormat()"
+          >{{ exportLoading() ? 'Готовим файл...' : 'Скачать файл' }}</button>
         </div>
         <p class="dashboard-document-export__status" aria-live="polite">
           Статус: <strong>{{ exportStatusLabel() }}</strong>
