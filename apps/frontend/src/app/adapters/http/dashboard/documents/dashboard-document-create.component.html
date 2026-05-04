@@ -1,14 +1,7 @@
-<edo-dogx-page-section
-  title="Создание документа"
-  subtitle="Новый черновик для последующего редактирования"
->
+<edo-dogx-page-section title="Создание документа" subtitle="Новый черновик для последующего редактирования">
   <edo-dogx-card title="Новый документ" subtitle="Заполните обязательные поля">
     <form class="dashboard-document-create" (submit)="$event.preventDefault(); createDocument()">
-      <edo-dogx-input
-        label="Название"
-        [control]="titleControl"
-        [errorText]="'Укажите название (до 300 символов)'"
-      />
+      <edo-dogx-input label="Название" [control]="titleControl" [errorText]="'Укажите название (до 300 символов)'" />
 
       <label class="dashboard-document-create__field">
         <span>Категория</span>
@@ -19,27 +12,25 @@
         </select>
       </label>
 
-      <section class="dashboard-rich-editor" aria-label="Редактор содержимого">
-        <div class="dashboard-rich-editor__toolbar" role="toolbar" aria-label="Панель форматирования">
+      <section class="editor dashboard-rich-editor" aria-label="Редактор содержимого">
+        <div class="editor__toolbar">
           @for (group of toolbarGroups; track group.id) {
-            <div class="dashboard-rich-editor__toolbar-group" role="group" [attr.aria-label]="group.label">
-              @for (actionId of group.actionIds; track actionId) {
-                <button
-                  type="button"
-                  class="dashboard-rich-editor__tool"
-                  [class.dashboard-rich-editor__tool--active]="isToolbarActionActive(actionId)"
-                  [disabled]="!isToolbarActionEnabled(actionId) || loading()"
-                  (click)="runToolbarAction(actionId)"
-                >{{ getToolbarLabel(actionId) }}</button>
-              }
-            </div>
+          <div class="editor__group">
+            @for (actionId of group.actionIds; track actionId) {
+            @if (shouldShowAction(actionId)) {
+            <button type="button" class="editor__btn" [class.active]="isActive(actionId)" (click)="run(actionId)">
+              {{ getAction(actionId).icon }}
+            </button>
+            }
+            }
+          </div>
           }
         </div>
 
         @if (editor; as editorInstance) {
-          <tiptap-editor class="dashboard-rich-editor__host" [editor]="editorInstance" />
+        <tiptap-editor [editor]="editorInstance" class="editor__content" />
         } @else {
-          <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
+        <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
         }
       </section>
 
@@ -48,17 +39,12 @@
       </p>
 
       <div class="dashboard-document-create__actions">
-        <edo-dogx-button
-          label="Создать черновик"
-          appearance="primary"
-          size="m"
-          [disabled]="loading()"
-          (pressed)="createDocument()"
-        />
+        <edo-dogx-button label="Создать черновик" appearance="primary" size="m" [disabled]="loading()"
+          (pressed)="createDocument()" />
       </div>
 
       @if (message()) {
-        <p class="dashboard-document-create__message" aria-live="polite">{{ message() }}</p>
+      <p class="dashboard-document-create__message" aria-live="polite">{{ message() }}</p>
       }
     </form>
   </edo-dogx-card>

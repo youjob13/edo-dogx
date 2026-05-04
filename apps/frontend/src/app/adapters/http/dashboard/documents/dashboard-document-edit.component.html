@@ -20,27 +20,25 @@
         </select>
       </label>
 
-      <section class="dashboard-rich-editor" aria-label="Редактор содержимого">
-        <div class="dashboard-rich-editor__toolbar" role="toolbar" aria-label="Панель форматирования">
+       <section class="editor dashboard-rich-editor" aria-label="Редактор содержимого">
+        <div class="editor__toolbar">
           @for (group of toolbarGroups; track group.id) {
-            <div class="dashboard-rich-editor__toolbar-group" role="group" [attr.aria-label]="group.label">
-              @for (actionId of group.actionIds; track actionId) {
-                <button
-                  type="button"
-                  class="dashboard-rich-editor__tool"
-                  [class.dashboard-rich-editor__tool--active]="isToolbarActionActive(actionId)"
-                  [disabled]="!isToolbarActionEnabled(actionId) || loading()"
-                  (click)="runToolbarAction(actionId)"
-                >{{ getToolbarLabel(actionId) }}</button>
-              }
-            </div>
+          <div class="editor__group">
+            @for (actionId of group.actionIds; track actionId) {
+            @if (shouldShowAction(actionId)) {
+            <button type="button" class="editor__btn" [class.active]="isActive(actionId)" (click)="run(actionId)">
+              {{ getAction(actionId).icon }}
+            </button>
+            }
+            }
+          </div>
           }
         </div>
 
         @if (editor; as editorInstance) {
-          <tiptap-editor class="dashboard-rich-editor__host" [editor]="editorInstance" />
+        <tiptap-editor [editor]="editorInstance" class="editor__content" />
         } @else {
-          <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
+        <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
         }
       </section>
 

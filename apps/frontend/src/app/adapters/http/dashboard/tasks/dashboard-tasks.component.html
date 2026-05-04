@@ -1,117 +1,197 @@
-<edo-dogx-page-section
-  title="Задачи"
-  subtitle="Канбан-доски организации с группировкой по исполнителю, отделу и логическим группам"
->
+<edo-dogx-page-section title="Задачи"
+  subtitle="Канбан-доски организации с группировкой по исполнителю, отделу и логическим группам">
   <edo-dogx-card title="Фильтры доски" subtitle="Выберите организацию, доску и способ группировки задач">
     <div class="dashboard-tasks__filters">
-      <label for="tasks-organization">Организация</label>
-      <select id="tasks-organization" [formControl]="organizationControl">
-        @for (option of organizationOptions; track option.value) {
+      <div class="filter">
+        <label for="tasks-organization">Департамент</label>
+        <select id="tasks-organization" [formControl]="organizationControl">
+          @for (option of organizationOptions; track option.value) {
           <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
+          }
+        </select>
+      </div>
 
-      <label for="tasks-board">Канбан-доска</label>
-      <select id="tasks-board" [formControl]="boardControl" [disabled]="!hasBoards()">
-        @for (board of boards(); track board.id) {
+      <div class="filter">
+        <label for="tasks-board">Канбан-доска</label>
+        <select id="tasks-board" [formControl]="boardControl" [disabled]="!hasBoards()">
+          @for (board of boards(); track board.id) {
           <option [value]="board.id">{{ board.name }}</option>
-        }
-      </select>
+          }
+        </select>
+      </div>
 
-      <label for="tasks-grouping">Группировка</label>
-      <select id="tasks-grouping" [formControl]="groupingControl" [disabled]="!selectedBoard()">
-        @for (option of groupingOptions; track option.value) {
+      <div class="filter">
+        <label for="tasks-grouping">Группировка</label>
+        <select id="tasks-grouping" [formControl]="groupingControl" [disabled]="!selectedBoard()">
+          @for (option of groupingOptions; track option.value) {
           <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
+          }
+        </select>
+      </div>
     </div>
   </edo-dogx-card>
 
   @if (loading()) {
-    <p class="dashboard-page__message">Загрузка задач...</p>
+  <p class="dashboard-page__message">Загрузка задач...</p>
   }
 
   @if (!loading() && !selectedBoard()) {
-    <edo-dogx-card title="Нет досок" subtitle="В этой организации пока нет настроенных kanban board">
-      <p class="dashboard-page__text">
-        Можно создать ноль, одну или несколько досок для организации. После появления доски задачи
-        будут доступны в канбан-формате.
-      </p>
-    </edo-dogx-card>
+  <edo-dogx-card title="Нет досок" subtitle="В этой организации пока нет настроенных kanban board">
+    <p class="dashboard-page__text">
+      Можно создать ноль, одну или несколько досок для организации. После появления доски задачи
+      будут доступны в канбан-формате.
+    </p>
+  </edo-dogx-card>
   }
 
   @if (selectedBoard(); as board) {
-    <edo-dogx-card [fullHeight]="true" [title]="board.name" [subtitle]="board.description">
-      <div class="dashboard-tasks__board" role="list" aria-label="Канбан-колонки задачи">
-        @for (column of columns(); track column.status) {
-          <section class="dashboard-tasks__column" role="listitem" [attr.aria-label]="column.label">
-            <header class="dashboard-tasks__column-header">
-              <h4>{{ column.label }}</h4>
-              <span>{{ column.groups.length }}</span>
-            </header>
+  <edo-dogx-card [fullHeight]="true" [title]="board.name" [subtitle]="board.description">
+    <div class="dashboard-tasks__header">
+      <edo-dogx-button label="Создать задачу" appearance="primary" (pressed)="openCreateTaskModal()" />
+    </div>
 
-            @if (column.groups.length === 0) {
-              <p class="dashboard-tasks__empty">В этой колонке пока нет задач.</p>
-            }
+    <div class="dashboard-tasks__board" role="list" aria-label="Канбан-колонки задачи">
+      @for (column of columns(); track column.status) {
+      <section class="dashboard-tasks__column" role="listitem" [attr.aria-label]="column.label">
+        <header class="dashboard-tasks__column-header">
+          <h4>{{ column.label }}</h4>
+          <span>{{ column.groups.length }}</span>
+        </header>
 
-            @for (group of column.groups; track trackByGroup($index, group)) {
-              <article class="dashboard-tasks__group">
-                <h5>{{ group.label }}</h5>
-
-                @for (task of group.tasks; track trackByTask($index, task)) {
-                  <div class="dashboard-tasks__task">
-                    <div>
-                      <p class="dashboard-tasks__task-title">{{ task.title }}</p>
-                      <p class="dashboard-tasks__task-description">{{ task.description }}</p>
-                    </div>
-
-                    <p class="dashboard-tasks__meta">Срок: {{ task.dueDateLabel }}</p>
-
-                    <label [for]="'assignee-' + task.id">Исполнитель</label>
-                    <select
-                      [id]="'assignee-' + task.id"
-                      [value]="task.assigneeId ?? ''"
-                      (change)="onAssigneeChanged(task.id, $any($event.target).value)"
-                    >
-                      <option value="">Не назначен</option>
-                      @for (member of getBoardMembers(); track member.id) {
-                        <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
-                      }
-                    </select>
-
-                    <div class="dashboard-tasks__task-actions">
-                      <edo-dogx-button
-                        label="Назад"
-                        appearance="secondary"
-                        size="s"
-                        [disabled]="!canMoveLeft(task)"
-                        (pressed)="onMoveTask(task.id, 'prev')"
-                      />
-                      <edo-dogx-button
-                        label="Вперед"
-                        appearance="secondary"
-                        size="s"
-                        [disabled]="!canMoveRight(task)"
-                        (pressed)="onMoveTask(task.id, 'next')"
-                      />
-                      <edo-dogx-button
-                        label="Детали"
-                        appearance="primary"
-                        size="s"
-                        (pressed)="openTaskDetails(board.id, task.id)"
-                      />
-                    </div>
-                  </div>
-                }
-              </article>
-            }
-          </section>
+        @if (column.groups.length === 0) {
+        <p class="dashboard-tasks__empty">В этой колонке пока нет задач.</p>
         }
-      </div>
-    </edo-dogx-card>
+
+        @for (group of column.groups; track trackByGroup($index, group)) {
+        <article class="dashboard-tasks__group">
+          <h5>{{ group.label }}</h5>
+
+          @for (task of group.tasks; track trackByTask($index, task)) {
+          <div class="dashboard-tasks__task">
+            <div>
+              <p class="dashboard-tasks__task-title">{{ task.title }}</p>
+              <p class="dashboard-tasks__task-description">{{ task.description }}</p>
+            </div>
+
+            <p class="dashboard-tasks__meta">Срок: {{ task.dueDateLabel }}</p>
+
+            <label [for]="'assignee-' + task.id">Исполнитель</label>
+            <select [id]="'assignee-' + task.id" [value]="task.assigneeId ?? ''"
+              (change)="onAssigneeChanged(task.id, $any($event.target).value)">
+              <option value="">Не назначен</option>
+              @for (member of getBoardMembers(); track member.id) {
+              <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
+              }
+            </select>
+
+            <div class="dashboard-tasks__task-actions">
+              @if (canApproveTask(task)) {
+                <edo-dogx-button label="Одобрить" appearance="primary" size="s"
+                  (pressed)="onApproveTask(task.id)" />
+                <edo-dogx-button label="Отклонить" appearance="secondary" size="s"
+                  (pressed)="onDeclineTask(task.id)" />
+              }
+              <edo-dogx-button label="Назад" appearance="secondary" size="s" [disabled]="!canMoveLeft(task)"
+                (pressed)="onMoveTask(task.id, 'prev')" />
+              <edo-dogx-button label="Вперед" appearance="secondary" size="s" [disabled]="!canMoveRight(task)"
+                (pressed)="onMoveTask(task.id, 'next')" />
+              <edo-dogx-button label="Детали" appearance="primary" size="s"
+                (pressed)="openTaskDetails(board.id, task.id)" />
+            </div>
+          </div>
+          }
+        </article>
+        }
+      </section>
+      }
+    </div>
+  </edo-dogx-card>
+  }
+
+  <!-- Create Task Modal -->
+  @if (showCreateTaskModal()) {
+  <div class="modal-overlay" (click)="closeCreateTaskModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <edo-dogx-card title="Создание задачи" subtitle="Заполните информацию о новой задаче">
+        <form [formGroup]="createTaskForm" (ngSubmit)="onCreateTask()">
+          <div class="form-group">
+            <label for="task-title">Название задачи *</label>
+            <input id="task-title" type="text" formControlName="title" placeholder="Введите название задачи">
+            @if (createTaskForm.get('title')?.invalid && createTaskForm.get('title')?.touched) {
+              <span class="error">Название обязательно и должно содержать минимум 3 символа</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="task-description">Описание</label>
+            <textarea id="task-description" formControlName="description" rows="3"
+              placeholder="Опишите задачу (необязательно)"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="task-assignee">Исполнитель *</label>
+            <select id="task-assignee" formControlName="assigneeId">
+              <option value="">Выберите исполнителя</option>
+              @for (member of getBoardMembers(); track member.id) {
+                <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
+              }
+            </select>
+            @if (createTaskForm.get('assigneeId')?.invalid && createTaskForm.get('assigneeId')?.touched) {
+              <span class="error">Необходимо выбрать исполнителя</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="task-type">Тип задачи</label>
+            <select id="task-type" formControlName="taskType">
+              @for (option of taskTypeOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+
+          @if (createTaskForm.get('taskType')?.value === 'approval') {
+            <div class="form-group">
+              <label for="task-approver">Одобряющий</label>
+              <select id="task-approver" formControlName="approverId">
+                <option value="">Выберите одобряющего</option>
+                @for (approver of availableApprovers(); track approver.userId) {
+                  <option [value]="approver.userId">{{ approver.userName }}</option>
+                }
+              </select>
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="task-due-date">Срок выполнения</label>
+            <input id="task-due-date" type="date" formControlName="dueDate">
+          </div>
+
+          <div class="form-group">
+            <label>Прикрепленные документы</label>
+            <div class="attachments-list">
+              @for (doc of availableDocuments(); track doc.documentId) {
+                <label class="attachment-item">
+                  <input type="checkbox" [value]="doc.documentId"
+                    (change)="onAttachmentToggle(doc.documentId, $any($event.target).checked)">
+                  {{ doc.title }} ({{ doc.category }})
+                </label>
+              }
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <edo-dogx-button label="Отмена" appearance="secondary" (pressed)="closeCreateTaskModal()" />
+            <edo-dogx-button label="Создать" appearance="primary" type="submit"
+              [disabled]="createTaskForm.invalid || loading()" />
+          </div>
+        </form>
+      </edo-dogx-card>
+    </div>
+  </div>
   }
 
   @if (message()) {
-    <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+  <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
   }
 </edo-dogx-page-section>

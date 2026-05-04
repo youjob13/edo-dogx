@@ -6,9 +6,14 @@ import {
   KanbanTask,
   KanbanTaskAssignPayload,
   KanbanTaskCommentPayload,
+  KanbanTaskCreatePayload,
   KanbanTaskDetails,
   KanbanTaskMovePayload,
+  KanbanTaskUpdateStatusPayload,
+  AvailableApproverItem,
+  AvailableDocumentItem,
 } from '../../domain/dashboard/dashboard.models';
+import { TaskResponse } from '@edo/types';
 
 export interface DashboardApiPort {
   getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>>;
@@ -29,6 +34,10 @@ export interface DashboardApiPort {
     taskId: string,
     payload: KanbanTaskCommentPayload,
   ): Observable<KanbanTask>;
+  createTask(payload: KanbanTaskCreatePayload): Observable<TaskResponse>;
+  updateTaskStatus(taskId: string, payload: KanbanTaskUpdateStatusPayload): Observable<KanbanTask>;
+  getAvailableApprovers(): Observable<Array<AvailableApproverItem>>;
+  getAvailableDocuments(limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }>;
 }
 
 export const DASHBOARD_API_PORT = new InjectionToken<DashboardApiPort>(

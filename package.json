@@ -16,7 +16,15 @@
     "test:all": "pnpm -r test",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:build": "docker compose build"
+    "docker:build": "docker compose build",
+    "docker:health": "docker compose ps && docker compose exec gateway curl -f http://localhost:3000/api/health",
+    "docker:logs": "docker compose logs -f",
+    "docker:clean": "docker compose down -v && docker system prune -f",
+    "db:migrate": "docker compose exec document-service ./migrate.sh",
+    "db:backup": "docker compose exec postgres pg_dump -U edo_user -d edo > backup_$(date +%Y%m%d_%H%M%S).sql",
+    "deploy:staging": "docker compose -f docker-compose.staging.yml up -d --build",
+    "deploy:prod": "docker compose -f docker-compose.prod.yml up -d --build",
+    "health:check": "curl -f http://localhost:3000/api/health && curl -f http://localhost:4000 && echo 'All services healthy'"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",

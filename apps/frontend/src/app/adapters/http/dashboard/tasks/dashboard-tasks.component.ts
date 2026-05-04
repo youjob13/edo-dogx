@@ -1,14 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, take } from 'rxjs';
 import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import {
+  AvailableApproverItem,
+  AvailableDocumentItem,
   KanbanBoardDetails,
   KanbanTask,
+  KanbanTaskCreatePayload,
   KanbanTaskGroupBy,
   KanbanTaskStatus,
+  TaskType,
 } from '../../../../domain/dashboard/dashboard.models';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
 
@@ -34,7 +38,7 @@ interface TaskColumnView {
 export class DashboardTasksComponent {
   private readonly useCases = inject(DashboardUseCases);
   private readonly router = inject(Router);
-  private readonly statusOrder: Array<KanbanTaskStatus> = ['todo', 'inProgress', 'review', 'done'];
+  private readonly statusOrder: Array<KanbanTaskStatus> = ['pending', 'in_review', 'approved', 'declined'];
 
   protected readonly organizationOptions: Array<{ value: string; label: string }> = [
     { value: 'org-main', label: 'ЭДО Group' },
@@ -47,6 +51,11 @@ export class DashboardTasksComponent {
     { value: 'group', label: 'По группе задач' },
   ];
 
+  protected readonly taskTypeOptions: Array<{ value: TaskType; label: string }> = [
+    { value: 'general', label: 'Общая задача' },
+    { value: 'approval', label: 'Требует одобрения' },
+  ];
+
   protected readonly organizationControl = new FormControl('org-main', { nonNullable: true });
   protected readonly boardControl = new FormControl('', { nonNullable: true });
   protected readonly groupingControl = new FormControl<KanbanTaskGroupBy>('assignee', {
@@ -56,10 +65,29 @@ export class DashboardTasksComponent {
     initialValue: this.groupingControl.value,
   });
 
+  // Task creation form
+  protected readonly showCreateTaskModal = signal(false);
+  protected readonly createTaskForm = new FormGroup({
+    title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
+    description: new FormControl('', { nonNullable: true }),
+    assigneeId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    approverId: new FormControl('', { nonNullable: true }),
+    taskType: new FormControl<TaskType>('general', { nonNullable: true }),
+    dueDate: new FormControl('', { nonNullable: true }),
+    priority: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(5)] }),
+    attachmentIds: new FormControl<string[]>([], { nonNullable: true }),
+  });
+
   protected readonly loading = signal(false);
   protected readonly boards = signal<Array<{ id: string; name: string }>>([]);
   protected readonly selectedBoard = signal<KanbanBoardDetails | null>(null);
   protected readonly message = signal('');
+
+  // Available approvers and documents for task creation
+  protected readonly availableApprovers = signal<AvailableApproverItem[]>([]);
+  protected readonly availableDocuments = signal<AvailableDocumentItem[]>([]);
+  protected readonly loadingApprovers = signal(false);
+  protected readonly loadingDocuments = signal(false);
 
   protected readonly columns = computed<Array<TaskColumnView>>(() => {
     const board = this.selectedBoard();
@@ -167,6 +195,123 @@ export class DashboardTasksComponent {
     this.router.navigate(['/dashboard/tasks', boardId, 'task', taskId]);
   }
 
+  protected openCreateTaskModal(): void {
+    const board = this.selectedBoard();
+    if (!board) {
+      return;
+    }
+
+    this.showCreateTaskModal.set(true);
+    this.loadAvailableApprovers(/*board.id*/);
+    this.loadAvailableDocuments(/*board.id*/);
+  }
+
+  protected closeCreateTaskModal(): void {
+    this.showCreateTaskModal.set(false);
+    this.createTaskForm.reset({
+      taskType: 'general',
+      priority: 1,
+      attachmentIds: [],
+    });
+  }
+
+  protected onCreateTask(): void {
+    const board = this.selectedBoard();
+    if (!board || !this.createTaskForm.valid) {
+      return;
+    }
+
+    const formValue = this.createTaskForm.value;
+    const assignee = board.members.find(m => m.id === formValue.assigneeId);
+    const approver = formValue.approverId ? board.members.find(m => m.id === formValue.approverId) : undefined;
+
+    const payload: KanbanTaskCreatePayload = {
+      title: formValue.title!,
+      description: formValue.description || undefined,
+      assigneeId: formValue.assigneeId!,
+      assigneeName: assignee?.fullName || '',
+      approverId: approver?.id,
+      approverName: approver?.fullName,
+      taskType: formValue.taskType!,
+      dueDate: formValue.dueDate || undefined,
+      priority: formValue.priority,
+      attachmentIds: formValue.attachmentIds!.length > 0 ? formValue.attachmentIds : undefined,
+    };
+
+    this.loading.set(true);
+    this.useCases
+      .createTask(payload)
+      .pipe(
+        take(1),
+        finalize(() => this.loading.set(false)),
+      )
+      .subscribe({
+        next: (task) => {
+          // Reload the board to get full KanbanTask details with all required fields
+          const boardId = board.id;
+          this.loadBoard(boardId);
+          this.closeCreateTaskModal();
+          this.message.set(`Задача "${task.title}" успешно создана.`);
+        },
+        error: (error) => {
+          console.error('Failed to create task:', error);
+          this.message.set('Ошибка при создании задачи. Попробуйте еще раз.');
+        },
+      });
+  }
+
+  protected onApproveTask(taskId: string): void {
+    const board = this.selectedBoard();
+    if (!board) {
+      return;
+    }
+
+    this.useCases
+      .updateTaskStatus(taskId, { status: 'approved', decision: 'approved' })
+      .pipe(take(1))
+      .subscribe((task) => {
+        this.updateTaskInBoard(task);
+        this.message.set(`Задача "${task.title}" одобрена.`);
+      });
+  }
+
+  protected onDeclineTask(taskId: string): void {
+    const board = this.selectedBoard();
+    if (!board) {
+      return;
+    }
+
+    const comment = prompt('Комментарий к отклонению:');
+    this.useCases
+      .updateTaskStatus(taskId, {
+        status: 'declined',
+        decision: 'declined',
+        decisionComment: comment || undefined
+      })
+      .pipe(take(1))
+      .subscribe((task) => {
+        this.updateTaskInBoard(task);
+        this.message.set(`Задача "${task.title}" отклонена.`);
+      });
+  }
+
+  protected canApproveTask(task: KanbanTask): boolean {
+    return task.taskType === 'approval' && task.status === 'in_review' && task.approverId === 'current-user-id'; // TODO: get current user ID
+  }
+
+  protected onAttachmentToggle(documentId: string, checked: boolean): void {
+    const currentAttachments = this.createTaskForm.get('attachmentIds')?.value || [];
+    if (checked) {
+      this.createTaskForm.patchValue({
+        attachmentIds: [...currentAttachments, documentId]
+      });
+    } else {
+      this.createTaskForm.patchValue({
+        attachmentIds: currentAttachments.filter(id => id !== documentId)
+      });
+    }
+  }
+
   protected getBoardMembers() {
     return this.selectedBoard()?.members ?? [];
   }
@@ -177,6 +322,32 @@ export class DashboardTasksComponent {
 
   protected trackByTask(_: number, task: KanbanTask): string {
     return task.id;
+  }
+
+  private loadAvailableApprovers(): void {
+    this.loadingApprovers.set(true);
+    this.useCases
+      .getAvailableApprovers()
+      .pipe(
+        take(1),
+        finalize(() => this.loadingApprovers.set(false)),
+      )
+      .subscribe((approvers) => {
+        this.availableApprovers.set(approvers);
+      });
+  }
+
+  private loadAvailableDocuments(): void {
+    this.loadingDocuments.set(true);
+    this.useCases
+      .getAvailableDocuments(50, 0)
+      .pipe(
+        take(1),
+        finalize(() => this.loadingDocuments.set(false)),
+      )
+      .subscribe((result) => {
+        this.availableDocuments.set(result.documents);
+      });
   }
 
   private loadBoards(organizationId: string): void {
@@ -249,10 +420,10 @@ export class DashboardTasksComponent {
 
   protected getStatusLabel(status: KanbanTaskStatus): string {
     const labels: Record<KanbanTaskStatus, string> = {
-      todo: 'К выполнению',
-      inProgress: 'В работе',
-      review: 'Проверка',
-      done: 'Готово',
+      pending: 'Ожидает проверки',
+      in_review: 'На проверке',
+      approved: 'Одобрено',
+      declined: 'Отклонено',
     };
 
     return labels[status];

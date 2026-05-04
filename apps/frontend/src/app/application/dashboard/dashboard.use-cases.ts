@@ -6,11 +6,16 @@ import {
   KanbanTask,
   KanbanTaskAssignPayload,
   KanbanTaskCommentPayload,
+  KanbanTaskCreatePayload,
   KanbanTaskDetails,
   KanbanTaskMovePayload,
+  KanbanTaskUpdateStatusPayload,
+  AvailableApproverItem,
+  AvailableDocumentItem,
   DashboardConflictError,
 } from '../../domain/dashboard/dashboard.models';
 import { DashboardApiPort, DASHBOARD_API_PORT } from '../../ports/outbound/dashboard-api.port';
+import { TaskResponse } from '@edo/types';
 
 
 @Injectable({ providedIn: 'root' })
@@ -67,5 +72,21 @@ export class DashboardUseCases {
     payload: KanbanTaskCommentPayload,
   ): Observable<KanbanTask> {
     return this.api.addTaskComment(boardId, taskId, payload);
+  }
+
+  public createTask(payload: KanbanTaskCreatePayload): Observable<TaskResponse> {
+    return this.api.createTask(payload);
+  }
+
+  public updateTaskStatus(taskId: string, payload: KanbanTaskUpdateStatusPayload): Observable<KanbanTask> {
+    return this.api.updateTaskStatus(taskId, payload);
+  }
+
+  public getAvailableApprovers(): Observable<Array<AvailableApproverItem>> {
+    return this.api.getAvailableApprovers();
+  }
+
+  public getAvailableDocuments(limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }> {
+    return this.api.getAvailableDocuments(limit, offset);
   }
 }

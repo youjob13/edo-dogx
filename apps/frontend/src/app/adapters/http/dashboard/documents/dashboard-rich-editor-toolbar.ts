@@ -133,3 +133,13 @@ export const isToolbarControlEnabled = (
 
   return isAllowed && !isBlocked;
 };
+
+export type Action =
+  | 'bold' | 'italic' | 'underline'
+  | 'heading1' | 'heading2'
+  | 'bulletList'
+  | 'alignLeft' | 'alignCenter'
+  | 'setLink' | 'insertImage'
+  | 'insertTable'
+  | 'addRowAfter' | 'addColumnAfter' | 'deleteTable';
+

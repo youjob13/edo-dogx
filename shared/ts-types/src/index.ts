@@ -91,6 +91,93 @@ export interface DocumentConflictResponse {
   currentVersion: number;
 }
 
+export type TaskStatus = 'pending' | 'in_review' | 'approved' | 'declined';
+export type TaskType = 'approval' | 'general';
+export type TaskDecision = 'approved' | 'declined';
+
+export interface TaskAttachment {
+  documentId: string;
+  title: string;
+  category: string;
+  status: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  taskType: TaskType;
+  creatorId: string;
+  creatorName: string;
+  assigneeId: string;
+  assigneeName: string;
+  approverId?: string;
+  approverName?: string;
+  decision?: TaskDecision;
+  decisionComment?: string;
+  dueDate?: string;
+  attachments: TaskAttachment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type {TaskResponse, CreateTaskRequest} from './task.api.model.js';
+
+export interface UpdateTaskStatusRequest {
+  status: TaskStatus;
+  decisionComment?: string;
+}
+
+export interface AddTaskAttachmentsRequest {
+  documentIds: string[];
+}
+
+export interface AvailableApprover {
+  id: string;
+  fullName: string;
+  department: string;
+  email: string;
+}
+
+export interface DocumentItem {
+  id: string;
+  title: string;
+  category: string;
+  status: string;
+  updatedAt: string;
+  sizeKb: number;
+  version: number;
+}
+
+export interface TaskBoard {
+  id: string;
+  name: string;
+  members: { id: string; fullName: string; department: string; email: string }[];
+  tasks: Task[];
+  availableApprovers: AvailableApprover[];
+  availableDocuments: DocumentItem[];
+}
+
+export interface TaskDetailsResponse {
+  task: Task;
+  members: { id: string; fullName: string; department: string; email: string }[];
+  currentUserId: string;
+  canEdit: boolean;
+  canApprove: boolean;
+  canMoveToReview: boolean;
+}
+
+export interface AvailableApproversResponse {
+  items: AvailableApprover[];
+  total: number;
+}
+
+export interface AvailableDocumentsResponse {
+  items: DocumentItem[];
+  total: number;
+}
+
 export interface SignatureSigner {
   userId: string;
   dueAt?: string;

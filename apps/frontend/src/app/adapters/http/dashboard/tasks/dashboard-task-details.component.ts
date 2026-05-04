@@ -23,7 +23,7 @@ export class DashboardTaskDetailsComponent {
   private readonly router = inject(Router);
 
   protected readonly assigneeControl = new FormControl('', { nonNullable: true });
-  protected readonly statusControl = new FormControl<KanbanTaskStatus>('todo', {
+  protected readonly statusControl = new FormControl<KanbanTaskStatus>('pending', {
     nonNullable: true,
   });
   protected readonly commentControl = new FormControl('', { nonNullable: true });
@@ -110,10 +110,10 @@ export class DashboardTaskDetailsComponent {
 
   protected getStatusLabel(status: KanbanTaskStatus): string {
     const labels: Record<KanbanTaskStatus, string> = {
-      todo: 'К выполнению',
-      inProgress: 'В работе',
-      review: 'Проверка',
-      done: 'Готово',
+      pending: 'Ожидает проверки',
+      in_review: 'На проверке',
+      approved: 'Одобрено',
+      declined: 'Отклонено',
     };
 
     return labels[status];

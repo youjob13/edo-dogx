@@ -74,6 +74,228 @@ paths:
                     items:
                       $ref: "#/components/schemas/DocumentResponse"
 
+  /api/tasks:
+    post:
+      tags: [documents]
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+
+  /api/tasks/{taskId}/status:
+    patch:
+      tags: [documents]
+      summary: Update task status
+      operationId: updateTaskStatus
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskStatusRequest"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+
+  /api/tasks/{taskId}/attachments:
+    post:
+      tags: [documents]
+      summary: Add attachments to a task
+      operationId: addTaskAttachments
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTaskAttachmentsRequest"
+      responses:
+        "200":
+          description: Attachments added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddTaskAttachmentsResponse"
+
+  /api/tasks/{taskId}/attachments/{documentId}:
+    delete:
+      tags: [documents]
+      summary: Remove a document attachment from a task
+      operationId: removeTaskAttachment
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Attachment removed
+
+  /api/tasks/available-approvers:
+    get:
+      tags: [documents]
+      summary: List available approvers
+      operationId: getAvailableApprovers
+      parameters:
+        - in: query
+          name: boardId
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Available approvers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailableApproversResponse"
+
+  /api/tasks/available-documents:
+    get:
+      tags: [documents]
+      summary: List available documents for task attachments
+      operationId: getAvailableDocuments
+      parameters:
+        - in: query
+          name: boardId
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Available documents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailableDocumentsResponse"
+
+  /api/boards:
+    get:
+      tags: [documents]
+      summary: List task boards for an organization
+      operationId: listTaskBoards
+      parameters:
+        - in: query
+          name: organizationId
+          required: true
+          schema:
+            type: string
+          description: Organization identifier
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Maximum number of boards to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of boards to skip
+      responses:
+        "200":
+          description: List of task boards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskBoardsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/boards/{boardId}:
+    get:
+      tags: [documents]
+      summary: Get detailed information about a task board
+      operationId: getTaskBoard
+      parameters:
+        - in: path
+          name: boardId
+          required: true
+          schema:
+            type: string
+          description: Board identifier
+      responses:
+        "200":
+          description: Task board details with tasks and available resources
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskBoardDetailsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Board not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/documents/{documentId}/workflow/submit:
     post:
       tags: [documents]
@@ -780,6 +1002,370 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    # Task Orchestration Schemas
+    TaskType:
+      type: string
+      enum: [approval, general]
+      description: Type of task - general tasks or those requiring approval
+
+    TaskStatus:
+      type: string
+      enum: [pending, in_review, approved, declined]
+      description: Current status of the task in the workflow
+
+    TaskDecision:
+      type: string
+      enum: [approved, declined]
+      description: Decision made by the approver
+
+    KanbanTaskGroupBy:
+      type: string
+      enum: [assignee, department, group]
+      description: How to group tasks in the Kanban view
+
+    CreateTaskRequest:
+      type: object
+      required: [title, assigneeId, assigneeName, taskType]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: Task title
+        description:
+          type: string
+          maxLength: 2000
+          description: Optional task description
+        assigneeId:
+          type: string
+          description: ID of the user assigned to the task
+        assigneeName:
+          type: string
+          description: Display name of the assigned user
+        approverId:
+          type: string
+          description: ID of the user who can approve (required for approval tasks)
+        approverName:
+          type: string
+          description: Display name of the approver
+        taskType:
+          $ref: "#/components/schemas/TaskType"
+        dueDate:
+          type: string
+          format: date
+          description: Optional due date for the task
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Task priority (1=lowest, 5=highest)
+        attachmentIds:
+          type: array
+          items:
+            type: string
+          description: IDs of documents to attach to the task
+
+    UpdateTaskStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        decision:
+          $ref: "#/components/schemas/TaskDecision"
+        decisionComment:
+          type: string
+          maxLength: 1000
+          description: Optional comment from the approver
+
+    TaskAttachment:
+      type: object
+      required: [documentId, title, category, status]
+      properties:
+        documentId:
+          type: string
+          description: Document identifier
+        title:
+          type: string
+          description: Document title
+        category:
+          type: string
+          enum: [HR, FINANCE, GENERAL]
+          description: Document category
+        status:
+          type: string
+          enum: [IN_REVIEW, DRAFT, ARCHIVED, APPROVED]
+          description: Document status
+
+    TaskComment:
+      type: object
+      required: [id, authorId, authorName, text, createdAtLabel]
+      properties:
+        id:
+          type: string
+          description: Comment identifier
+        authorId:
+          type: string
+          description: Author user ID
+        authorName:
+          type: string
+          description: Author display name
+        text:
+          type: string
+          description: Comment text
+        createdAtLabel:
+          type: string
+          description: Human-readable creation timestamp
+
+    KanbanTask:
+      type: object
+      required: [id, title, status, assigneeId, assigneeName, department, groupId, groupName, dueDateLabel, comments, creatorId, creatorName, attachments, taskType, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          description: Task identifier
+        title:
+          type: string
+          description: Task title
+        description:
+          type: string
+          description: Task description
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        assigneeId:
+          type: string
+          nullable: true
+          description: Assigned user ID
+        assigneeName:
+          type: string
+          description: Assigned user display name
+        department:
+          type: string
+          description: User's department
+        groupId:
+          type: string
+          description: Task group identifier
+        groupName:
+          type: string
+          description: Task group display name
+        dueDateLabel:
+          type: string
+          description: Human-readable due date
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskComment"
+        creatorId:
+          type: string
+          description: User who created the task
+        creatorName:
+          type: string
+          description: Creator display name
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAttachment"
+        approverId:
+          type: string
+          nullable: true
+          description: Approver user ID
+        approverName:
+          type: string
+          nullable: true
+          description: Approver display name
+        taskType:
+          $ref: "#/components/schemas/TaskType"
+        decision:
+          $ref: "#/components/schemas/TaskDecision"
+          nullable: true
+        decisionComment:
+          type: string
+          nullable: true
+          description: Approver's decision comment
+        createdAt:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Task last update timestamp
+
+    TaskResponse:
+      type: object
+      required: [id, title, status, assigneeId, assigneeName, department, groupId, groupName, dueDateLabel, comments, creatorId, creatorName, attachments, taskType, createdAt, updatedAt]
+      properties:
+        $ref: "#/components/schemas/KanbanTask"
+
+    KanbanBoardMember:
+      type: object
+      required: [id, fullName, department]
+      properties:
+        id:
+          type: string
+          description: User identifier
+        fullName:
+          type: string
+          description: User's full name
+        department:
+          type: string
+          description: User's department
+
+    KanbanBoardSummary:
+      type: object
+      required: [id, organizationId, name, description, membersCount, tasksCount]
+      properties:
+        id:
+          type: string
+          description: Board identifier
+        organizationId:
+          type: string
+          description: Organization identifier
+        name:
+          type: string
+          description: Board display name
+        description:
+          type: string
+          description: Board description
+        membersCount:
+          type: integer
+          minimum: 0
+          description: Number of board members
+        tasksCount:
+          type: integer
+          minimum: 0
+          description: Number of tasks on the board
+
+    TaskBoardsResponse:
+      type: object
+      required: [boards, total, page, pageSize]
+      properties:
+        boards:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanBoardSummary"
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of boards
+        page:
+          type: integer
+          minimum: 0
+          description: Current page number
+        pageSize:
+          type: integer
+          minimum: 1
+          description: Number of boards per page
+
+    AvailableApproverItem:
+      type: object
+      required: [userId, userName]
+      properties:
+        userId:
+          type: string
+          description: User identifier
+        userName:
+          type: string
+          description: User display name
+
+    AvailableApproversResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/AvailableApproverItem"
+
+    AvailableDocumentItem:
+      type: object
+      required: [documentId, title, category]
+      properties:
+        documentId:
+          type: string
+          description: Document identifier
+        title:
+          type: string
+          description: Document title
+        category:
+          type: string
+          enum: [HR, FINANCE, GENERAL]
+          description: Document category
+
+    AvailableDocumentsResponse:
+      type: object
+      required: [documents, limit, offset]
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailableDocumentItem"
+        limit:
+          type: integer
+          description: Requested limit
+        offset:
+          type: integer
+          description: Requested offset
+
+    TaskBoardDetailsResponse:
+      type: object
+      required: [id, organizationId, name, description, allowedGrouping, members, tasks, availableApprovers, availableDocuments]
+      properties:
+        id:
+          type: string
+          description: Board identifier
+        organizationId:
+          type: string
+          description: Organization identifier
+        name:
+          type: string
+          description: Board display name
+        description:
+          type: string
+          description: Board description
+        allowedGrouping:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanTaskGroupBy"
+          description: Allowed grouping options for this board
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanBoardMember"
+          description: Board members
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanTask"
+          description: Tasks on the board
+        availableApprovers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailableApproverItem"
+          description: Users who can be selected as approvers
+        availableDocuments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailableDocumentItem"
+          description: Documents available for attachment
+
+    AddTaskAttachmentsRequest:
+      type: object
+      required: [documentIds]
+      properties:
+        documentIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Document IDs to attach
+
+    AddTaskAttachmentsResponse:
+      type: object
+      required: [attachedDocuments]
+      properties:
+        attachedDocuments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAttachment"
+          description: Successfully attached documents
 
   securitySchemes:
     keycloak:

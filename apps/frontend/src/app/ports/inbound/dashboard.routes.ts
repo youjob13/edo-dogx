@@ -55,13 +55,6 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
-        path: 'search-notification',
-        loadComponent: () =>
-          import('../../adapters/http/dashboard/search-notification.component').then(
-            (m) => m.SearchNotificationComponent,
-          ),
-      },
-      {
         path: 'tasks/:boardId/task/:taskId',
         loadComponent: () =>
           import('../../adapters/http/dashboard/tasks/dashboard-task-details.component').then(

@@ -1,0 +1,185 @@
+components:
+  schemas:
+    TaskAttachment:
+      type: object
+      required: [documentId, title, category, status]
+      properties:
+        documentId:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        status:
+          type: string
+
+    Task:
+      type: object
+      required: [id, title, status, taskType, creatorUserId, creatorUserName, assigneeUserId, assigneeUserName, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        taskType:
+          type: string
+        creatorUserId:
+          type: string
+        creatorUserName:
+          type: string
+        assigneeUserId:
+          type: string
+        assigneeUserName:
+          type: string
+        approverUserId:
+          type: string
+        approverUserName:
+          type: string
+        decision:
+          type: string
+        decisionComment:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAttachment"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      required: [actorUserId, title, assigneeUserId, taskType]
+      properties:
+        actorUserId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        assigneeUserId:
+          type: string
+        approverUserId:
+          type: string
+        taskType:
+          type: string
+          enum: [approval, general]
+        attachmentDocumentIds:
+          type: array
+          items:
+            type: string
+        dueDate:
+          type: string
+          format: date
+
+    TaskResponse:
+      type: object
+      required: [task]
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    UpdateTaskStatusRequest:
+      type: object
+      required: [actorUserId, status]
+      properties:
+        actorUserId:
+          type: string
+        status:
+          type: string
+          enum: [in_review, approved, declined]
+        decisionComment:
+          type: string
+
+    UpdateTaskStatusResponse:
+      type: object
+      required: [task]
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
+    AddTaskAttachmentsRequest:
+      type: object
+      required: [actorUserId, attachments]
+      properties:
+        actorUserId:
+          type: string
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAttachment"
+
+    AddTaskAttachmentsResponse:
+      type: object
+      required: [attachments]
+      properties:
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAttachment"
+
+    AvailableApproversResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoardMember"
+        total:
+          type: integer
+
+    BoardMember:
+      type: object
+      required: [id, fullName, department, email]
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        department:
+          type: string
+        email:
+          type: string
+          format: email
+
+    AvailableDocumentsResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentItem"
+        total:
+          type: integer
+
+    DocumentItem:
+      type: object
+      required: [id, title, category, status, updatedAt, sizeKb, version]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        status:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        sizeKb:
+          type: integer
+        version:
+          type: integer

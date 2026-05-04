@@ -164,7 +164,7 @@ export interface DashboardPreviewDocument {
   readonly ownerUserName?: string;
 }
 
-export type KanbanTaskStatus = 'todo' | 'inProgress' | 'review' | 'done';
+export type KanbanTaskStatus = 'pending' | 'in_review' | 'approved' | 'declined';
 
 export type KanbanTaskGroupBy = 'assignee' | 'department' | 'group';
 
@@ -182,10 +182,21 @@ export interface KanbanTaskComment {
   readonly createdAtLabel: string;
 }
 
+export interface TaskAttachment {
+  readonly documentId: string;
+  readonly title: string;
+  readonly category: DashboardDocumentCategory;
+  readonly status: DashboardDocumentStatus;
+}
+
+export type TaskType = 'approval' | 'general';
+
+export type TaskDecision = 'approved' | 'declined';
+
 export interface KanbanTask {
   readonly id: string;
   readonly title: string;
-  readonly description: string;
+  readonly description?: string;
   readonly status: KanbanTaskStatus;
   readonly assigneeId: string | null;
   readonly assigneeName: string;
@@ -194,6 +205,18 @@ export interface KanbanTask {
   readonly groupName: string;
   readonly dueDateLabel: string;
   readonly comments: Array<KanbanTaskComment>;
+
+  // New fields for orchestration
+  readonly creatorId: string;
+  readonly creatorName: string;
+  readonly attachments: Array<TaskAttachment>;
+  readonly approverId?: string;
+  readonly approverName?: string;
+  readonly taskType: TaskType;
+  readonly decision?: TaskDecision;
+  readonly decisionComment?: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface KanbanBoardSummary {
@@ -213,6 +236,10 @@ export interface KanbanBoardDetails {
   readonly allowedGrouping: Array<KanbanTaskGroupBy>;
   readonly members: Array<KanbanBoardMember>;
   readonly tasks: Array<KanbanTask>;
+
+  // New fields for orchestration
+  readonly availableApprovers: Array<KanbanBoardMember>;
+  readonly availableDocuments: Array<DocumentItem>;
 }
 
 export interface KanbanTaskDetails {
@@ -233,4 +260,34 @@ export interface KanbanTaskMovePayload {
 
 export interface KanbanTaskCommentPayload {
   readonly text: string;
+}
+
+export interface KanbanTaskCreatePayload {
+  readonly title: string;
+  readonly description?: string;
+  readonly assigneeId: string;
+  readonly assigneeName: string;
+  readonly approverId?: string;
+  readonly approverName?: string;
+  readonly taskType: TaskType;
+  readonly dueDate?: string;
+  readonly priority?: number;
+  readonly attachmentIds?: string[];
+}
+
+export interface KanbanTaskUpdateStatusPayload {
+  readonly status: KanbanTaskStatus;
+  readonly decision?: TaskDecision;
+  readonly decisionComment?: string;
+}
+
+export interface AvailableApproverItem {
+  readonly userId: string;
+  readonly userName: string;
+}
+
+export interface AvailableDocumentItem {
+  readonly documentId: string;
+  readonly title: string;
+  readonly category: string;
 }

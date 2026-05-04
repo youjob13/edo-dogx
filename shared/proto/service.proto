@@ -124,6 +124,159 @@ message WorkflowInstance {
   string updated_at = 6;
 }
 
+message BoardMember {
+  string id = 1;
+  string full_name = 2;
+  string department = 3;
+  string email = 4;
+}
+
+message TaskAttachment {
+  string document_id = 1;
+  string title = 2;
+  string category = 3;
+  string status = 4;
+}
+
+message Task {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string status = 4;
+  string task_type = 5;
+  string creator_user_id = 6;
+  string creator_user_name = 7;
+  string assignee_user_id = 8;
+  string assignee_user_name = 9;
+  string approver_user_id = 10;
+  string approver_user_name = 11;
+  string decision = 12;
+  string decision_comment = 13;
+  string due_date = 14;
+  repeated TaskAttachment attachments = 15;
+  string created_at = 16;
+  string updated_at = 17;
+}
+
+message CreateTaskRequest {
+  string actor_user_id = 1;
+  string title = 2;
+  string description = 3;
+  string assignee_user_id = 4;
+  string approver_user_id = 5;
+  string task_type = 6;
+  repeated string attachment_document_ids = 7;
+  string due_date = 8;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message UpdateTaskStatusRequest {
+  string actor_user_id = 1;
+  string task_id = 2;
+  string status = 3;
+  string decision_comment = 4;
+}
+
+message UpdateTaskStatusResponse {
+  Task task = 1;
+}
+
+message AddTaskAttachmentsRequest {
+  string actor_user_id = 1;
+  string task_id = 2;
+  repeated TaskAttachment attachments = 3;
+}
+
+message AddTaskAttachmentsResponse {
+  repeated TaskAttachment attachments = 1;
+}
+
+message RemoveTaskAttachmentRequest {
+  string actor_user_id = 1;
+  string task_id = 2;
+  string document_id = 3;
+}
+
+message GetTaskBoardRequest {
+  string actor_user_id = 1;
+  string board_id = 2;
+}
+
+message TaskBoard {
+  string id = 1;
+  string name = 2;
+  repeated BoardMember members = 3;
+  repeated Task tasks = 4;
+  repeated TaskAttachment available_documents = 5;
+  repeated BoardMember available_approvers = 6;
+}
+
+message GetTaskBoardResponse {
+  TaskBoard board = 1;
+}
+
+message GetTaskDetailsRequest {
+  string actor_user_id = 1;
+  string task_id = 2;
+}
+
+message GetTaskDetailsResponse {
+  Task task = 1;
+  repeated BoardMember members = 2;
+  string current_user_id = 3;
+  bool can_edit = 4;
+  bool can_approve = 5;
+  bool can_move_to_review = 6;
+}
+
+message AvailableApproversRequest {
+  string board_id = 1;
+  string search = 2;
+  int32 limit = 3;
+}
+
+message AvailableApproversResponse {
+  repeated BoardMember items = 1;
+  int32 total = 2;
+}
+
+message DocumentItem {
+  string id = 1;
+  string title = 2;
+  string category = 3;
+  string status = 4;
+  string updated_at = 5;
+  int32 size_kb = 6;
+  int32 version = 7;
+}
+
+message AvailableDocumentsRequest {
+  string board_id = 1;
+  string category = 2;
+  string status = 3;
+  string search = 4;
+  int32 limit = 5;
+}
+
+message AvailableDocumentsResponse {
+  repeated DocumentItem items = 1;
+  int32 total = 2;
+}
+
+service TaskOrchestrationService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse);
+  rpc AddTaskAttachments(AddTaskAttachmentsRequest) returns (AddTaskAttachmentsResponse);
+  rpc RemoveTaskAttachment(RemoveTaskAttachmentRequest) returns (Task);
+  rpc GetTaskBoard(GetTaskBoardRequest) returns (GetTaskBoardResponse);
+  rpc GetTaskDetails(GetTaskDetailsRequest) returns (GetTaskDetailsResponse);
+  rpc GetAvailableApprovers(AvailableApproversRequest) returns (AvailableApproversResponse);
+  rpc GetAvailableDocuments(AvailableDocumentsRequest) returns (AvailableDocumentsResponse);
+}
+
 message SignatureRequest {
   string id = 1;
   string document_id = 2;

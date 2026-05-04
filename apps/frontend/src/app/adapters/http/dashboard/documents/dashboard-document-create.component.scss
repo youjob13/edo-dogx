@@ -156,3 +156,153 @@
     min-height: 11rem;
   }
 }
+
+.editor {
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1e1e1e;
+  color: #e6e6e6;
+}
+
+/* ===== Toolbar ===== */
+
+.editor__toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #2a2a2a;
+  background: #1a1a1a;
+}
+
+.editor__group {
+  display: flex;
+  gap: 4px;
+  padding-right: 8px;
+  border-right: 1px solid #2a2a2a;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.editor__btn {
+  border: none;
+  background: transparent;
+  color: #cfcfcf;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #2a2a2a;
+    color: #ffffff;
+  }
+
+  &.active {
+    background: #2f3a4a;
+    color: #4da3ff;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+/* ===== Editor content ===== */
+
+.editor__content {
+  padding: 16px;
+  min-height: 200px;
+  outline: none;
+  color: #e6e6e6;
+
+  /* Placeholder */
+  p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: #6f6f6f;
+    pointer-events: none;
+    float: left;
+    height: 0;
+  }
+
+  /* Headings */
+  h1, h2, h3 {
+    color: #ffffff;
+  }
+
+  /* Links */
+  a {
+    color: #4da3ff;
+    text-decoration: underline;
+
+    &:hover {
+      color: #82c4ff;
+    }
+  }
+
+  /* Blockquote */
+  blockquote {
+    border-left: 3px solid #3a3a3a;
+    padding-left: 12px;
+    color: #bdbdbd;
+  }
+
+  /* Code */
+  code {
+    background: #2a2a2a;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+
+  pre {
+    background: #111;
+    padding: 12px;
+    border-radius: 8px;
+    overflow: auto;
+  }
+
+  /* ===== Table ===== */
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .table-header,
+  .table-cell {
+    border: 1px solid #3a3a3a;
+    padding: 8px;
+    vertical-align: top;
+  }
+
+  .table-header {
+    background: #2a2a2a;
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .table-cell  {
+    background: #1e1e1e;
+  }
+
+  tr:hover .table-cell  {
+    background: #242424;
+  }
+
+  .selectedCell {
+    background: rgba(77, 163, 255, 0.25);
+  }
+
+  /* ===== Images ===== */
+
+  img {
+    max-width: 100%;
+    border-radius: 6px;
+  }
+}
