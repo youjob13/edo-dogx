@@ -65,4 +65,16 @@ export class TaskOrchestrationServiceClient {
   listTaskBoards(payload: unknown): Promise<unknown> {
     return this.call('ListTaskBoards', payload);
   }
+
+  createTaskBoard(payload: unknown): Promise<unknown> {
+    return this.call('CreateTaskBoard', payload);
+  }
+
+  listOrganizationMembers(payload: unknown): Promise<unknown> {
+    return this.call('ListOrganizationMembers', payload);
+  }
+
+  addTaskBoardMember(payload: unknown): Promise<unknown> {
+    return this.call('AddTaskBoardMember', payload);
+  }
 }

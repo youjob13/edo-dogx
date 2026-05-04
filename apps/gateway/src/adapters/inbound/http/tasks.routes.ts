@@ -4,7 +4,7 @@ import { DocumentServiceClient } from '../../outbound/grpc/document.client.js';
 import { TaskService, type UpdateTaskStatusRequest } from '../../../application/task.service.js';
 import { TaskValidationService } from '../../../application/validation/task.validation.js';
 import type { AuthSession } from '../../../domain/auth.js';
-import { CreateTaskRequest } from '@edo/ts-types';
+import { CreateTaskRequest } from '@edo/types';
 
 const grpcClient = new TaskOrchestrationServiceClient();
 const documentClient = new DocumentServiceClient();
@@ -56,6 +56,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       }
 
       const taskRequest: CreateTaskRequest = {
+        boardId: body.boardId,
         title: body.title,
         description: body.description,
         assigneeId: body.assigneeId,
@@ -65,7 +66,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         taskType: body.taskType,
         dueDate: body.dueDate ? new Date(body.dueDate as unknown as string) : undefined,
         priority: body.priority,
-        attachmentIds: body.documentIds,
+        attachmentIds: body.attachmentIds ?? body.documentIds,
       };
 
       const task = await taskService.createTask(taskRequest, {

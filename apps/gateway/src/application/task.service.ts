@@ -1,7 +1,7 @@
 import type { UserProfile } from '@edo/types';
 import type { TaskOrchestrationServiceClient } from '../adapters/outbound/grpc/task.client.js';
 import type { DocumentServiceClient } from '../adapters/outbound/grpc/document.client.js';
-import { CreateTaskRequest, TaskResponse } from '@edo/ts-types';
+import { CreateTaskRequest, TaskResponse } from '@edo/types';
 
 export interface UpdateTaskStatusRequest {
   readonly taskId: string;
@@ -46,18 +46,15 @@ export class TaskService {
 
     // Call gRPC service to create task
     const response = await this.grpcClient.createTask({
+      actor_user_id: currentUser.userId,
+      board_id: request.boardId,
       title: request.title,
       description: request.description || '',
-      assigneeId: request.assigneeId,
-      assigneeName: request.assigneeName,
-      approverId: request.approverId || '',
-      approverName: request.approverName || '',
-      taskType: request.taskType,
-      dueDate: request.dueDate?.toISOString() || '',
-      priority: request.priority || 0,
-      attachmentIds: request.attachmentIds || [],
-      creatorId: currentUser.userId,
-      creatorName: currentUser.userName,
+      assignee_user_id: request.assigneeId,
+      approver_user_id: request.approverId || '',
+      task_type: request.taskType,
+      attachment_document_ids: request.attachmentIds || [],
+      due_date: request.dueDate?.toISOString() || '',
     });
 
     return this.mapGrpcResponseToTask(response);
@@ -180,31 +177,56 @@ export class TaskService {
   }
 
   private mapGrpcResponseToTask(grpcResponse: unknown): TaskResponse {
-    // Map gRPC response to TaskResponse interface
-    // This assumes the gRPC response has similar structure
-    const response = grpcResponse as Record<string, unknown>;
+    const envelope = grpcResponse as Record<string, unknown>;
+    const response = (envelope.task as Record<string, unknown> | undefined) ?? envelope;
 
     return {
       id: String(response.id || ''),
       title: String(response.title || ''),
       description: response.description ? String(response.description) : undefined,
       status: (response.status || 'pending') as 'pending' | 'in_review' | 'approved' | 'declined',
-      taskType: (response.taskType || 'general') as 'approval' | 'general',
-      creatorId: String(response.creatorId || ''),
-      creatorName: String(response.creatorName || ''),
-      assigneeId: String(response.assigneeId || ''),
-      assigneeName: String(response.assigneeName || ''),
-      approverId: response.approverId ? String(response.approverId) : undefined,
-      approverName: response.approverName ? String(response.approverName) : undefined,
+      taskType: (response.taskType || response.task_type || 'general') as 'approval' | 'general',
+      creatorId: String(response.creatorId || response.creator_user_id || ''),
+      creatorName: String(response.creatorName || response.creator_user_name || ''),
+      assigneeId: String(response.assigneeId || response.assignee_user_id || ''),
+      assigneeName: String(response.assigneeName || response.assignee_user_name || ''),
+      approverId: response.approverId
+        ? String(response.approverId)
+        : response.approver_user_id
+          ? String(response.approver_user_id)
+          : undefined,
+      approverName: response.approverName
+        ? String(response.approverName)
+        : response.approver_user_name
+          ? String(response.approver_user_name)
+          : undefined,
       decision: response.decision ? (String(response.decision) as 'approved' | 'declined') : undefined,
-      decisionComment: response.decisionComment ? String(response.decisionComment) : undefined,
-      dueDate: response.dueDate ? new Date(String(response.dueDate)) : undefined,
+      decisionComment: response.decisionComment
+        ? String(response.decisionComment)
+        : response.decision_comment
+          ? String(response.decision_comment)
+          : undefined,
+      dueDate: response.dueDate
+        ? new Date(String(response.dueDate))
+        : response.due_date
+          ? new Date(String(response.due_date))
+          : undefined,
       priority: response.priority ? Number(response.priority) : undefined,
       attachmentIds: Array.isArray(response.attachmentIds)
         ? response.attachmentIds.map((id) => String(id))
+        : Array.isArray(response.attachment_document_ids)
+          ? response.attachment_document_ids.map((id) => String(id))
         : [],
-      createdAt: response.createdAt ? new Date(String(response.createdAt)) : new Date(),
-      updatedAt: response.updatedAt ? new Date(String(response.updatedAt)) : new Date(),
+      createdAt: response.createdAt
+        ? new Date(String(response.createdAt))
+        : response.created_at
+          ? new Date(String(response.created_at))
+          : new Date(),
+      updatedAt: response.updatedAt
+        ? new Date(String(response.updatedAt))
+        : response.updated_at
+          ? new Date(String(response.updated_at))
+          : new Date(),
     };
   }
 }

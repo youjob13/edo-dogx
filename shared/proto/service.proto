@@ -160,13 +160,14 @@ message Task {
 
 message CreateTaskRequest {
   string actor_user_id = 1;
-  string title = 2;
-  string description = 3;
-  string assignee_user_id = 4;
-  string approver_user_id = 5;
-  string task_type = 6;
-  repeated string attachment_document_ids = 7;
-  string due_date = 8;
+  string board_id = 2;
+  string title = 3;
+  string description = 4;
+  string assignee_user_id = 5;
+  string approver_user_id = 6;
+  string task_type = 7;
+  repeated string attachment_document_ids = 8;
+  string due_date = 9;
 }
 
 message CreateTaskResponse {
@@ -205,6 +206,20 @@ message GetTaskBoardRequest {
   string board_id = 2;
 }
 
+message CreateTaskBoardRequest {
+  string actor_user_id = 1;
+  string organization_id = 2;
+  string name = 3;
+  string description = 4;
+}
+
+message ListTaskBoardsRequest {
+  string actor_user_id = 1;
+  string organization_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
 message TaskBoard {
   string id = 1;
   string name = 2;
@@ -212,10 +227,33 @@ message TaskBoard {
   repeated Task tasks = 4;
   repeated TaskAttachment available_documents = 5;
   repeated BoardMember available_approvers = 6;
+  string organization_id = 7;
+  string description = 8;
+  repeated string allowed_grouping = 9;
+}
+
+message TaskBoardSummary {
+  string id = 1;
+  string organization_id = 2;
+  string name = 3;
+  string description = 4;
+  int32 members_count = 5;
+  int32 tasks_count = 6;
+}
+
+message ListTaskBoardsResponse {
+  repeated TaskBoardSummary boards = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
 }
 
 message GetTaskBoardResponse {
   TaskBoard board = 1;
+}
+
+message CreateTaskBoardResponse {
+  TaskBoardSummary board = 1;
 }
 
 message GetTaskDetailsRequest {
@@ -243,6 +281,28 @@ message AvailableApproversResponse {
   int32 total = 2;
 }
 
+message ListOrganizationMembersRequest {
+  string actor_user_id = 1;
+  string organization_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListOrganizationMembersResponse {
+  repeated BoardMember items = 1;
+  int32 total = 2;
+}
+
+message AddTaskBoardMemberRequest {
+  string actor_user_id = 1;
+  string board_id = 2;
+  string user_id = 3;
+}
+
+message AddTaskBoardMemberResponse {
+  BoardMember member = 1;
+}
+
 message DocumentItem {
   string id = 1;
   string title = 2;
@@ -267,14 +327,18 @@ message AvailableDocumentsResponse {
 }
 
 service TaskOrchestrationService {
+  rpc CreateTaskBoard(CreateTaskBoardRequest) returns (CreateTaskBoardResponse);
   rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
   rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse);
   rpc AddTaskAttachments(AddTaskAttachmentsRequest) returns (AddTaskAttachmentsResponse);
   rpc RemoveTaskAttachment(RemoveTaskAttachmentRequest) returns (Task);
+  rpc ListTaskBoards(ListTaskBoardsRequest) returns (ListTaskBoardsResponse);
   rpc GetTaskBoard(GetTaskBoardRequest) returns (GetTaskBoardResponse);
   rpc GetTaskDetails(GetTaskDetailsRequest) returns (GetTaskDetailsResponse);
   rpc GetAvailableApprovers(AvailableApproversRequest) returns (AvailableApproversResponse);
   rpc GetAvailableDocuments(AvailableDocumentsRequest) returns (AvailableDocumentsResponse);
+  rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse);
+  rpc AddTaskBoardMember(AddTaskBoardMemberRequest) returns (AddTaskBoardMemberResponse);
 }
 
 message SignatureRequest {

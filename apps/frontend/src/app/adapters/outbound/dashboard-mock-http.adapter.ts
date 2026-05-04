@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import {
   KanbanBoardDetails,
   KanbanBoardSummary,
@@ -13,9 +13,31 @@ import {
   KanbanTaskUpdateStatusPayload,
   AvailableApproverItem,
   AvailableDocumentItem,
+  KanbanBoardCreatePayload,
+  OrganizationMember,
 } from '../../domain/dashboard/dashboard.models';
 import { DashboardApiPort } from '../../ports/outbound/dashboard-api.port';
 import type { CreateTaskRequest, TaskResponse } from '@edo/types';
+
+interface GatewayTaskBoardsResponse {
+  boards: Array<KanbanBoardSummary>;
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+interface GatewayCreateTaskBoardResponse {
+  board: KanbanBoardSummary;
+}
+
+interface GatewayAvailableApproversResponse {
+  approvers: Array<AvailableApproverItem>;
+}
+
+interface GatewayOrganizationMembersResponse {
+  items: Array<OrganizationMember>;
+  total: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class DashboardMockHttpAdapter implements DashboardApiPort {
@@ -23,9 +45,17 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
   private readonly apiBaseUrl = '/api';
 
   public getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>> {
-    return this.http.get<Array<KanbanBoardSummary>>(`${this.apiBaseUrl}/boards`, {
-      params: { organizationId },
-    });
+    return this.http
+      .get<GatewayTaskBoardsResponse>(`${this.apiBaseUrl}/boards`, {
+        params: { organizationId },
+      })
+      .pipe(map((response) => response.boards));
+  }
+
+  public createTaskBoard(payload: KanbanBoardCreatePayload): Observable<KanbanBoardSummary> {
+    return this.http
+      .post<GatewayCreateTaskBoardResponse>(`${this.apiBaseUrl}/boards`, payload)
+      .pipe(map((response) => response.board));
   }
 
   public getTaskBoard(boardId: string): Observable<KanbanBoardDetails> {
@@ -62,6 +92,7 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
 
   public createTask(payload: KanbanTaskCreatePayload): Observable<TaskResponse> {
     const createRequest: CreateTaskRequest = {
+      boardId: payload.boardId,
       title: payload.title,
       description: payload.description,
       assigneeId: payload.assigneeId,
@@ -82,7 +113,9 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
   }
 
   public getAvailableApprovers(): Observable<Array<AvailableApproverItem>> {
-    return this.http.get<Array<AvailableApproverItem>>(`${this.apiBaseUrl}/tasks/available-approvers`);
+    return this.http
+      .get<GatewayAvailableApproversResponse>(`${this.apiBaseUrl}/tasks/available-approvers`)
+      .pipe(map((response) => response.approvers));
   }
 
   public getAvailableDocuments(
@@ -95,5 +128,17 @@ export class DashboardMockHttpAdapter implements DashboardApiPort {
         params: { limit, offset },
       },
     );
+  }
+
+  public getOrganizationMembers(organizationId: string): Observable<{ items: Array<OrganizationMember>; total: number }> {
+    return this.http.get<GatewayOrganizationMembersResponse>(
+      `${this.apiBaseUrl}/organizations/${organizationId}/members`,
+    );
+  }
+
+  public addBoardMember(boardId: string, userId: string): Observable<{ member: OrganizationMember }> {
+    return this.http.post<{ member: OrganizationMember }>(`${this.apiBaseUrl}/boards/${boardId}/members`, {
+      userId,
+    });
   }
 }

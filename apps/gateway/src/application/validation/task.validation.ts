@@ -27,6 +27,15 @@ export class TaskValidationService {
     const errors: ValidationError[] = [];
 
     // Validate title
+    if (!payload.boardId || typeof payload.boardId !== 'string' || payload.boardId.trim().length === 0) {
+      errors.push({
+        field: 'boardId',
+        message: 'Task must be created within a board (boardId is required)',
+        code: 'BOARD_ID_REQUIRED',
+      });
+    }
+
+    // Validate title
     if (!payload.title || typeof payload.title !== 'string' || payload.title.trim().length === 0) {
       errors.push({
         field: 'title',

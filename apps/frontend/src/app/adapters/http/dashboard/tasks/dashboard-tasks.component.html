@@ -29,6 +29,9 @@
         </select>
       </div>
     </div>
+    <div class="dashboard-tasks__toolbar">
+      <edo-dogx-button label="Создать доску" appearance="secondary" (pressed)="openCreateBoardModal()" />
+    </div>
   </edo-dogx-card>
 
   @if (loading()) {
@@ -47,6 +50,16 @@
   @if (selectedBoard(); as board) {
   <edo-dogx-card [fullHeight]="true" [title]="board.name" [subtitle]="board.description">
     <div class="dashboard-tasks__header">
+      <div class="dashboard-tasks__member-add">
+        <select [formControl]="memberToAddControl" [disabled]="loadingMembers() || getMembersAvailableToAdd().length === 0">
+          <option value="">Добавить участника в доску</option>
+          @for (member of getMembersAvailableToAdd(); track member.id) {
+          <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
+          }
+        </select>
+        <edo-dogx-button label="Добавить" appearance="secondary" [disabled]="!memberToAddControl.value || loadingMembers()"
+          (pressed)="addMemberToBoard()" />
+      </div>
       <edo-dogx-button label="Создать задачу" appearance="primary" (pressed)="openCreateTaskModal()" />
     </div>
 
@@ -86,10 +99,8 @@
 
             <div class="dashboard-tasks__task-actions">
               @if (canApproveTask(task)) {
-                <edo-dogx-button label="Одобрить" appearance="primary" size="s"
-                  (pressed)="onApproveTask(task.id)" />
-                <edo-dogx-button label="Отклонить" appearance="secondary" size="s"
-                  (pressed)="onDeclineTask(task.id)" />
+              <edo-dogx-button label="Одобрить" appearance="primary" size="s" (pressed)="onApproveTask(task.id)" />
+              <edo-dogx-button label="Отклонить" appearance="secondary" size="s" (pressed)="onDeclineTask(task.id)" />
               }
               <edo-dogx-button label="Назад" appearance="secondary" size="s" [disabled]="!canMoveLeft(task)"
                 (pressed)="onMoveTask(task.id, 'prev')" />
@@ -108,6 +119,37 @@
   </edo-dogx-card>
   }
 
+  <!-- Create Board Modal -->
+  @if (showCreateBoardModal()) {
+  <div class="modal-overlay" (click)="closeCreateBoardModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <edo-dogx-card title="Создание доски" subtitle="Создайте новую канбан-доску для текущей организации">
+        <form [formGroup]="createBoardForm" (ngSubmit)="onCreateBoard()">
+          <div class="form-group">
+            <label for="board-name">Название доски *</label>
+            <input id="board-name" type="text" formControlName="name" placeholder="Введите название доски">
+            @if (createBoardForm.get('name')?.invalid && createBoardForm.get('name')?.touched) {
+            <span class="error">Название доски должно содержать не менее 3 символов</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="board-description">Описание</label>
+            <textarea id="board-description" formControlName="description" rows="3"
+              placeholder="Коротко опишите цель доски"></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <edo-dogx-button label="Отмена" appearance="secondary" (pressed)="closeCreateBoardModal()" />
+            <edo-dogx-button label="Создать" appearance="primary" type="submit"
+              [disabled]="createBoardForm.invalid || loading()" />
+          </div>
+        </form>
+      </edo-dogx-card>
+    </div>
+  </div>
+  }
+
   <!-- Create Task Modal -->
   @if (showCreateTaskModal()) {
   <div class="modal-overlay" (click)="closeCreateTaskModal()">
@@ -118,7 +160,7 @@
             <label for="task-title">Название задачи *</label>
             <input id="task-title" type="text" formControlName="title" placeholder="Введите название задачи">
             @if (createTaskForm.get('title')?.invalid && createTaskForm.get('title')?.touched) {
-              <span class="error">Название обязательно и должно содержать минимум 3 символа</span>
+            <span class="error">Название обязательно и должно содержать минимум 3 символа</span>
             }
           </div>
 
@@ -133,11 +175,11 @@
             <select id="task-assignee" formControlName="assigneeId">
               <option value="">Выберите исполнителя</option>
               @for (member of getBoardMembers(); track member.id) {
-                <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
+              <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
               }
             </select>
             @if (createTaskForm.get('assigneeId')?.invalid && createTaskForm.get('assigneeId')?.touched) {
-              <span class="error">Необходимо выбрать исполнителя</span>
+            <span class="error">Необходимо выбрать исполнителя</span>
             }
           </div>
 
@@ -145,21 +187,21 @@
             <label for="task-type">Тип задачи</label>
             <select id="task-type" formControlName="taskType">
               @for (option of taskTypeOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
+              <option [value]="option.value">{{ option.label }}</option>
               }
             </select>
           </div>
 
           @if (createTaskForm.get('taskType')?.value === 'approval') {
-            <div class="form-group">
-              <label for="task-approver">Одобряющий</label>
-              <select id="task-approver" formControlName="approverId">
-                <option value="">Выберите одобряющего</option>
-                @for (approver of availableApprovers(); track approver.userId) {
-                  <option [value]="approver.userId">{{ approver.userName }}</option>
-                }
-              </select>
-            </div>
+          <div class="form-group">
+            <label for="task-approver">Одобряющий</label>
+            <select id="task-approver" formControlName="approverId">
+              <option value="">Выберите одобряющего</option>
+              @for (approver of availableApprovers(); track approver.userId) {
+              <option [value]="approver.userId">{{ approver.userName }}</option>
+              }
+            </select>
+          </div>
           }
 
           <div class="form-group">
@@ -171,11 +213,11 @@
             <label>Прикрепленные документы</label>
             <div class="attachments-list">
               @for (doc of availableDocuments(); track doc.documentId) {
-                <label class="attachment-item">
-                  <input type="checkbox" [value]="doc.documentId"
-                    (change)="onAttachmentToggle(doc.documentId, $any($event.target).checked)">
-                  {{ doc.title }} ({{ doc.category }})
-                </label>
+              <label class="attachment-item">
+                <input type="checkbox" [value]="doc.documentId"
+                  (change)="onAttachmentToggle(doc.documentId, $any($event.target).checked)">
+                {{ doc.title }} ({{ doc.category }})
+              </label>
               }
             </div>
           </div>

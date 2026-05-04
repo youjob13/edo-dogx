@@ -25,6 +25,7 @@ type TaskAttachment struct {
 
 type Task struct {
 	ID                string
+	BoardID           string
 	DocumentID        string
 	TaskType          TaskType
 	Title             string
@@ -34,6 +35,10 @@ type Task struct {
 	AssignedUserName  string
 	CreatedByUserID   string
 	CreatedByUserName string
+	ApproverUserID    *string
+	ApproverUserName  *string
+	Decision          *TaskDecision
+	DecisionComment   *string
 	DueDate           *time.Time
 	Priority          int
 	Metadata          map[string]interface{}
@@ -41,6 +46,40 @@ type Task struct {
 	UpdatedAt         time.Time
 	UpdatedByUserID   *string
 	UpdatedByUserName *string
+}
+
+type TaskBoardSummary struct {
+	ID             string
+	OrganizationID string
+	Name           string
+	Description    string
+	MembersCount   int
+	TasksCount     int
+}
+
+type TaskBoard struct {
+	ID             string
+	OrganizationID string
+	Name           string
+	Description    string
+	Members        []TaskBoardMember
+}
+
+type TaskBoardMember struct {
+	UserID     string
+	FullName   string
+	Department string
+	Email      string
+}
+
+type TaskBoardDetails struct {
+	ID              string
+	OrganizationID  string
+	Name            string
+	Description     string
+	AllowedGrouping []string
+	Members         []TaskBoardMember
+	Tasks           []Task
 }
 
 const (
@@ -57,7 +96,9 @@ const (
 )
 
 var (
-	ErrTaskNotFound = errors.New("task not found")
+	ErrTaskNotFound       = errors.New("task not found")
+	ErrTaskBoardNotFound  = errors.New("task board not found")
+	ErrTaskMemberNotFound = errors.New("organization member not found")
 )
 
 func (s TaskStatus) IsFinal() bool {

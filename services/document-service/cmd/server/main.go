@@ -64,6 +64,7 @@ func main() {
 		bucketName,
 		time.Duration(presignedExpirySeconds)*time.Second,
 	)
+	taskRepository := postgresadapter.NewTaskRepository(db)
 	versionRepository := postgresadapter.NewDocumentVersionRepository(db)
 	lifecycleService := appservice.NewDocumentLifecycleService(documentRepository, versionRepository)
 
@@ -75,6 +76,7 @@ func main() {
 
 	server := grpcadapter.NewServer()
 	server.AddRegistrar(grpcadapter.NewDocumentHandler(lifecycleService))
+	server.AddRegistrar(grpcadapter.NewTaskOrchestrationHandler(taskRepository))
 	server.RegisterServices()
 
 	slog.Info("document-service gRPC listening", "addr", addr)

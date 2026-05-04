@@ -18,27 +18,206 @@ func NewTaskRepository(db *sql.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r *TaskRepository) CreateTask(ctx context.Context, task model.Task) (model.Task, error) {
-	metadataJSON, err := json.Marshal(task.Metadata)
-	if err != nil {
-		return model.Task{}, fmt.Errorf("failed to marshal metadata: %w", err)
+func (r *TaskRepository) CreateTaskBoard(ctx context.Context, board model.TaskBoard) (model.TaskBoardSummary, error) {
+	if board.OrganizationID == "" {
+		return model.TaskBoardSummary{}, fmt.Errorf("organization id is required")
+	}
+	if board.Name == "" {
+		return model.TaskBoardSummary{}, fmt.Errorf("board name is required")
 	}
 
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return model.TaskBoardSummary{}, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	const boardQuery = `
+		INSERT INTO task_boards (organization_id, name, description)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`
+
+	if err := tx.QueryRowContext(ctx, boardQuery, board.OrganizationID, board.Name, board.Description).Scan(&board.ID); err != nil {
+		return model.TaskBoardSummary{}, fmt.Errorf("failed to create task board: %w", err)
+	}
+
+	if len(board.Members) > 0 {
+		const memberQuery = `
+			INSERT INTO task_board_members (board_id, user_id, full_name, department, email)
+			VALUES ($1, $2, $3, $4, $5)
+		`
+
+		for _, member := range board.Members {
+			if member.UserID == "" {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, memberQuery, board.ID, member.UserID, member.FullName, member.Department, member.Email); err != nil {
+				return model.TaskBoardSummary{}, fmt.Errorf("failed to create task board member: %w", err)
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return model.TaskBoardSummary{}, fmt.Errorf("failed to commit task board: %w", err)
+	}
+
+	return model.TaskBoardSummary{
+		ID:             board.ID,
+		OrganizationID: board.OrganizationID,
+		Name:           board.Name,
+		Description:    board.Description,
+		MembersCount:   len(board.Members),
+		TasksCount:     0,
+	}, nil
+}
+
+func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (model.TaskBoardDetails, error) {
+	const boardQuery = `
+		SELECT id, organization_id, name, description
+		FROM task_boards
+		WHERE id = $1
+	`
+
+	var board model.TaskBoardDetails
+	if err := r.db.QueryRowContext(ctx, boardQuery, boardID).Scan(
+		&board.ID,
+		&board.OrganizationID,
+		&board.Name,
+		&board.Description,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return model.TaskBoardDetails{}, model.ErrTaskNotFound
+		}
+		return model.TaskBoardDetails{}, fmt.Errorf("failed to get task board: %w", err)
+	}
+
+	const membersQuery = `
+		SELECT user_id, full_name, department, email
+		FROM task_board_members
+		WHERE board_id = $1
+		ORDER BY full_name ASC
+	`
+
+	memberRows, err := r.db.QueryContext(ctx, membersQuery, boardID)
+	if err != nil {
+		return model.TaskBoardDetails{}, fmt.Errorf("failed to load task board members: %w", err)
+	}
+	defer memberRows.Close()
+
+	for memberRows.Next() {
+		var member model.TaskBoardMember
+		if err := memberRows.Scan(&member.UserID, &member.FullName, &member.Department, &member.Email); err != nil {
+			return model.TaskBoardDetails{}, fmt.Errorf("failed to scan task board member: %w", err)
+		}
+		board.Members = append(board.Members, member)
+	}
+	if err := memberRows.Err(); err != nil {
+		return model.TaskBoardDetails{}, fmt.Errorf("error iterating task board members: %w", err)
+	}
+
+	const tasksQuery = `
+		SELECT id, title, description, status, task_type,
+		       creator_user_id, creator_user_name,
+		       assignee_user_id, assignee_user_name,
+		       approver_user_id, approver_user_name,
+		       decision, decision_comment, due_date,
+		       created_at, updated_at
+		FROM tasks
+		WHERE board_id = $1
+		ORDER BY created_at DESC
+	`
+
+	taskRows, err := r.db.QueryContext(ctx, tasksQuery, boardID)
+	if err != nil {
+		return model.TaskBoardDetails{}, fmt.Errorf("failed to load task board tasks: %w", err)
+	}
+	defer taskRows.Close()
+
+	for taskRows.Next() {
+		var task model.Task
+		var taskType, status string
+		var dueDate sql.NullTime
+		var approverUserID, approverUserName sql.NullString
+		var decision, decisionComment sql.NullString
+
+		if err := taskRows.Scan(
+			&task.ID,
+			&task.Title,
+			&task.Description,
+			&status,
+			&taskType,
+			&task.CreatedByUserID,
+			&task.CreatedByUserName,
+			&task.AssignedUserID,
+			&task.AssignedUserName,
+			&approverUserID,
+			&approverUserName,
+			&decision,
+			&decisionComment,
+			&dueDate,
+			&task.CreatedAt,
+			&task.UpdatedAt,
+		); err != nil {
+			return model.TaskBoardDetails{}, fmt.Errorf("failed to scan task board task: %w", err)
+		}
+
+		task.TaskType = model.TaskType(taskType)
+		task.Status = model.TaskStatus(status)
+
+		if dueDate.Valid {
+			task.DueDate = &dueDate.Time
+		}
+		if approverUserID.Valid {
+			task.ApproverUserID = &approverUserID.String
+		}
+		if approverUserName.Valid {
+			task.ApproverUserName = &approverUserName.String
+		}
+		if decision.Valid {
+			decisionValue := model.TaskDecision(decision.String)
+			task.Decision = &decisionValue
+		}
+		if decisionComment.Valid {
+			task.DecisionComment = &decisionComment.String
+		}
+
+		board.Tasks = append(board.Tasks, task)
+	}
+	if err := taskRows.Err(); err != nil {
+		return model.TaskBoardDetails{}, fmt.Errorf("error iterating task board tasks: %w", err)
+	}
+
+	board.AllowedGrouping = []string{"assignee", "department", "group"}
+	return board, nil
+}
+
+func (r *TaskRepository) CreateTask(ctx context.Context, task model.Task) (model.Task, error) {
 	const query = `
 		INSERT INTO tasks (
-			document_id, task_type, title, description, status,
-			assigned_user_id, assigned_user_name, created_by_user_id,
-			created_by_user_name, due_date, priority, metadata_json
+			board_id, title, description, status, task_type,
+			creator_user_id, creator_user_name,
+			assignee_user_id, assignee_user_name,
+			approver_user_id, approver_user_name,
+			due_date
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, created_at, updated_at
 	`
 
 	row := r.db.QueryRowContext(ctx, query,
-		task.DocumentID, string(task.TaskType), task.Title, task.Description,
-		string(task.Status), task.AssignedUserID, task.AssignedUserName,
-		task.CreatedByUserID, task.CreatedByUserName, task.DueDate,
-		task.Priority, metadataJSON,
+		task.BoardID,
+		task.Title,
+		task.Description,
+		string(task.Status),
+		string(task.TaskType),
+		task.CreatedByUserID,
+		task.CreatedByUserName,
+		task.AssignedUserID,
+		task.AssignedUserName,
+		task.ApproverUserID,
+		task.ApproverUserName,
+		task.DueDate,
 	)
 
 	if err := row.Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
@@ -290,4 +469,161 @@ func (r *TaskRepository) GetTaskAttachments(ctx context.Context, taskID string) 
 	}
 
 	return attachments, nil
+}
+
+func (r *TaskRepository) ListTaskBoards(ctx context.Context, filter outbound.TaskBoardFilter) ([]model.TaskBoardSummary, int, error) {
+	countQuery := `SELECT COUNT(*) FROM task_boards`
+	countArgs := []interface{}{}
+
+	if filter.OrganizationID != nil {
+		countQuery += " WHERE organization_id = $1"
+		countArgs = append(countArgs, *filter.OrganizationID)
+	}
+
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count task boards: %w", err)
+	}
+
+	query := `
+		SELECT
+			b.id,
+			b.organization_id,
+			b.name,
+			b.description,
+			COUNT(DISTINCT bm.user_id) AS members_count,
+			COUNT(DISTINCT t.id) AS tasks_count
+		FROM task_boards b
+		LEFT JOIN task_board_members bm ON bm.board_id = b.id
+		LEFT JOIN tasks t ON t.board_id = b.id
+	`
+
+	args := []interface{}{}
+	argCount := 0
+	if filter.OrganizationID != nil {
+		argCount++
+		query += fmt.Sprintf(" WHERE b.organization_id = $%d", argCount)
+		args = append(args, *filter.OrganizationID)
+	}
+
+	query += `
+		GROUP BY b.id, b.organization_id, b.name, b.description
+		ORDER BY b.created_at DESC
+	`
+
+	if filter.Limit != nil {
+		argCount++
+		query += fmt.Sprintf(" LIMIT $%d", argCount)
+		args = append(args, *filter.Limit)
+	}
+
+	if filter.Offset != nil {
+		argCount++
+		query += fmt.Sprintf(" OFFSET $%d", argCount)
+		args = append(args, *filter.Offset)
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list task boards: %w", err)
+	}
+	defer rows.Close()
+
+	boards := make([]model.TaskBoardSummary, 0)
+	for rows.Next() {
+		var board model.TaskBoardSummary
+		if err := rows.Scan(
+			&board.ID,
+			&board.OrganizationID,
+			&board.Name,
+			&board.Description,
+			&board.MembersCount,
+			&board.TasksCount,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan task board: %w", err)
+		}
+		boards = append(boards, board)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating task boards: %w", err)
+	}
+
+	return boards, total, nil
+}
+
+func (r *TaskRepository) ListOrganizationMembers(ctx context.Context, organizationID string, limit int, offset int) ([]model.TaskBoardMember, int, error) {
+	countQuery := `SELECT COUNT(*) FROM organization_members WHERE organization_id = $1`
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, organizationID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count organization members: %w", err)
+	}
+
+	query := `
+		SELECT user_id, full_name, department, email
+		FROM organization_members
+		WHERE organization_id = $1
+		ORDER BY full_name ASC
+		LIMIT $2 OFFSET $3
+	`
+	rows, err := r.db.QueryContext(ctx, query, organizationID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list organization members: %w", err)
+	}
+	defer rows.Close()
+
+	members := make([]model.TaskBoardMember, 0)
+	for rows.Next() {
+		var member model.TaskBoardMember
+		if err := rows.Scan(&member.UserID, &member.FullName, &member.Department, &member.Email); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan organization member: %w", err)
+		}
+		members = append(members, member)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating organization members: %w", err)
+	}
+
+	return members, total, nil
+}
+
+func (r *TaskRepository) AddTaskBoardMember(ctx context.Context, boardID string, userID string) (model.TaskBoardMember, error) {
+	const boardQuery = `SELECT organization_id FROM task_boards WHERE id = $1`
+	var organizationID string
+	if err := r.db.QueryRowContext(ctx, boardQuery, boardID).Scan(&organizationID); err != nil {
+		if err == sql.ErrNoRows {
+			return model.TaskBoardMember{}, model.ErrTaskBoardNotFound
+		}
+		return model.TaskBoardMember{}, fmt.Errorf("failed to get task board organization: %w", err)
+	}
+
+	const memberQuery = `
+		SELECT user_id, full_name, department, email
+		FROM organization_members
+		WHERE organization_id = $1 AND user_id = $2
+	`
+	var member model.TaskBoardMember
+	if err := r.db.QueryRowContext(ctx, memberQuery, organizationID, userID).Scan(
+		&member.UserID,
+		&member.FullName,
+		&member.Department,
+		&member.Email,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return model.TaskBoardMember{}, model.ErrTaskMemberNotFound
+		}
+		return model.TaskBoardMember{}, fmt.Errorf("failed to get organization member: %w", err)
+	}
+
+	const insertQuery = `
+		INSERT INTO task_board_members (board_id, user_id, full_name, department, email)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (board_id, user_id)
+		DO UPDATE SET full_name = EXCLUDED.full_name, department = EXCLUDED.department, email = EXCLUDED.email
+	`
+	if _, err := r.db.ExecContext(ctx, insertQuery, boardID, member.UserID, member.FullName, member.Department, member.Email); err != nil {
+		return model.TaskBoardMember{}, fmt.Errorf("failed to add board member: %w", err)
+	}
+
+	return member, nil
 }

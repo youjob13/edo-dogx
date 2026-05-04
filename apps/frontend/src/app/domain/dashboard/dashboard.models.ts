@@ -228,6 +228,13 @@ export interface KanbanBoardSummary {
   readonly tasksCount: number;
 }
 
+export interface KanbanBoardCreatePayload {
+  readonly organizationId: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly memberIds?: Array<string>;
+}
+
 export interface KanbanBoardDetails {
   readonly id: string;
   readonly organizationId: string;
@@ -263,6 +270,7 @@ export interface KanbanTaskCommentPayload {
 }
 
 export interface KanbanTaskCreatePayload {
+  readonly boardId: string;
   readonly title: string;
   readonly description?: string;
   readonly assigneeId: string;
@@ -290,4 +298,11 @@ export interface AvailableDocumentItem {
   readonly documentId: string;
   readonly title: string;
   readonly category: string;
+}
+
+export interface OrganizationMember {
+  readonly id: string;
+  readonly fullName: string;
+  readonly department: string;
+  readonly email: string;
 }

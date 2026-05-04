@@ -137,8 +137,31 @@
 
 .dashboard-tasks__header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+.dashboard-tasks__member-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  select {
+    min-width: 260px;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--edo-ui-border), #ffffff 20%);
+    background: var(--edo-ui-surface);
+    color: var(--edo-ui-ink);
+  }
+}
+
+.dashboard-tasks__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 // Modal styles

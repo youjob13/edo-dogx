@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   KanbanBoardDetails,
+  KanbanBoardCreatePayload,
   KanbanBoardSummary,
   KanbanTask,
   KanbanTaskAssignPayload,
@@ -13,6 +14,7 @@ import {
   AvailableApproverItem,
   AvailableDocumentItem,
   DashboardConflictError,
+  OrganizationMember,
 } from '../../domain/dashboard/dashboard.models';
 import { DashboardApiPort, DASHBOARD_API_PORT } from '../../ports/outbound/dashboard-api.port';
 import { TaskResponse } from '@edo/types';
@@ -40,6 +42,10 @@ export class DashboardUseCases {
 
   public getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>> {
     return this.api.getTaskBoards(organizationId);
+  }
+
+  public createTaskBoard(payload: KanbanBoardCreatePayload): Observable<KanbanBoardSummary> {
+    return this.api.createTaskBoard(payload);
   }
 
   public getTaskBoard(boardId: string): Observable<KanbanBoardDetails> {
@@ -88,5 +94,13 @@ export class DashboardUseCases {
 
   public getAvailableDocuments(limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }> {
     return this.api.getAvailableDocuments(limit, offset);
+  }
+
+  public getOrganizationMembers(organizationId: string): Observable<{ items: Array<OrganizationMember>; total: number }> {
+    return this.api.getOrganizationMembers(organizationId);
+  }
+
+  public addBoardMember(boardId: string, userId: string): Observable<{ member: OrganizationMember }> {
+    return this.api.addBoardMember(boardId, userId);
   }
 }

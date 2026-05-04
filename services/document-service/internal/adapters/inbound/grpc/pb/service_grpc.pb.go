@@ -1877,3 +1877,524 @@ var NotificationService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "service.proto",
 }
+
+const (
+	TaskOrchestrationService_CreateTaskBoard_FullMethodName         = "/service.v1.TaskOrchestrationService/CreateTaskBoard"
+	TaskOrchestrationService_CreateTask_FullMethodName              = "/service.v1.TaskOrchestrationService/CreateTask"
+	TaskOrchestrationService_UpdateTaskStatus_FullMethodName        = "/service.v1.TaskOrchestrationService/UpdateTaskStatus"
+	TaskOrchestrationService_AddTaskAttachments_FullMethodName      = "/service.v1.TaskOrchestrationService/AddTaskAttachments"
+	TaskOrchestrationService_RemoveTaskAttachment_FullMethodName    = "/service.v1.TaskOrchestrationService/RemoveTaskAttachment"
+	TaskOrchestrationService_ListTaskBoards_FullMethodName          = "/service.v1.TaskOrchestrationService/ListTaskBoards"
+	TaskOrchestrationService_GetTaskBoard_FullMethodName            = "/service.v1.TaskOrchestrationService/GetTaskBoard"
+	TaskOrchestrationService_GetTaskDetails_FullMethodName          = "/service.v1.TaskOrchestrationService/GetTaskDetails"
+	TaskOrchestrationService_GetAvailableApprovers_FullMethodName   = "/service.v1.TaskOrchestrationService/GetAvailableApprovers"
+	TaskOrchestrationService_GetAvailableDocuments_FullMethodName   = "/service.v1.TaskOrchestrationService/GetAvailableDocuments"
+	TaskOrchestrationService_ListOrganizationMembers_FullMethodName = "/service.v1.TaskOrchestrationService/ListOrganizationMembers"
+	TaskOrchestrationService_AddTaskBoardMember_FullMethodName      = "/service.v1.TaskOrchestrationService/AddTaskBoardMember"
+)
+
+// TaskOrchestrationServiceClient is the client API for TaskOrchestrationService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TaskOrchestrationServiceClient interface {
+	CreateTaskBoard(ctx context.Context, in *CreateTaskBoardRequest, opts ...grpc.CallOption) (*CreateTaskBoardResponse, error)
+	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*CreateTaskResponse, error)
+	UpdateTaskStatus(ctx context.Context, in *UpdateTaskStatusRequest, opts ...grpc.CallOption) (*UpdateTaskStatusResponse, error)
+	AddTaskAttachments(ctx context.Context, in *AddTaskAttachmentsRequest, opts ...grpc.CallOption) (*AddTaskAttachmentsResponse, error)
+	RemoveTaskAttachment(ctx context.Context, in *RemoveTaskAttachmentRequest, opts ...grpc.CallOption) (*Task, error)
+	ListTaskBoards(ctx context.Context, in *ListTaskBoardsRequest, opts ...grpc.CallOption) (*ListTaskBoardsResponse, error)
+	GetTaskBoard(ctx context.Context, in *GetTaskBoardRequest, opts ...grpc.CallOption) (*GetTaskBoardResponse, error)
+	GetTaskDetails(ctx context.Context, in *GetTaskDetailsRequest, opts ...grpc.CallOption) (*GetTaskDetailsResponse, error)
+	GetAvailableApprovers(ctx context.Context, in *AvailableApproversRequest, opts ...grpc.CallOption) (*AvailableApproversResponse, error)
+	GetAvailableDocuments(ctx context.Context, in *AvailableDocumentsRequest, opts ...grpc.CallOption) (*AvailableDocumentsResponse, error)
+	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
+	AddTaskBoardMember(ctx context.Context, in *AddTaskBoardMemberRequest, opts ...grpc.CallOption) (*AddTaskBoardMemberResponse, error)
+}
+
+type taskOrchestrationServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTaskOrchestrationServiceClient(cc grpc.ClientConnInterface) TaskOrchestrationServiceClient {
+	return &taskOrchestrationServiceClient{cc}
+}
+
+func (c *taskOrchestrationServiceClient) CreateTaskBoard(ctx context.Context, in *CreateTaskBoardRequest, opts ...grpc.CallOption) (*CreateTaskBoardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateTaskBoardResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_CreateTaskBoard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*CreateTaskResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateTaskResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_CreateTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) UpdateTaskStatus(ctx context.Context, in *UpdateTaskStatusRequest, opts ...grpc.CallOption) (*UpdateTaskStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateTaskStatusResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_UpdateTaskStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) AddTaskAttachments(ctx context.Context, in *AddTaskAttachmentsRequest, opts ...grpc.CallOption) (*AddTaskAttachmentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddTaskAttachmentsResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_AddTaskAttachments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) RemoveTaskAttachment(ctx context.Context, in *RemoveTaskAttachmentRequest, opts ...grpc.CallOption) (*Task, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Task)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_RemoveTaskAttachment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) ListTaskBoards(ctx context.Context, in *ListTaskBoardsRequest, opts ...grpc.CallOption) (*ListTaskBoardsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTaskBoardsResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_ListTaskBoards_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) GetTaskBoard(ctx context.Context, in *GetTaskBoardRequest, opts ...grpc.CallOption) (*GetTaskBoardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTaskBoardResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_GetTaskBoard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) GetTaskDetails(ctx context.Context, in *GetTaskDetailsRequest, opts ...grpc.CallOption) (*GetTaskDetailsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTaskDetailsResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_GetTaskDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) GetAvailableApprovers(ctx context.Context, in *AvailableApproversRequest, opts ...grpc.CallOption) (*AvailableApproversResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AvailableApproversResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_GetAvailableApprovers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) GetAvailableDocuments(ctx context.Context, in *AvailableDocumentsRequest, opts ...grpc.CallOption) (*AvailableDocumentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AvailableDocumentsResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_GetAvailableDocuments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOrganizationMembersResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_ListOrganizationMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskOrchestrationServiceClient) AddTaskBoardMember(ctx context.Context, in *AddTaskBoardMemberRequest, opts ...grpc.CallOption) (*AddTaskBoardMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddTaskBoardMemberResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_AddTaskBoardMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TaskOrchestrationServiceServer is the server API for TaskOrchestrationService service.
+// All implementations must embed UnimplementedTaskOrchestrationServiceServer
+// for forward compatibility.
+type TaskOrchestrationServiceServer interface {
+	CreateTaskBoard(context.Context, *CreateTaskBoardRequest) (*CreateTaskBoardResponse, error)
+	CreateTask(context.Context, *CreateTaskRequest) (*CreateTaskResponse, error)
+	UpdateTaskStatus(context.Context, *UpdateTaskStatusRequest) (*UpdateTaskStatusResponse, error)
+	AddTaskAttachments(context.Context, *AddTaskAttachmentsRequest) (*AddTaskAttachmentsResponse, error)
+	RemoveTaskAttachment(context.Context, *RemoveTaskAttachmentRequest) (*Task, error)
+	ListTaskBoards(context.Context, *ListTaskBoardsRequest) (*ListTaskBoardsResponse, error)
+	GetTaskBoard(context.Context, *GetTaskBoardRequest) (*GetTaskBoardResponse, error)
+	GetTaskDetails(context.Context, *GetTaskDetailsRequest) (*GetTaskDetailsResponse, error)
+	GetAvailableApprovers(context.Context, *AvailableApproversRequest) (*AvailableApproversResponse, error)
+	GetAvailableDocuments(context.Context, *AvailableDocumentsRequest) (*AvailableDocumentsResponse, error)
+	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
+	AddTaskBoardMember(context.Context, *AddTaskBoardMemberRequest) (*AddTaskBoardMemberResponse, error)
+	mustEmbedUnimplementedTaskOrchestrationServiceServer()
+}
+
+// UnimplementedTaskOrchestrationServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedTaskOrchestrationServiceServer struct{}
+
+func (UnimplementedTaskOrchestrationServiceServer) CreateTaskBoard(context.Context, *CreateTaskBoardRequest) (*CreateTaskBoardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTaskBoard not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) CreateTask(context.Context, *CreateTaskRequest) (*CreateTaskResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateTask not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) UpdateTaskStatus(context.Context, *UpdateTaskStatusRequest) (*UpdateTaskStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateTaskStatus not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) AddTaskAttachments(context.Context, *AddTaskAttachmentsRequest) (*AddTaskAttachmentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddTaskAttachments not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) RemoveTaskAttachment(context.Context, *RemoveTaskAttachmentRequest) (*Task, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveTaskAttachment not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) ListTaskBoards(context.Context, *ListTaskBoardsRequest) (*ListTaskBoardsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTaskBoards not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) GetTaskBoard(context.Context, *GetTaskBoardRequest) (*GetTaskBoardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTaskBoard not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) GetTaskDetails(context.Context, *GetTaskDetailsRequest) (*GetTaskDetailsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTaskDetails not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) GetAvailableApprovers(context.Context, *AvailableApproversRequest) (*AvailableApproversResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAvailableApprovers not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) GetAvailableDocuments(context.Context, *AvailableDocumentsRequest) (*AvailableDocumentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAvailableDocuments not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListOrganizationMembers not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) AddTaskBoardMember(context.Context, *AddTaskBoardMemberRequest) (*AddTaskBoardMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddTaskBoardMember not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) mustEmbedUnimplementedTaskOrchestrationServiceServer() {
+}
+func (UnimplementedTaskOrchestrationServiceServer) testEmbeddedByValue() {}
+
+// UnsafeTaskOrchestrationServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TaskOrchestrationServiceServer will
+// result in compilation errors.
+type UnsafeTaskOrchestrationServiceServer interface {
+	mustEmbedUnimplementedTaskOrchestrationServiceServer()
+}
+
+func RegisterTaskOrchestrationServiceServer(s grpc.ServiceRegistrar, srv TaskOrchestrationServiceServer) {
+	// If the following call panics, it indicates UnimplementedTaskOrchestrationServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&TaskOrchestrationService_ServiceDesc, srv)
+}
+
+func _TaskOrchestrationService_CreateTaskBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTaskBoardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).CreateTaskBoard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_CreateTaskBoard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).CreateTaskBoard(ctx, req.(*CreateTaskBoardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).CreateTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_CreateTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).CreateTask(ctx, req.(*CreateTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_UpdateTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTaskStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).UpdateTaskStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_UpdateTaskStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).UpdateTaskStatus(ctx, req.(*UpdateTaskStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_AddTaskAttachments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddTaskAttachmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).AddTaskAttachments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_AddTaskAttachments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).AddTaskAttachments(ctx, req.(*AddTaskAttachmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_RemoveTaskAttachment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveTaskAttachmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).RemoveTaskAttachment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_RemoveTaskAttachment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).RemoveTaskAttachment(ctx, req.(*RemoveTaskAttachmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_ListTaskBoards_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTaskBoardsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).ListTaskBoards(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_ListTaskBoards_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).ListTaskBoards(ctx, req.(*ListTaskBoardsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_GetTaskBoard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskBoardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).GetTaskBoard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_GetTaskBoard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).GetTaskBoard(ctx, req.(*GetTaskBoardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_GetTaskDetails_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskDetailsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).GetTaskDetails(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_GetTaskDetails_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).GetTaskDetails(ctx, req.(*GetTaskDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_GetAvailableApprovers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AvailableApproversRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).GetAvailableApprovers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_GetAvailableApprovers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).GetAvailableApprovers(ctx, req.(*AvailableApproversRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_GetAvailableDocuments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AvailableDocumentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).GetAvailableDocuments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_GetAvailableDocuments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).GetAvailableDocuments(ctx, req.(*AvailableDocumentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_ListOrganizationMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).ListOrganizationMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_ListOrganizationMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).ListOrganizationMembers(ctx, req.(*ListOrganizationMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskOrchestrationService_AddTaskBoardMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddTaskBoardMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).AddTaskBoardMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_AddTaskBoardMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).AddTaskBoardMember(ctx, req.(*AddTaskBoardMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// TaskOrchestrationService_ServiceDesc is the grpc.ServiceDesc for TaskOrchestrationService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var TaskOrchestrationService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "service.v1.TaskOrchestrationService",
+	HandlerType: (*TaskOrchestrationServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateTaskBoard",
+			Handler:    _TaskOrchestrationService_CreateTaskBoard_Handler,
+		},
+		{
+			MethodName: "CreateTask",
+			Handler:    _TaskOrchestrationService_CreateTask_Handler,
+		},
+		{
+			MethodName: "UpdateTaskStatus",
+			Handler:    _TaskOrchestrationService_UpdateTaskStatus_Handler,
+		},
+		{
+			MethodName: "AddTaskAttachments",
+			Handler:    _TaskOrchestrationService_AddTaskAttachments_Handler,
+		},
+		{
+			MethodName: "RemoveTaskAttachment",
+			Handler:    _TaskOrchestrationService_RemoveTaskAttachment_Handler,
+		},
+		{
+			MethodName: "ListTaskBoards",
+			Handler:    _TaskOrchestrationService_ListTaskBoards_Handler,
+		},
+		{
+			MethodName: "GetTaskBoard",
+			Handler:    _TaskOrchestrationService_GetTaskBoard_Handler,
+		},
+		{
+			MethodName: "GetTaskDetails",
+			Handler:    _TaskOrchestrationService_GetTaskDetails_Handler,
+		},
+		{
+			MethodName: "GetAvailableApprovers",
+			Handler:    _TaskOrchestrationService_GetAvailableApprovers_Handler,
+		},
+		{
+			MethodName: "GetAvailableDocuments",
+			Handler:    _TaskOrchestrationService_GetAvailableDocuments_Handler,
+		},
+		{
+			MethodName: "ListOrganizationMembers",
+			Handler:    _TaskOrchestrationService_ListOrganizationMembers_Handler,
+		},
+		{
+			MethodName: "AddTaskBoardMember",
+			Handler:    _TaskOrchestrationService_AddTaskBoardMember_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "service.proto",
+}

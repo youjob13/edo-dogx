@@ -7,11 +7,14 @@ import { DashboardUseCases } from '../../../../application/dashboard/dashboard.u
 import {
   AvailableApproverItem,
   AvailableDocumentItem,
+  KanbanBoardCreatePayload,
   KanbanBoardDetails,
+  KanbanBoardMember,
   KanbanTask,
   KanbanTaskCreatePayload,
   KanbanTaskGroupBy,
   KanbanTaskStatus,
+  OrganizationMember,
   TaskType,
 } from '../../../../domain/dashboard/dashboard.models';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
@@ -58,6 +61,7 @@ export class DashboardTasksComponent {
 
   protected readonly organizationControl = new FormControl('org-main', { nonNullable: true });
   protected readonly boardControl = new FormControl('', { nonNullable: true });
+  protected readonly memberToAddControl = new FormControl('', { nonNullable: true });
   protected readonly groupingControl = new FormControl<KanbanTaskGroupBy>('assignee', {
     nonNullable: true,
   });
@@ -67,6 +71,7 @@ export class DashboardTasksComponent {
 
   // Task creation form
   protected readonly showCreateTaskModal = signal(false);
+  protected readonly showCreateBoardModal = signal(false);
   protected readonly createTaskForm = new FormGroup({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
     description: new FormControl('', { nonNullable: true }),
@@ -77,6 +82,10 @@ export class DashboardTasksComponent {
     priority: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(5)] }),
     attachmentIds: new FormControl<string[]>([], { nonNullable: true }),
   });
+  protected readonly createBoardForm = new FormGroup({
+    name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
+    description: new FormControl('', { nonNullable: true }),
+  });
 
   protected readonly loading = signal(false);
   protected readonly boards = signal<Array<{ id: string; name: string }>>([]);
@@ -86,8 +95,10 @@ export class DashboardTasksComponent {
   // Available approvers and documents for task creation
   protected readonly availableApprovers = signal<AvailableApproverItem[]>([]);
   protected readonly availableDocuments = signal<AvailableDocumentItem[]>([]);
+  protected readonly organizationMembers = signal<OrganizationMember[]>([]);
   protected readonly loadingApprovers = signal(false);
   protected readonly loadingDocuments = signal(false);
+  protected readonly loadingMembers = signal(false);
 
   protected readonly columns = computed<Array<TaskColumnView>>(() => {
     const board = this.selectedBoard();
@@ -127,6 +138,7 @@ export class DashboardTasksComponent {
 
   constructor() {
     this.organizationControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((organizationId) => {
+      this.loadOrganizationMembers(organizationId);
       this.loadBoards(organizationId);
     });
 
@@ -134,6 +146,7 @@ export class DashboardTasksComponent {
       this.loadBoard(boardId);
     });
 
+    this.loadOrganizationMembers(this.organizationControl.value);
     this.loadBoards(this.organizationControl.value);
   }
 
@@ -206,6 +219,10 @@ export class DashboardTasksComponent {
     this.loadAvailableDocuments(/*board.id*/);
   }
 
+  protected openCreateBoardModal(): void {
+    this.showCreateBoardModal.set(true);
+  }
+
   protected closeCreateTaskModal(): void {
     this.showCreateTaskModal.set(false);
     this.createTaskForm.reset({
@@ -215,6 +232,47 @@ export class DashboardTasksComponent {
     });
   }
 
+  protected closeCreateBoardModal(): void {
+    this.showCreateBoardModal.set(false);
+    this.createBoardForm.reset({
+      name: '',
+      description: '',
+    });
+  }
+
+  protected onCreateBoard(): void {
+    const organizationId = this.organizationControl.value;
+    if (!organizationId || !this.createBoardForm.valid) {
+      return;
+    }
+
+    const formValue = this.createBoardForm.value;
+    const payload: KanbanBoardCreatePayload = {
+      organizationId,
+      name: formValue.name?.trim() ?? '',
+      description: formValue.description?.trim() || undefined,
+    };
+
+    this.loading.set(true);
+    this.useCases
+      .createTaskBoard(payload)
+      .pipe(
+        take(1),
+        finalize(() => this.loading.set(false)),
+      )
+      .subscribe({
+        next: (board) => {
+          this.closeCreateBoardModal();
+          this.loadBoards(organizationId, board.id);
+          this.message.set(`Доска "${board.name}" создана.`);
+        },
+        error: (error) => {
+          console.error('Failed to create task board:', error);
+          this.message.set('Не удалось создать доску. Повторите попытку.');
+        },
+      });
+  }
+
   protected onCreateTask(): void {
     const board = this.selectedBoard();
     if (!board || !this.createTaskForm.valid) {
@@ -222,10 +280,13 @@ export class DashboardTasksComponent {
     }
 
     const formValue = this.createTaskForm.value;
-    const assignee = board.members.find(m => m.id === formValue.assigneeId);
-    const approver = formValue.approverId ? board.members.find(m => m.id === formValue.approverId) : undefined;
+    const assignee = board.members.find((member) => member.id === formValue.assigneeId);
+    const approver = formValue.approverId
+      ? board.members.find((member) => member.id === formValue.approverId)
+      : undefined;
 
     const payload: KanbanTaskCreatePayload = {
+      boardId: board.id,
       title: formValue.title!,
       description: formValue.description || undefined,
       assigneeId: formValue.assigneeId!,
@@ -312,8 +373,45 @@ export class DashboardTasksComponent {
     }
   }
 
-  protected getBoardMembers() {
+  protected getBoardMembers(): Array<KanbanBoardMember> {
+    /*
+      department: 'ЭДО Group',
+      fullName: 'Петя Петров'
+    }]
+    */
     return this.selectedBoard()?.members ?? [];
+  }
+
+  protected getMembersAvailableToAdd(): Array<OrganizationMember> {
+    const boardMemberIds = new Set(this.getBoardMembers().map((member) => member.id));
+    return this.organizationMembers().filter((member) => !boardMemberIds.has(member.id));
+  }
+
+  protected addMemberToBoard(): void {
+    const board = this.selectedBoard();
+    const userId = this.memberToAddControl.value;
+    if (!board || !userId) {
+      return;
+    }
+
+    this.loadingMembers.set(true);
+    this.useCases
+      .addBoardMember(board.id, userId)
+      .pipe(
+        take(1),
+        finalize(() => this.loadingMembers.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.memberToAddControl.setValue('');
+          this.loadBoard(board.id);
+          this.message.set('Участник добавлен в доску.');
+        },
+        error: (error) => {
+          console.error('Failed to add member to board:', error);
+          this.message.set('Не удалось добавить участника в доску.');
+        },
+      });
   }
 
   protected trackByGroup(_: number, group: TaskGroupView): string {
@@ -325,16 +423,13 @@ export class DashboardTasksComponent {
   }
 
   private loadAvailableApprovers(): void {
-    this.loadingApprovers.set(true);
-    this.useCases
-      .getAvailableApprovers()
-      .pipe(
-        take(1),
-        finalize(() => this.loadingApprovers.set(false)),
-      )
-      .subscribe((approvers) => {
-        this.availableApprovers.set(approvers);
-      });
+    const boardMembers = this.selectedBoard()?.members ?? [];
+    this.availableApprovers.set(
+      boardMembers.map((member) => ({
+        userId: member.id,
+        userName: member.fullName,
+      })),
+    );
   }
 
   private loadAvailableDocuments(): void {
@@ -350,7 +445,7 @@ export class DashboardTasksComponent {
       });
   }
 
-  private loadBoards(organizationId: string): void {
+  private loadBoards(organizationId: string, preferredBoardId?: string): void {
     this.loading.set(true);
     this.useCases
       .getTaskBoards(organizationId)
@@ -369,8 +464,13 @@ export class DashboardTasksComponent {
         }
 
         const currentBoard = this.boardControl.value;
+        const hasPreferredBoard = preferredBoardId ? boards.some((board) => board.id === preferredBoardId) : false;
         const hasCurrentBoard = boards.some((board) => board.id === currentBoard);
-        const boardToLoad = hasCurrentBoard ? currentBoard : boards[0]!.id;
+        const boardToLoad = hasPreferredBoard
+          ? preferredBoardId!
+          : hasCurrentBoard
+            ? currentBoard
+            : boards[0]!.id;
         this.boardControl.setValue(boardToLoad, { emitEvent: false });
         this.loadBoard(boardToLoad);
       });
@@ -391,6 +491,31 @@ export class DashboardTasksComponent {
       )
       .subscribe((board) => {
         this.selectedBoard.set(board);
+        this.loadAvailableApprovers();
+      });
+  }
+
+  private loadOrganizationMembers(organizationId: string): void {
+    if (!organizationId) {
+      this.organizationMembers.set([]);
+      return;
+    }
+
+    this.loadingMembers.set(true);
+    this.useCases
+      .getOrganizationMembers(organizationId)
+      .pipe(
+        take(1),
+        finalize(() => this.loadingMembers.set(false)),
+      )
+      .subscribe({
+        next: (response) => {
+          this.organizationMembers.set(response.items);
+        },
+        error: (error) => {
+          console.error('Failed to load organization members:', error);
+          this.organizationMembers.set([]);
+        },
       });
   }
 

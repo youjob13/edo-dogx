@@ -226,6 +226,35 @@ paths:
                 $ref: "#/components/schemas/AvailableDocumentsResponse"
 
   /api/boards:
+    post:
+      tags: [documents]
+      summary: Create a task board
+      operationId: createTaskBoard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBoardRequest"
+      responses:
+        "201":
+          description: Task board created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTaskBoardResponse"
+        "400":
+          description: Invalid board request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     get:
       tags: [documents]
       summary: List task boards for an organization
@@ -1026,8 +1055,11 @@ components:
 
     CreateTaskRequest:
       type: object
-      required: [title, assigneeId, assigneeName, taskType]
+      required: [boardId, title, assigneeId, assigneeName, taskType]
       properties:
+        boardId:
+          type: string
+          description: Board identifier where the task will be created
         title:
           type: string
           minLength: 3
@@ -1257,6 +1289,29 @@ components:
           type: integer
           minimum: 1
           description: Number of boards per page
+
+    CreateTaskBoardRequest:
+      type: object
+      required: [organizationId, name]
+      properties:
+        organizationId:
+          type: string
+          description: Organization identifier
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: Board display name
+        description:
+          type: string
+          description: Optional board description
+
+    CreateTaskBoardResponse:
+      type: object
+      required: [board]
+      properties:
+        board:
+          $ref: "#/components/schemas/KanbanBoardSummary"
 
     AvailableApproverItem:
       type: object

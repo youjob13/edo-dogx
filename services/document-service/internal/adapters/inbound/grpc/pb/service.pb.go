@@ -593,6 +593,1970 @@ func (x *WorkflowInstance) GetUpdatedAt() string {
 	return ""
 }
 
+type BoardMember struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	FullName      string                 `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	Department    string                 `protobuf:"bytes,3,opt,name=department,proto3" json:"department,omitempty"`
+	Email         string                 `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BoardMember) Reset() {
+	*x = BoardMember{}
+	mi := &file_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoardMember) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoardMember) ProtoMessage() {}
+
+func (x *BoardMember) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoardMember.ProtoReflect.Descriptor instead.
+func (*BoardMember) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *BoardMember) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *BoardMember) GetFullName() string {
+	if x != nil {
+		return x.FullName
+	}
+	return ""
+}
+
+func (x *BoardMember) GetDepartment() string {
+	if x != nil {
+		return x.Department
+	}
+	return ""
+}
+
+func (x *BoardMember) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type TaskAttachment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DocumentId    string                 `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Category      string                 `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskAttachment) Reset() {
+	*x = TaskAttachment{}
+	mi := &file_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskAttachment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskAttachment) ProtoMessage() {}
+
+func (x *TaskAttachment) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskAttachment.ProtoReflect.Descriptor instead.
+func (*TaskAttachment) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *TaskAttachment) GetDocumentId() string {
+	if x != nil {
+		return x.DocumentId
+	}
+	return ""
+}
+
+func (x *TaskAttachment) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *TaskAttachment) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *TaskAttachment) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type Task struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title            string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Description      string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Status           string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	TaskType         string                 `protobuf:"bytes,5,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	CreatorUserId    string                 `protobuf:"bytes,6,opt,name=creator_user_id,json=creatorUserId,proto3" json:"creator_user_id,omitempty"`
+	CreatorUserName  string                 `protobuf:"bytes,7,opt,name=creator_user_name,json=creatorUserName,proto3" json:"creator_user_name,omitempty"`
+	AssigneeUserId   string                 `protobuf:"bytes,8,opt,name=assignee_user_id,json=assigneeUserId,proto3" json:"assignee_user_id,omitempty"`
+	AssigneeUserName string                 `protobuf:"bytes,9,opt,name=assignee_user_name,json=assigneeUserName,proto3" json:"assignee_user_name,omitempty"`
+	ApproverUserId   string                 `protobuf:"bytes,10,opt,name=approver_user_id,json=approverUserId,proto3" json:"approver_user_id,omitempty"`
+	ApproverUserName string                 `protobuf:"bytes,11,opt,name=approver_user_name,json=approverUserName,proto3" json:"approver_user_name,omitempty"`
+	Decision         string                 `protobuf:"bytes,12,opt,name=decision,proto3" json:"decision,omitempty"`
+	DecisionComment  string                 `protobuf:"bytes,13,opt,name=decision_comment,json=decisionComment,proto3" json:"decision_comment,omitempty"`
+	DueDate          string                 `protobuf:"bytes,14,opt,name=due_date,json=dueDate,proto3" json:"due_date,omitempty"`
+	Attachments      []*TaskAttachment      `protobuf:"bytes,15,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	CreatedAt        string                 `protobuf:"bytes,16,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt        string                 `protobuf:"bytes,17,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *Task) Reset() {
+	*x = Task{}
+	mi := &file_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Task) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Task) ProtoMessage() {}
+
+func (x *Task) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Task.ProtoReflect.Descriptor instead.
+func (*Task) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Task) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Task) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Task) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Task) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *Task) GetTaskType() string {
+	if x != nil {
+		return x.TaskType
+	}
+	return ""
+}
+
+func (x *Task) GetCreatorUserId() string {
+	if x != nil {
+		return x.CreatorUserId
+	}
+	return ""
+}
+
+func (x *Task) GetCreatorUserName() string {
+	if x != nil {
+		return x.CreatorUserName
+	}
+	return ""
+}
+
+func (x *Task) GetAssigneeUserId() string {
+	if x != nil {
+		return x.AssigneeUserId
+	}
+	return ""
+}
+
+func (x *Task) GetAssigneeUserName() string {
+	if x != nil {
+		return x.AssigneeUserName
+	}
+	return ""
+}
+
+func (x *Task) GetApproverUserId() string {
+	if x != nil {
+		return x.ApproverUserId
+	}
+	return ""
+}
+
+func (x *Task) GetApproverUserName() string {
+	if x != nil {
+		return x.ApproverUserName
+	}
+	return ""
+}
+
+func (x *Task) GetDecision() string {
+	if x != nil {
+		return x.Decision
+	}
+	return ""
+}
+
+func (x *Task) GetDecisionComment() string {
+	if x != nil {
+		return x.DecisionComment
+	}
+	return ""
+}
+
+func (x *Task) GetDueDate() string {
+	if x != nil {
+		return x.DueDate
+	}
+	return ""
+}
+
+func (x *Task) GetAttachments() []*TaskAttachment {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
+}
+
+func (x *Task) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *Task) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+type CreateTaskRequest struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId           string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	BoardId               string                 `protobuf:"bytes,2,opt,name=board_id,json=boardId,proto3" json:"board_id,omitempty"`
+	Title                 string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Description           string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	AssigneeUserId        string                 `protobuf:"bytes,5,opt,name=assignee_user_id,json=assigneeUserId,proto3" json:"assignee_user_id,omitempty"`
+	ApproverUserId        string                 `protobuf:"bytes,6,opt,name=approver_user_id,json=approverUserId,proto3" json:"approver_user_id,omitempty"`
+	TaskType              string                 `protobuf:"bytes,7,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	AttachmentDocumentIds []string               `protobuf:"bytes,8,rep,name=attachment_document_ids,json=attachmentDocumentIds,proto3" json:"attachment_document_ids,omitempty"`
+	DueDate               string                 `protobuf:"bytes,9,opt,name=due_date,json=dueDate,proto3" json:"due_date,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CreateTaskRequest) Reset() {
+	*x = CreateTaskRequest{}
+	mi := &file_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateTaskRequest) ProtoMessage() {}
+
+func (x *CreateTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateTaskRequest.ProtoReflect.Descriptor instead.
+func (*CreateTaskRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CreateTaskRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetBoardId() string {
+	if x != nil {
+		return x.BoardId
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetAssigneeUserId() string {
+	if x != nil {
+		return x.AssigneeUserId
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetApproverUserId() string {
+	if x != nil {
+		return x.ApproverUserId
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetTaskType() string {
+	if x != nil {
+		return x.TaskType
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetAttachmentDocumentIds() []string {
+	if x != nil {
+		return x.AttachmentDocumentIds
+	}
+	return nil
+}
+
+func (x *CreateTaskRequest) GetDueDate() string {
+	if x != nil {
+		return x.DueDate
+	}
+	return ""
+}
+
+type CreateTaskResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateTaskResponse) Reset() {
+	*x = CreateTaskResponse{}
+	mi := &file_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateTaskResponse) ProtoMessage() {}
+
+func (x *CreateTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateTaskResponse.ProtoReflect.Descriptor instead.
+func (*CreateTaskResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CreateTaskResponse) GetTask() *Task {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+type UpdateTaskStatusRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId     string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	TaskId          string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Status          string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	DecisionComment string                 `protobuf:"bytes,4,opt,name=decision_comment,json=decisionComment,proto3" json:"decision_comment,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UpdateTaskStatusRequest) Reset() {
+	*x = UpdateTaskStatusRequest{}
+	mi := &file_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTaskStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTaskStatusRequest) ProtoMessage() {}
+
+func (x *UpdateTaskStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTaskStatusRequest.ProtoReflect.Descriptor instead.
+func (*UpdateTaskStatusRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UpdateTaskStatusRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *UpdateTaskStatusRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *UpdateTaskStatusRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *UpdateTaskStatusRequest) GetDecisionComment() string {
+	if x != nil {
+		return x.DecisionComment
+	}
+	return ""
+}
+
+type UpdateTaskStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Task          *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateTaskStatusResponse) Reset() {
+	*x = UpdateTaskStatusResponse{}
+	mi := &file_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTaskStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTaskStatusResponse) ProtoMessage() {}
+
+func (x *UpdateTaskStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTaskStatusResponse.ProtoReflect.Descriptor instead.
+func (*UpdateTaskStatusResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *UpdateTaskStatusResponse) GetTask() *Task {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+type AddTaskAttachmentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Attachments   []*TaskAttachment      `protobuf:"bytes,3,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddTaskAttachmentsRequest) Reset() {
+	*x = AddTaskAttachmentsRequest{}
+	mi := &file_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddTaskAttachmentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddTaskAttachmentsRequest) ProtoMessage() {}
+
+func (x *AddTaskAttachmentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddTaskAttachmentsRequest.ProtoReflect.Descriptor instead.
+func (*AddTaskAttachmentsRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AddTaskAttachmentsRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *AddTaskAttachmentsRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *AddTaskAttachmentsRequest) GetAttachments() []*TaskAttachment {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
+}
+
+type AddTaskAttachmentsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Attachments   []*TaskAttachment      `protobuf:"bytes,1,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddTaskAttachmentsResponse) Reset() {
+	*x = AddTaskAttachmentsResponse{}
+	mi := &file_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddTaskAttachmentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddTaskAttachmentsResponse) ProtoMessage() {}
+
+func (x *AddTaskAttachmentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddTaskAttachmentsResponse.ProtoReflect.Descriptor instead.
+func (*AddTaskAttachmentsResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *AddTaskAttachmentsResponse) GetAttachments() []*TaskAttachment {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
+}
+
+type RemoveTaskAttachmentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	DocumentId    string                 `protobuf:"bytes,3,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveTaskAttachmentRequest) Reset() {
+	*x = RemoveTaskAttachmentRequest{}
+	mi := &file_service_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveTaskAttachmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveTaskAttachmentRequest) ProtoMessage() {}
+
+func (x *RemoveTaskAttachmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveTaskAttachmentRequest.ProtoReflect.Descriptor instead.
+func (*RemoveTaskAttachmentRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *RemoveTaskAttachmentRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *RemoveTaskAttachmentRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *RemoveTaskAttachmentRequest) GetDocumentId() string {
+	if x != nil {
+		return x.DocumentId
+	}
+	return ""
+}
+
+type GetTaskBoardRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	BoardId       string                 `protobuf:"bytes,2,opt,name=board_id,json=boardId,proto3" json:"board_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTaskBoardRequest) Reset() {
+	*x = GetTaskBoardRequest{}
+	mi := &file_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskBoardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskBoardRequest) ProtoMessage() {}
+
+func (x *GetTaskBoardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskBoardRequest.ProtoReflect.Descriptor instead.
+func (*GetTaskBoardRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetTaskBoardRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *GetTaskBoardRequest) GetBoardId() string {
+	if x != nil {
+		return x.BoardId
+	}
+	return ""
+}
+
+type CreateTaskBoardRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId    string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description    string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CreateTaskBoardRequest) Reset() {
+	*x = CreateTaskBoardRequest{}
+	mi := &file_service_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateTaskBoardRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateTaskBoardRequest) ProtoMessage() {}
+
+func (x *CreateTaskBoardRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateTaskBoardRequest.ProtoReflect.Descriptor instead.
+func (*CreateTaskBoardRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CreateTaskBoardRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *CreateTaskBoardRequest) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *CreateTaskBoardRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateTaskBoardRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+type ListTaskBoardsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId    string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Limit          int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset         int32                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListTaskBoardsRequest) Reset() {
+	*x = ListTaskBoardsRequest{}
+	mi := &file_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTaskBoardsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTaskBoardsRequest) ProtoMessage() {}
+
+func (x *ListTaskBoardsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTaskBoardsRequest.ProtoReflect.Descriptor instead.
+func (*ListTaskBoardsRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ListTaskBoardsRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ListTaskBoardsRequest) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *ListTaskBoardsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListTaskBoardsRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type TaskBoard struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Members            []*BoardMember         `protobuf:"bytes,3,rep,name=members,proto3" json:"members,omitempty"`
+	Tasks              []*Task                `protobuf:"bytes,4,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	AvailableDocuments []*TaskAttachment      `protobuf:"bytes,5,rep,name=available_documents,json=availableDocuments,proto3" json:"available_documents,omitempty"`
+	AvailableApprovers []*BoardMember         `protobuf:"bytes,6,rep,name=available_approvers,json=availableApprovers,proto3" json:"available_approvers,omitempty"`
+	OrganizationId     string                 `protobuf:"bytes,7,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Description        string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	AllowedGrouping    []string               `protobuf:"bytes,9,rep,name=allowed_grouping,json=allowedGrouping,proto3" json:"allowed_grouping,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *TaskBoard) Reset() {
+	*x = TaskBoard{}
+	mi := &file_service_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskBoard) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskBoard) ProtoMessage() {}
+
+func (x *TaskBoard) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskBoard.ProtoReflect.Descriptor instead.
+func (*TaskBoard) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *TaskBoard) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *TaskBoard) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TaskBoard) GetMembers() []*BoardMember {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
+func (x *TaskBoard) GetTasks() []*Task {
+	if x != nil {
+		return x.Tasks
+	}
+	return nil
+}
+
+func (x *TaskBoard) GetAvailableDocuments() []*TaskAttachment {
+	if x != nil {
+		return x.AvailableDocuments
+	}
+	return nil
+}
+
+func (x *TaskBoard) GetAvailableApprovers() []*BoardMember {
+	if x != nil {
+		return x.AvailableApprovers
+	}
+	return nil
+}
+
+func (x *TaskBoard) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *TaskBoard) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *TaskBoard) GetAllowedGrouping() []string {
+	if x != nil {
+		return x.AllowedGrouping
+	}
+	return nil
+}
+
+type TaskBoardSummary struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Name           string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Description    string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	MembersCount   int32                  `protobuf:"varint,5,opt,name=members_count,json=membersCount,proto3" json:"members_count,omitempty"`
+	TasksCount     int32                  `protobuf:"varint,6,opt,name=tasks_count,json=tasksCount,proto3" json:"tasks_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TaskBoardSummary) Reset() {
+	*x = TaskBoardSummary{}
+	mi := &file_service_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskBoardSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskBoardSummary) ProtoMessage() {}
+
+func (x *TaskBoardSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskBoardSummary.ProtoReflect.Descriptor instead.
+func (*TaskBoardSummary) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *TaskBoardSummary) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *TaskBoardSummary) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *TaskBoardSummary) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TaskBoardSummary) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *TaskBoardSummary) GetMembersCount() int32 {
+	if x != nil {
+		return x.MembersCount
+	}
+	return 0
+}
+
+func (x *TaskBoardSummary) GetTasksCount() int32 {
+	if x != nil {
+		return x.TasksCount
+	}
+	return 0
+}
+
+type ListTaskBoardsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Boards        []*TaskBoardSummary    `protobuf:"bytes,1,rep,name=boards,proto3" json:"boards,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTaskBoardsResponse) Reset() {
+	*x = ListTaskBoardsResponse{}
+	mi := &file_service_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTaskBoardsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTaskBoardsResponse) ProtoMessage() {}
+
+func (x *ListTaskBoardsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTaskBoardsResponse.ProtoReflect.Descriptor instead.
+func (*ListTaskBoardsResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ListTaskBoardsResponse) GetBoards() []*TaskBoardSummary {
+	if x != nil {
+		return x.Boards
+	}
+	return nil
+}
+
+func (x *ListTaskBoardsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ListTaskBoardsResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListTaskBoardsResponse) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetTaskBoardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Board         *TaskBoard             `protobuf:"bytes,1,opt,name=board,proto3" json:"board,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTaskBoardResponse) Reset() {
+	*x = GetTaskBoardResponse{}
+	mi := &file_service_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskBoardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskBoardResponse) ProtoMessage() {}
+
+func (x *GetTaskBoardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskBoardResponse.ProtoReflect.Descriptor instead.
+func (*GetTaskBoardResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetTaskBoardResponse) GetBoard() *TaskBoard {
+	if x != nil {
+		return x.Board
+	}
+	return nil
+}
+
+type CreateTaskBoardResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Board         *TaskBoardSummary      `protobuf:"bytes,1,opt,name=board,proto3" json:"board,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateTaskBoardResponse) Reset() {
+	*x = CreateTaskBoardResponse{}
+	mi := &file_service_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateTaskBoardResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateTaskBoardResponse) ProtoMessage() {}
+
+func (x *CreateTaskBoardResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateTaskBoardResponse.ProtoReflect.Descriptor instead.
+func (*CreateTaskBoardResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *CreateTaskBoardResponse) GetBoard() *TaskBoardSummary {
+	if x != nil {
+		return x.Board
+	}
+	return nil
+}
+
+type GetTaskDetailsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTaskDetailsRequest) Reset() {
+	*x = GetTaskDetailsRequest{}
+	mi := &file_service_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskDetailsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskDetailsRequest) ProtoMessage() {}
+
+func (x *GetTaskDetailsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskDetailsRequest.ProtoReflect.Descriptor instead.
+func (*GetTaskDetailsRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetTaskDetailsRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *GetTaskDetailsRequest) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+type GetTaskDetailsResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Task            *Task                  `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	Members         []*BoardMember         `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	CurrentUserId   string                 `protobuf:"bytes,3,opt,name=current_user_id,json=currentUserId,proto3" json:"current_user_id,omitempty"`
+	CanEdit         bool                   `protobuf:"varint,4,opt,name=can_edit,json=canEdit,proto3" json:"can_edit,omitempty"`
+	CanApprove      bool                   `protobuf:"varint,5,opt,name=can_approve,json=canApprove,proto3" json:"can_approve,omitempty"`
+	CanMoveToReview bool                   `protobuf:"varint,6,opt,name=can_move_to_review,json=canMoveToReview,proto3" json:"can_move_to_review,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetTaskDetailsResponse) Reset() {
+	*x = GetTaskDetailsResponse{}
+	mi := &file_service_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTaskDetailsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTaskDetailsResponse) ProtoMessage() {}
+
+func (x *GetTaskDetailsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTaskDetailsResponse.ProtoReflect.Descriptor instead.
+func (*GetTaskDetailsResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetTaskDetailsResponse) GetTask() *Task {
+	if x != nil {
+		return x.Task
+	}
+	return nil
+}
+
+func (x *GetTaskDetailsResponse) GetMembers() []*BoardMember {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
+func (x *GetTaskDetailsResponse) GetCurrentUserId() string {
+	if x != nil {
+		return x.CurrentUserId
+	}
+	return ""
+}
+
+func (x *GetTaskDetailsResponse) GetCanEdit() bool {
+	if x != nil {
+		return x.CanEdit
+	}
+	return false
+}
+
+func (x *GetTaskDetailsResponse) GetCanApprove() bool {
+	if x != nil {
+		return x.CanApprove
+	}
+	return false
+}
+
+func (x *GetTaskDetailsResponse) GetCanMoveToReview() bool {
+	if x != nil {
+		return x.CanMoveToReview
+	}
+	return false
+}
+
+type AvailableApproversRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BoardId       string                 `protobuf:"bytes,1,opt,name=board_id,json=boardId,proto3" json:"board_id,omitempty"`
+	Search        string                 `protobuf:"bytes,2,opt,name=search,proto3" json:"search,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AvailableApproversRequest) Reset() {
+	*x = AvailableApproversRequest{}
+	mi := &file_service_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvailableApproversRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableApproversRequest) ProtoMessage() {}
+
+func (x *AvailableApproversRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableApproversRequest.ProtoReflect.Descriptor instead.
+func (*AvailableApproversRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *AvailableApproversRequest) GetBoardId() string {
+	if x != nil {
+		return x.BoardId
+	}
+	return ""
+}
+
+func (x *AvailableApproversRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *AvailableApproversRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type AvailableApproversResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*BoardMember         `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AvailableApproversResponse) Reset() {
+	*x = AvailableApproversResponse{}
+	mi := &file_service_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvailableApproversResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableApproversResponse) ProtoMessage() {}
+
+func (x *AvailableApproversResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableApproversResponse.ProtoReflect.Descriptor instead.
+func (*AvailableApproversResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *AvailableApproversResponse) GetItems() []*BoardMember {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *AvailableApproversResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type ListOrganizationMembersRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId    string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Limit          int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset         int32                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListOrganizationMembersRequest) Reset() {
+	*x = ListOrganizationMembersRequest{}
+	mi := &file_service_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOrganizationMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOrganizationMembersRequest) ProtoMessage() {}
+
+func (x *ListOrganizationMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOrganizationMembersRequest.ProtoReflect.Descriptor instead.
+func (*ListOrganizationMembersRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ListOrganizationMembersRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ListOrganizationMembersRequest) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *ListOrganizationMembersRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListOrganizationMembersRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type ListOrganizationMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*BoardMember         `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListOrganizationMembersResponse) Reset() {
+	*x = ListOrganizationMembersResponse{}
+	mi := &file_service_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListOrganizationMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListOrganizationMembersResponse) ProtoMessage() {}
+
+func (x *ListOrganizationMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListOrganizationMembersResponse.ProtoReflect.Descriptor instead.
+func (*ListOrganizationMembersResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *ListOrganizationMembersResponse) GetItems() []*BoardMember {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListOrganizationMembersResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type AddTaskBoardMemberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	BoardId       string                 `protobuf:"bytes,2,opt,name=board_id,json=boardId,proto3" json:"board_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddTaskBoardMemberRequest) Reset() {
+	*x = AddTaskBoardMemberRequest{}
+	mi := &file_service_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddTaskBoardMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddTaskBoardMemberRequest) ProtoMessage() {}
+
+func (x *AddTaskBoardMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddTaskBoardMemberRequest.ProtoReflect.Descriptor instead.
+func (*AddTaskBoardMemberRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *AddTaskBoardMemberRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *AddTaskBoardMemberRequest) GetBoardId() string {
+	if x != nil {
+		return x.BoardId
+	}
+	return ""
+}
+
+func (x *AddTaskBoardMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type AddTaskBoardMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Member        *BoardMember           `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddTaskBoardMemberResponse) Reset() {
+	*x = AddTaskBoardMemberResponse{}
+	mi := &file_service_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddTaskBoardMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddTaskBoardMemberResponse) ProtoMessage() {}
+
+func (x *AddTaskBoardMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddTaskBoardMemberResponse.ProtoReflect.Descriptor instead.
+func (*AddTaskBoardMemberResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *AddTaskBoardMemberResponse) GetMember() *BoardMember {
+	if x != nil {
+		return x.Member
+	}
+	return nil
+}
+
+type DocumentItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Category      string                 `protobuf:"bytes,3,opt,name=category,proto3" json:"category,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	SizeKb        int32                  `protobuf:"varint,6,opt,name=size_kb,json=sizeKb,proto3" json:"size_kb,omitempty"`
+	Version       int32                  `protobuf:"varint,7,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DocumentItem) Reset() {
+	*x = DocumentItem{}
+	mi := &file_service_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DocumentItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DocumentItem) ProtoMessage() {}
+
+func (x *DocumentItem) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DocumentItem.ProtoReflect.Descriptor instead.
+func (*DocumentItem) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *DocumentItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DocumentItem) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *DocumentItem) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *DocumentItem) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *DocumentItem) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *DocumentItem) GetSizeKb() int32 {
+	if x != nil {
+		return x.SizeKb
+	}
+	return 0
+}
+
+func (x *DocumentItem) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type AvailableDocumentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BoardId       string                 `protobuf:"bytes,1,opt,name=board_id,json=boardId,proto3" json:"board_id,omitempty"`
+	Category      string                 `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Search        string                 `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
+	Limit         int32                  `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AvailableDocumentsRequest) Reset() {
+	*x = AvailableDocumentsRequest{}
+	mi := &file_service_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvailableDocumentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableDocumentsRequest) ProtoMessage() {}
+
+func (x *AvailableDocumentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableDocumentsRequest.ProtoReflect.Descriptor instead.
+func (*AvailableDocumentsRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *AvailableDocumentsRequest) GetBoardId() string {
+	if x != nil {
+		return x.BoardId
+	}
+	return ""
+}
+
+func (x *AvailableDocumentsRequest) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *AvailableDocumentsRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *AvailableDocumentsRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *AvailableDocumentsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type AvailableDocumentsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*DocumentItem        `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AvailableDocumentsResponse) Reset() {
+	*x = AvailableDocumentsResponse{}
+	mi := &file_service_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvailableDocumentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableDocumentsResponse) ProtoMessage() {}
+
+func (x *AvailableDocumentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableDocumentsResponse.ProtoReflect.Descriptor instead.
+func (*AvailableDocumentsResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *AvailableDocumentsResponse) GetItems() []*DocumentItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *AvailableDocumentsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
 type SignatureRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -606,7 +2570,7 @@ type SignatureRequest struct {
 
 func (x *SignatureRequest) Reset() {
 	*x = SignatureRequest{}
-	mi := &file_service_proto_msgTypes[7]
+	mi := &file_service_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -618,7 +2582,7 @@ func (x *SignatureRequest) String() string {
 func (*SignatureRequest) ProtoMessage() {}
 
 func (x *SignatureRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[7]
+	mi := &file_service_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -631,7 +2595,7 @@ func (x *SignatureRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignatureRequest.ProtoReflect.Descriptor instead.
 func (*SignatureRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{7}
+	return file_service_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *SignatureRequest) GetId() string {
@@ -681,7 +2645,7 @@ type CreateDraftRequest struct {
 
 func (x *CreateDraftRequest) Reset() {
 	*x = CreateDraftRequest{}
-	mi := &file_service_proto_msgTypes[8]
+	mi := &file_service_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -693,7 +2657,7 @@ func (x *CreateDraftRequest) String() string {
 func (*CreateDraftRequest) ProtoMessage() {}
 
 func (x *CreateDraftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[8]
+	mi := &file_service_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -706,7 +2670,7 @@ func (x *CreateDraftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDraftRequest.ProtoReflect.Descriptor instead.
 func (*CreateDraftRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{8}
+	return file_service_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *CreateDraftRequest) GetActorUserId() string {
@@ -751,7 +2715,7 @@ type UpdateDraftRequest struct {
 
 func (x *UpdateDraftRequest) Reset() {
 	*x = UpdateDraftRequest{}
-	mi := &file_service_proto_msgTypes[9]
+	mi := &file_service_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -763,7 +2727,7 @@ func (x *UpdateDraftRequest) String() string {
 func (*UpdateDraftRequest) ProtoMessage() {}
 
 func (x *UpdateDraftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[9]
+	mi := &file_service_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +2740,7 @@ func (x *UpdateDraftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDraftRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDraftRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{9}
+	return file_service_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *UpdateDraftRequest) GetActorUserId() string {
@@ -831,7 +2795,7 @@ type GetDocumentRequest struct {
 
 func (x *GetDocumentRequest) Reset() {
 	*x = GetDocumentRequest{}
-	mi := &file_service_proto_msgTypes[10]
+	mi := &file_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -843,7 +2807,7 @@ func (x *GetDocumentRequest) String() string {
 func (*GetDocumentRequest) ProtoMessage() {}
 
 func (x *GetDocumentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[10]
+	mi := &file_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -856,7 +2820,7 @@ func (x *GetDocumentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDocumentRequest.ProtoReflect.Descriptor instead.
 func (*GetDocumentRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{10}
+	return file_service_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetDocumentRequest) GetActorUserId() string {
@@ -884,7 +2848,7 @@ type GetEditorControlProfileRequest struct {
 
 func (x *GetEditorControlProfileRequest) Reset() {
 	*x = GetEditorControlProfileRequest{}
-	mi := &file_service_proto_msgTypes[11]
+	mi := &file_service_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -896,7 +2860,7 @@ func (x *GetEditorControlProfileRequest) String() string {
 func (*GetEditorControlProfileRequest) ProtoMessage() {}
 
 func (x *GetEditorControlProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[11]
+	mi := &file_service_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -909,7 +2873,7 @@ func (x *GetEditorControlProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEditorControlProfileRequest.ProtoReflect.Descriptor instead.
 func (*GetEditorControlProfileRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{11}
+	return file_service_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *GetEditorControlProfileRequest) GetActorUserId() string {
@@ -946,7 +2910,7 @@ type UpdateEditorControlProfileRequest struct {
 
 func (x *UpdateEditorControlProfileRequest) Reset() {
 	*x = UpdateEditorControlProfileRequest{}
-	mi := &file_service_proto_msgTypes[12]
+	mi := &file_service_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -958,7 +2922,7 @@ func (x *UpdateEditorControlProfileRequest) String() string {
 func (*UpdateEditorControlProfileRequest) ProtoMessage() {}
 
 func (x *UpdateEditorControlProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[12]
+	mi := &file_service_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -971,7 +2935,7 @@ func (x *UpdateEditorControlProfileRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateEditorControlProfileRequest.ProtoReflect.Descriptor instead.
 func (*UpdateEditorControlProfileRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{12}
+	return file_service_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *UpdateEditorControlProfileRequest) GetActorUserId() string {
@@ -1021,7 +2985,7 @@ type CreateExportPayload struct {
 
 func (x *CreateExportPayload) Reset() {
 	*x = CreateExportPayload{}
-	mi := &file_service_proto_msgTypes[13]
+	mi := &file_service_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1033,7 +2997,7 @@ func (x *CreateExportPayload) String() string {
 func (*CreateExportPayload) ProtoMessage() {}
 
 func (x *CreateExportPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[13]
+	mi := &file_service_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1046,7 +3010,7 @@ func (x *CreateExportPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateExportPayload.ProtoReflect.Descriptor instead.
 func (*CreateExportPayload) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{13}
+	return file_service_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *CreateExportPayload) GetActorUserId() string {
@@ -1088,7 +3052,7 @@ type GetExportRequestRequest struct {
 
 func (x *GetExportRequestRequest) Reset() {
 	*x = GetExportRequestRequest{}
-	mi := &file_service_proto_msgTypes[14]
+	mi := &file_service_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1100,7 +3064,7 @@ func (x *GetExportRequestRequest) String() string {
 func (*GetExportRequestRequest) ProtoMessage() {}
 
 func (x *GetExportRequestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[14]
+	mi := &file_service_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1113,7 +3077,7 @@ func (x *GetExportRequestRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetExportRequestRequest.ProtoReflect.Descriptor instead.
 func (*GetExportRequestRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{14}
+	return file_service_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *GetExportRequestRequest) GetActorUserId() string {
@@ -1148,7 +3112,7 @@ type DownloadExportArtifactRequest struct {
 
 func (x *DownloadExportArtifactRequest) Reset() {
 	*x = DownloadExportArtifactRequest{}
-	mi := &file_service_proto_msgTypes[15]
+	mi := &file_service_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1160,7 +3124,7 @@ func (x *DownloadExportArtifactRequest) String() string {
 func (*DownloadExportArtifactRequest) ProtoMessage() {}
 
 func (x *DownloadExportArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[15]
+	mi := &file_service_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1173,7 +3137,7 @@ func (x *DownloadExportArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadExportArtifactRequest.ProtoReflect.Descriptor instead.
 func (*DownloadExportArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{15}
+	return file_service_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *DownloadExportArtifactRequest) GetActorUserId() string {
@@ -1208,7 +3172,7 @@ type DownloadExportArtifactResponse struct {
 
 func (x *DownloadExportArtifactResponse) Reset() {
 	*x = DownloadExportArtifactResponse{}
-	mi := &file_service_proto_msgTypes[16]
+	mi := &file_service_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1220,7 +3184,7 @@ func (x *DownloadExportArtifactResponse) String() string {
 func (*DownloadExportArtifactResponse) ProtoMessage() {}
 
 func (x *DownloadExportArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[16]
+	mi := &file_service_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1233,7 +3197,7 @@ func (x *DownloadExportArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadExportArtifactResponse.ProtoReflect.Descriptor instead.
 func (*DownloadExportArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{16}
+	return file_service_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *DownloadExportArtifactResponse) GetData() []byte {
@@ -1271,7 +3235,7 @@ type SearchDocumentsRequest struct {
 
 func (x *SearchDocumentsRequest) Reset() {
 	*x = SearchDocumentsRequest{}
-	mi := &file_service_proto_msgTypes[17]
+	mi := &file_service_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1283,7 +3247,7 @@ func (x *SearchDocumentsRequest) String() string {
 func (*SearchDocumentsRequest) ProtoMessage() {}
 
 func (x *SearchDocumentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[17]
+	mi := &file_service_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1296,7 +3260,7 @@ func (x *SearchDocumentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchDocumentsRequest.ProtoReflect.Descriptor instead.
 func (*SearchDocumentsRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{17}
+	return file_service_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *SearchDocumentsRequest) GetActorUserId() string {
@@ -1351,7 +3315,7 @@ type SearchDocumentsResponse struct {
 
 func (x *SearchDocumentsResponse) Reset() {
 	*x = SearchDocumentsResponse{}
-	mi := &file_service_proto_msgTypes[18]
+	mi := &file_service_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1363,7 +3327,7 @@ func (x *SearchDocumentsResponse) String() string {
 func (*SearchDocumentsResponse) ProtoMessage() {}
 
 func (x *SearchDocumentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[18]
+	mi := &file_service_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1376,7 +3340,7 @@ func (x *SearchDocumentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchDocumentsResponse.ProtoReflect.Descriptor instead.
 func (*SearchDocumentsResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{18}
+	return file_service_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *SearchDocumentsResponse) GetItems() []*Document {
@@ -1404,7 +3368,7 @@ type ArchiveDocumentRequest struct {
 
 func (x *ArchiveDocumentRequest) Reset() {
 	*x = ArchiveDocumentRequest{}
-	mi := &file_service_proto_msgTypes[19]
+	mi := &file_service_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1416,7 +3380,7 @@ func (x *ArchiveDocumentRequest) String() string {
 func (*ArchiveDocumentRequest) ProtoMessage() {}
 
 func (x *ArchiveDocumentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[19]
+	mi := &file_service_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1429,7 +3393,7 @@ func (x *ArchiveDocumentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveDocumentRequest.ProtoReflect.Descriptor instead.
 func (*ArchiveDocumentRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{19}
+	return file_service_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *ArchiveDocumentRequest) GetActorUserId() string {
@@ -1463,7 +3427,7 @@ type ArchiveDocumentResponse struct {
 
 func (x *ArchiveDocumentResponse) Reset() {
 	*x = ArchiveDocumentResponse{}
-	mi := &file_service_proto_msgTypes[20]
+	mi := &file_service_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1475,7 +3439,7 @@ func (x *ArchiveDocumentResponse) String() string {
 func (*ArchiveDocumentResponse) ProtoMessage() {}
 
 func (x *ArchiveDocumentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[20]
+	mi := &file_service_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1488,7 +3452,7 @@ func (x *ArchiveDocumentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArchiveDocumentResponse.ProtoReflect.Descriptor instead.
 func (*ArchiveDocumentResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{20}
+	return file_service_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *ArchiveDocumentResponse) GetArchived() bool {
@@ -1515,7 +3479,7 @@ type StartWorkflowRequest struct {
 
 func (x *StartWorkflowRequest) Reset() {
 	*x = StartWorkflowRequest{}
-	mi := &file_service_proto_msgTypes[21]
+	mi := &file_service_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1527,7 +3491,7 @@ func (x *StartWorkflowRequest) String() string {
 func (*StartWorkflowRequest) ProtoMessage() {}
 
 func (x *StartWorkflowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[21]
+	mi := &file_service_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1540,7 +3504,7 @@ func (x *StartWorkflowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartWorkflowRequest.ProtoReflect.Descriptor instead.
 func (*StartWorkflowRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{21}
+	return file_service_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *StartWorkflowRequest) GetActorUserId() string {
@@ -1569,7 +3533,7 @@ type ApproveStepRequest struct {
 
 func (x *ApproveStepRequest) Reset() {
 	*x = ApproveStepRequest{}
-	mi := &file_service_proto_msgTypes[22]
+	mi := &file_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1581,7 +3545,7 @@ func (x *ApproveStepRequest) String() string {
 func (*ApproveStepRequest) ProtoMessage() {}
 
 func (x *ApproveStepRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[22]
+	mi := &file_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1594,7 +3558,7 @@ func (x *ApproveStepRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApproveStepRequest.ProtoReflect.Descriptor instead.
 func (*ApproveStepRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{22}
+	return file_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *ApproveStepRequest) GetActorUserId() string {
@@ -1637,7 +3601,7 @@ type RejectStepRequest struct {
 
 func (x *RejectStepRequest) Reset() {
 	*x = RejectStepRequest{}
-	mi := &file_service_proto_msgTypes[23]
+	mi := &file_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1649,7 +3613,7 @@ func (x *RejectStepRequest) String() string {
 func (*RejectStepRequest) ProtoMessage() {}
 
 func (x *RejectStepRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[23]
+	mi := &file_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1662,7 +3626,7 @@ func (x *RejectStepRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RejectStepRequest.ProtoReflect.Descriptor instead.
 func (*RejectStepRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{23}
+	return file_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *RejectStepRequest) GetActorUserId() string {
@@ -1705,7 +3669,7 @@ type RequestChangesRequest struct {
 
 func (x *RequestChangesRequest) Reset() {
 	*x = RequestChangesRequest{}
-	mi := &file_service_proto_msgTypes[24]
+	mi := &file_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1717,7 +3681,7 @@ func (x *RequestChangesRequest) String() string {
 func (*RequestChangesRequest) ProtoMessage() {}
 
 func (x *RequestChangesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[24]
+	mi := &file_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1730,7 +3694,7 @@ func (x *RequestChangesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestChangesRequest.ProtoReflect.Descriptor instead.
 func (*RequestChangesRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{24}
+	return file_service_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *RequestChangesRequest) GetActorUserId() string {
@@ -1771,7 +3735,7 @@ type SubmitWorkflowRequest struct {
 
 func (x *SubmitWorkflowRequest) Reset() {
 	*x = SubmitWorkflowRequest{}
-	mi := &file_service_proto_msgTypes[25]
+	mi := &file_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1783,7 +3747,7 @@ func (x *SubmitWorkflowRequest) String() string {
 func (*SubmitWorkflowRequest) ProtoMessage() {}
 
 func (x *SubmitWorkflowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[25]
+	mi := &file_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1796,7 +3760,7 @@ func (x *SubmitWorkflowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitWorkflowRequest.ProtoReflect.Descriptor instead.
 func (*SubmitWorkflowRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{25}
+	return file_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *SubmitWorkflowRequest) GetActorUserId() string {
@@ -1824,7 +3788,7 @@ type ApproveWorkflowRequest struct {
 
 func (x *ApproveWorkflowRequest) Reset() {
 	*x = ApproveWorkflowRequest{}
-	mi := &file_service_proto_msgTypes[26]
+	mi := &file_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1836,7 +3800,7 @@ func (x *ApproveWorkflowRequest) String() string {
 func (*ApproveWorkflowRequest) ProtoMessage() {}
 
 func (x *ApproveWorkflowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[26]
+	mi := &file_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1849,7 +3813,7 @@ func (x *ApproveWorkflowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApproveWorkflowRequest.ProtoReflect.Descriptor instead.
 func (*ApproveWorkflowRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{26}
+	return file_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ApproveWorkflowRequest) GetActorUserId() string {
@@ -1885,7 +3849,7 @@ type RequestWorkflowChangesRequest struct {
 
 func (x *RequestWorkflowChangesRequest) Reset() {
 	*x = RequestWorkflowChangesRequest{}
-	mi := &file_service_proto_msgTypes[27]
+	mi := &file_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1897,7 +3861,7 @@ func (x *RequestWorkflowChangesRequest) String() string {
 func (*RequestWorkflowChangesRequest) ProtoMessage() {}
 
 func (x *RequestWorkflowChangesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[27]
+	mi := &file_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1910,7 +3874,7 @@ func (x *RequestWorkflowChangesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestWorkflowChangesRequest.ProtoReflect.Descriptor instead.
 func (*RequestWorkflowChangesRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{27}
+	return file_service_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *RequestWorkflowChangesRequest) GetActorUserId() string {
@@ -1952,7 +3916,7 @@ type StartSignatureRequest struct {
 
 func (x *StartSignatureRequest) Reset() {
 	*x = StartSignatureRequest{}
-	mi := &file_service_proto_msgTypes[28]
+	mi := &file_service_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1964,7 +3928,7 @@ func (x *StartSignatureRequest) String() string {
 func (*StartSignatureRequest) ProtoMessage() {}
 
 func (x *StartSignatureRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[28]
+	mi := &file_service_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1977,7 +3941,7 @@ func (x *StartSignatureRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartSignatureRequest.ProtoReflect.Descriptor instead.
 func (*StartSignatureRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{28}
+	return file_service_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *StartSignatureRequest) GetActorUserId() string {
@@ -2011,7 +3975,7 @@ type SignatureSigner struct {
 
 func (x *SignatureSigner) Reset() {
 	*x = SignatureSigner{}
-	mi := &file_service_proto_msgTypes[29]
+	mi := &file_service_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2023,7 +3987,7 @@ func (x *SignatureSigner) String() string {
 func (*SignatureSigner) ProtoMessage() {}
 
 func (x *SignatureSigner) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[29]
+	mi := &file_service_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2036,7 +4000,7 @@ func (x *SignatureSigner) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignatureSigner.ProtoReflect.Descriptor instead.
 func (*SignatureSigner) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{29}
+	return file_service_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *SignatureSigner) GetUserId() string {
@@ -2065,7 +4029,7 @@ type RecordSignatureCallbackRequest struct {
 
 func (x *RecordSignatureCallbackRequest) Reset() {
 	*x = RecordSignatureCallbackRequest{}
-	mi := &file_service_proto_msgTypes[30]
+	mi := &file_service_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2077,7 +4041,7 @@ func (x *RecordSignatureCallbackRequest) String() string {
 func (*RecordSignatureCallbackRequest) ProtoMessage() {}
 
 func (x *RecordSignatureCallbackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[30]
+	mi := &file_service_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2090,7 +4054,7 @@ func (x *RecordSignatureCallbackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSignatureCallbackRequest.ProtoReflect.Descriptor instead.
 func (*RecordSignatureCallbackRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{30}
+	return file_service_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *RecordSignatureCallbackRequest) GetActorUserId() string {
@@ -2131,7 +4095,7 @@ type GetSignatureStatusRequest struct {
 
 func (x *GetSignatureStatusRequest) Reset() {
 	*x = GetSignatureStatusRequest{}
-	mi := &file_service_proto_msgTypes[31]
+	mi := &file_service_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2143,7 +4107,7 @@ func (x *GetSignatureStatusRequest) String() string {
 func (*GetSignatureStatusRequest) ProtoMessage() {}
 
 func (x *GetSignatureStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[31]
+	mi := &file_service_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2156,7 +4120,7 @@ func (x *GetSignatureStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSignatureStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetSignatureStatusRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{31}
+	return file_service_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *GetSignatureStatusRequest) GetActorUserId() string {
@@ -2185,7 +4149,7 @@ type EmitNotificationRequest struct {
 
 func (x *EmitNotificationRequest) Reset() {
 	*x = EmitNotificationRequest{}
-	mi := &file_service_proto_msgTypes[32]
+	mi := &file_service_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2197,7 +4161,7 @@ func (x *EmitNotificationRequest) String() string {
 func (*EmitNotificationRequest) ProtoMessage() {}
 
 func (x *EmitNotificationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[32]
+	mi := &file_service_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2210,7 +4174,7 @@ func (x *EmitNotificationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmitNotificationRequest.ProtoReflect.Descriptor instead.
 func (*EmitNotificationRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{32}
+	return file_service_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *EmitNotificationRequest) GetActorUserId() string {
@@ -2250,7 +4214,7 @@ type EmitNotificationResponse struct {
 
 func (x *EmitNotificationResponse) Reset() {
 	*x = EmitNotificationResponse{}
-	mi := &file_service_proto_msgTypes[33]
+	mi := &file_service_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2262,7 +4226,7 @@ func (x *EmitNotificationResponse) String() string {
 func (*EmitNotificationResponse) ProtoMessage() {}
 
 func (x *EmitNotificationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[33]
+	mi := &file_service_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2275,7 +4239,7 @@ func (x *EmitNotificationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmitNotificationResponse.ProtoReflect.Descriptor instead.
 func (*EmitNotificationResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{33}
+	return file_service_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *EmitNotificationResponse) GetNotificationId() string {
@@ -2295,7 +4259,7 @@ type RetryFailedNotificationsRequest struct {
 
 func (x *RetryFailedNotificationsRequest) Reset() {
 	*x = RetryFailedNotificationsRequest{}
-	mi := &file_service_proto_msgTypes[34]
+	mi := &file_service_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2307,7 +4271,7 @@ func (x *RetryFailedNotificationsRequest) String() string {
 func (*RetryFailedNotificationsRequest) ProtoMessage() {}
 
 func (x *RetryFailedNotificationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[34]
+	mi := &file_service_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2320,7 +4284,7 @@ func (x *RetryFailedNotificationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryFailedNotificationsRequest.ProtoReflect.Descriptor instead.
 func (*RetryFailedNotificationsRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{34}
+	return file_service_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *RetryFailedNotificationsRequest) GetActorUserId() string {
@@ -2346,7 +4310,7 @@ type RetryFailedNotificationsResponse struct {
 
 func (x *RetryFailedNotificationsResponse) Reset() {
 	*x = RetryFailedNotificationsResponse{}
-	mi := &file_service_proto_msgTypes[35]
+	mi := &file_service_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2358,7 +4322,7 @@ func (x *RetryFailedNotificationsResponse) String() string {
 func (*RetryFailedNotificationsResponse) ProtoMessage() {}
 
 func (x *RetryFailedNotificationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[35]
+	mi := &file_service_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2371,7 +4335,7 @@ func (x *RetryFailedNotificationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryFailedNotificationsResponse.ProtoReflect.Descriptor instead.
 func (*RetryFailedNotificationsResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{35}
+	return file_service_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *RetryFailedNotificationsResponse) GetRetriedCount() int32 {
@@ -2392,7 +4356,7 @@ type SyncSearchProjectionRequest struct {
 
 func (x *SyncSearchProjectionRequest) Reset() {
 	*x = SyncSearchProjectionRequest{}
-	mi := &file_service_proto_msgTypes[36]
+	mi := &file_service_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2404,7 +4368,7 @@ func (x *SyncSearchProjectionRequest) String() string {
 func (*SyncSearchProjectionRequest) ProtoMessage() {}
 
 func (x *SyncSearchProjectionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[36]
+	mi := &file_service_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2417,7 +4381,7 @@ func (x *SyncSearchProjectionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncSearchProjectionRequest.ProtoReflect.Descriptor instead.
 func (*SyncSearchProjectionRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{36}
+	return file_service_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *SyncSearchProjectionRequest) GetActorUserId() string {
@@ -2451,7 +4415,7 @@ type SyncSearchProjectionResponse struct {
 
 func (x *SyncSearchProjectionResponse) Reset() {
 	*x = SyncSearchProjectionResponse{}
-	mi := &file_service_proto_msgTypes[37]
+	mi := &file_service_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2463,7 +4427,7 @@ func (x *SyncSearchProjectionResponse) String() string {
 func (*SyncSearchProjectionResponse) ProtoMessage() {}
 
 func (x *SyncSearchProjectionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[37]
+	mi := &file_service_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2476,7 +4440,7 @@ func (x *SyncSearchProjectionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncSearchProjectionResponse.ProtoReflect.Descriptor instead.
 func (*SyncSearchProjectionResponse) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{37}
+	return file_service_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *SyncSearchProjectionResponse) GetSynced() bool {
@@ -2557,7 +4521,161 @@ const file_service_proto_rawDesc = "" +
 	"\x06status\x18\x04 \x01(\tR\x06status\x12(\n" +
 	"\x10assigned_user_id\x18\x05 \x01(\tR\x0eassignedUserId\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x06 \x01(\tR\tupdatedAt\"\x95\x01\n" +
+	"updated_at\x18\x06 \x01(\tR\tupdatedAt\"p\n" +
+	"\vBoardMember\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\tfull_name\x18\x02 \x01(\tR\bfullName\x12\x1e\n" +
+	"\n" +
+	"department\x18\x03 \x01(\tR\n" +
+	"department\x12\x14\n" +
+	"\x05email\x18\x04 \x01(\tR\x05email\"{\n" +
+	"\x0eTaskAttachment\x12\x1f\n" +
+	"\vdocument_id\x18\x01 \x01(\tR\n" +
+	"documentId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
+	"\bcategory\x18\x03 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\"\xe5\x04\n" +
+	"\x04Task\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1b\n" +
+	"\ttask_type\x18\x05 \x01(\tR\btaskType\x12&\n" +
+	"\x0fcreator_user_id\x18\x06 \x01(\tR\rcreatorUserId\x12*\n" +
+	"\x11creator_user_name\x18\a \x01(\tR\x0fcreatorUserName\x12(\n" +
+	"\x10assignee_user_id\x18\b \x01(\tR\x0eassigneeUserId\x12,\n" +
+	"\x12assignee_user_name\x18\t \x01(\tR\x10assigneeUserName\x12(\n" +
+	"\x10approver_user_id\x18\n" +
+	" \x01(\tR\x0eapproverUserId\x12,\n" +
+	"\x12approver_user_name\x18\v \x01(\tR\x10approverUserName\x12\x1a\n" +
+	"\bdecision\x18\f \x01(\tR\bdecision\x12)\n" +
+	"\x10decision_comment\x18\r \x01(\tR\x0fdecisionComment\x12\x19\n" +
+	"\bdue_date\x18\x0e \x01(\tR\adueDate\x12<\n" +
+	"\vattachments\x18\x0f \x03(\v2\x1a.service.v1.TaskAttachmentR\vattachments\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x10 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x11 \x01(\tR\tupdatedAt\"\xce\x02\n" +
+	"\x11CreateTaskRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x19\n" +
+	"\bboard_id\x18\x02 \x01(\tR\aboardId\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12(\n" +
+	"\x10assignee_user_id\x18\x05 \x01(\tR\x0eassigneeUserId\x12(\n" +
+	"\x10approver_user_id\x18\x06 \x01(\tR\x0eapproverUserId\x12\x1b\n" +
+	"\ttask_type\x18\a \x01(\tR\btaskType\x126\n" +
+	"\x17attachment_document_ids\x18\b \x03(\tR\x15attachmentDocumentIds\x12\x19\n" +
+	"\bdue_date\x18\t \x01(\tR\adueDate\":\n" +
+	"\x12CreateTaskResponse\x12$\n" +
+	"\x04task\x18\x01 \x01(\v2\x10.service.v1.TaskR\x04task\"\x99\x01\n" +
+	"\x17UpdateTaskStatusRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12)\n" +
+	"\x10decision_comment\x18\x04 \x01(\tR\x0fdecisionComment\"@\n" +
+	"\x18UpdateTaskStatusResponse\x12$\n" +
+	"\x04task\x18\x01 \x01(\v2\x10.service.v1.TaskR\x04task\"\x96\x01\n" +
+	"\x19AddTaskAttachmentsRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\x12<\n" +
+	"\vattachments\x18\x03 \x03(\v2\x1a.service.v1.TaskAttachmentR\vattachments\"Z\n" +
+	"\x1aAddTaskAttachmentsResponse\x12<\n" +
+	"\vattachments\x18\x01 \x03(\v2\x1a.service.v1.TaskAttachmentR\vattachments\"{\n" +
+	"\x1bRemoveTaskAttachmentRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\x12\x1f\n" +
+	"\vdocument_id\x18\x03 \x01(\tR\n" +
+	"documentId\"T\n" +
+	"\x13GetTaskBoardRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x19\n" +
+	"\bboard_id\x18\x02 \x01(\tR\aboardId\"\x9b\x01\n" +
+	"\x16CreateTaskBoardRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\"\x92\x01\n" +
+	"\x15ListTaskBoardsRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x05R\x06offset\"\x97\x03\n" +
+	"\tTaskBoard\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x121\n" +
+	"\amembers\x18\x03 \x03(\v2\x17.service.v1.BoardMemberR\amembers\x12&\n" +
+	"\x05tasks\x18\x04 \x03(\v2\x10.service.v1.TaskR\x05tasks\x12K\n" +
+	"\x13available_documents\x18\x05 \x03(\v2\x1a.service.v1.TaskAttachmentR\x12availableDocuments\x12H\n" +
+	"\x13available_approvers\x18\x06 \x03(\v2\x17.service.v1.BoardMemberR\x12availableApprovers\x12'\n" +
+	"\x0forganization_id\x18\a \x01(\tR\x0eorganizationId\x12 \n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12)\n" +
+	"\x10allowed_grouping\x18\t \x03(\tR\x0fallowedGrouping\"\xc7\x01\n" +
+	"\x10TaskBoardSummary\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12#\n" +
+	"\rmembers_count\x18\x05 \x01(\x05R\fmembersCount\x12\x1f\n" +
+	"\vtasks_count\x18\x06 \x01(\x05R\n" +
+	"tasksCount\"\x95\x01\n" +
+	"\x16ListTaskBoardsResponse\x124\n" +
+	"\x06boards\x18\x01 \x03(\v2\x1c.service.v1.TaskBoardSummaryR\x06boards\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"C\n" +
+	"\x14GetTaskBoardResponse\x12+\n" +
+	"\x05board\x18\x01 \x01(\v2\x15.service.v1.TaskBoardR\x05board\"M\n" +
+	"\x17CreateTaskBoardResponse\x122\n" +
+	"\x05board\x18\x01 \x01(\v2\x1c.service.v1.TaskBoardSummaryR\x05board\"T\n" +
+	"\x15GetTaskDetailsRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\"\x82\x02\n" +
+	"\x16GetTaskDetailsResponse\x12$\n" +
+	"\x04task\x18\x01 \x01(\v2\x10.service.v1.TaskR\x04task\x121\n" +
+	"\amembers\x18\x02 \x03(\v2\x17.service.v1.BoardMemberR\amembers\x12&\n" +
+	"\x0fcurrent_user_id\x18\x03 \x01(\tR\rcurrentUserId\x12\x19\n" +
+	"\bcan_edit\x18\x04 \x01(\bR\acanEdit\x12\x1f\n" +
+	"\vcan_approve\x18\x05 \x01(\bR\n" +
+	"canApprove\x12+\n" +
+	"\x12can_move_to_review\x18\x06 \x01(\bR\x0fcanMoveToReview\"d\n" +
+	"\x19AvailableApproversRequest\x12\x19\n" +
+	"\bboard_id\x18\x01 \x01(\tR\aboardId\x12\x16\n" +
+	"\x06search\x18\x02 \x01(\tR\x06search\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"a\n" +
+	"\x1aAvailableApproversResponse\x12-\n" +
+	"\x05items\x18\x01 \x03(\v2\x17.service.v1.BoardMemberR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\x9b\x01\n" +
+	"\x1eListOrganizationMembersRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x05R\x06offset\"f\n" +
+	"\x1fListOrganizationMembersResponse\x12-\n" +
+	"\x05items\x18\x01 \x03(\v2\x17.service.v1.BoardMemberR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"s\n" +
+	"\x19AddTaskBoardMemberRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x19\n" +
+	"\bboard_id\x18\x02 \x01(\tR\aboardId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\"M\n" +
+	"\x1aAddTaskBoardMemberResponse\x12/\n" +
+	"\x06member\x18\x01 \x01(\v2\x17.service.v1.BoardMemberR\x06member\"\xba\x01\n" +
+	"\fDocumentItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1a\n" +
+	"\bcategory\x18\x03 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x05 \x01(\tR\tupdatedAt\x12\x17\n" +
+	"\asize_kb\x18\x06 \x01(\x05R\x06sizeKb\x12\x18\n" +
+	"\aversion\x18\a \x01(\x05R\aversion\"\x98\x01\n" +
+	"\x19AvailableDocumentsRequest\x12\x19\n" +
+	"\bboard_id\x18\x01 \x01(\tR\aboardId\x12\x1a\n" +
+	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12\x16\n" +
+	"\x06search\x18\x04 \x01(\tR\x06search\x12\x14\n" +
+	"\x05limit\x18\x05 \x01(\x05R\x05limit\"b\n" +
+	"\x1aAvailableDocumentsResponse\x12.\n" +
+	"\x05items\x18\x01 \x03(\v2\x18.service.v1.DocumentItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\x95\x01\n" +
 	"\x10SignatureRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vdocument_id\x18\x02 \x01(\tR\n" +
@@ -2755,7 +4873,21 @@ const file_service_proto_rawDesc = "" +
 	"\x12GetSignatureStatus\x12%.service.v1.GetSignatureStatusRequest\x1a\x1c.service.v1.SignatureRequest2\xeb\x01\n" +
 	"\x13NotificationService\x12]\n" +
 	"\x10EmitNotification\x12#.service.v1.EmitNotificationRequest\x1a$.service.v1.EmitNotificationResponse\x12u\n" +
-	"\x18RetryFailedNotifications\x12+.service.v1.RetryFailedNotificationsRequest\x1a,.service.v1.RetryFailedNotificationsResponseB\x18Z\x16edo/shared/proto/pb;pbb\x06proto3"
+	"\x18RetryFailedNotifications\x12+.service.v1.RetryFailedNotificationsRequest\x1a,.service.v1.RetryFailedNotificationsResponse2\x88\t\n" +
+	"\x18TaskOrchestrationService\x12Z\n" +
+	"\x0fCreateTaskBoard\x12\".service.v1.CreateTaskBoardRequest\x1a#.service.v1.CreateTaskBoardResponse\x12K\n" +
+	"\n" +
+	"CreateTask\x12\x1d.service.v1.CreateTaskRequest\x1a\x1e.service.v1.CreateTaskResponse\x12]\n" +
+	"\x10UpdateTaskStatus\x12#.service.v1.UpdateTaskStatusRequest\x1a$.service.v1.UpdateTaskStatusResponse\x12c\n" +
+	"\x12AddTaskAttachments\x12%.service.v1.AddTaskAttachmentsRequest\x1a&.service.v1.AddTaskAttachmentsResponse\x12Q\n" +
+	"\x14RemoveTaskAttachment\x12'.service.v1.RemoveTaskAttachmentRequest\x1a\x10.service.v1.Task\x12W\n" +
+	"\x0eListTaskBoards\x12!.service.v1.ListTaskBoardsRequest\x1a\".service.v1.ListTaskBoardsResponse\x12Q\n" +
+	"\fGetTaskBoard\x12\x1f.service.v1.GetTaskBoardRequest\x1a .service.v1.GetTaskBoardResponse\x12W\n" +
+	"\x0eGetTaskDetails\x12!.service.v1.GetTaskDetailsRequest\x1a\".service.v1.GetTaskDetailsResponse\x12f\n" +
+	"\x15GetAvailableApprovers\x12%.service.v1.AvailableApproversRequest\x1a&.service.v1.AvailableApproversResponse\x12f\n" +
+	"\x15GetAvailableDocuments\x12%.service.v1.AvailableDocumentsRequest\x1a&.service.v1.AvailableDocumentsResponse\x12r\n" +
+	"\x17ListOrganizationMembers\x12*.service.v1.ListOrganizationMembersRequest\x1a+.service.v1.ListOrganizationMembersResponse\x12c\n" +
+	"\x12AddTaskBoardMember\x12%.service.v1.AddTaskBoardMemberRequest\x1a&.service.v1.AddTaskBoardMemberResponseB\x18Z\x16edo/shared/proto/pb;pbb\x06proto3"
 
 var (
 	file_service_proto_rawDescOnce sync.Once
@@ -2769,7 +4901,7 @@ func file_service_proto_rawDescGZIP() []byte {
 	return file_service_proto_rawDescData
 }
 
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 67)
 var file_service_proto_goTypes = []any{
 	(*PingRequest)(nil),                       // 0: service.v1.PingRequest
 	(*PingResponse)(nil),                      // 1: service.v1.PingResponse
@@ -2778,121 +4910,192 @@ var file_service_proto_goTypes = []any{
 	(*ExportArtifact)(nil),                    // 4: service.v1.ExportArtifact
 	(*ExportRequest)(nil),                     // 5: service.v1.ExportRequest
 	(*WorkflowInstance)(nil),                  // 6: service.v1.WorkflowInstance
-	(*SignatureRequest)(nil),                  // 7: service.v1.SignatureRequest
-	(*CreateDraftRequest)(nil),                // 8: service.v1.CreateDraftRequest
-	(*UpdateDraftRequest)(nil),                // 9: service.v1.UpdateDraftRequest
-	(*GetDocumentRequest)(nil),                // 10: service.v1.GetDocumentRequest
-	(*GetEditorControlProfileRequest)(nil),    // 11: service.v1.GetEditorControlProfileRequest
-	(*UpdateEditorControlProfileRequest)(nil), // 12: service.v1.UpdateEditorControlProfileRequest
-	(*CreateExportPayload)(nil),               // 13: service.v1.CreateExportPayload
-	(*GetExportRequestRequest)(nil),           // 14: service.v1.GetExportRequestRequest
-	(*DownloadExportArtifactRequest)(nil),     // 15: service.v1.DownloadExportArtifactRequest
-	(*DownloadExportArtifactResponse)(nil),    // 16: service.v1.DownloadExportArtifactResponse
-	(*SearchDocumentsRequest)(nil),            // 17: service.v1.SearchDocumentsRequest
-	(*SearchDocumentsResponse)(nil),           // 18: service.v1.SearchDocumentsResponse
-	(*ArchiveDocumentRequest)(nil),            // 19: service.v1.ArchiveDocumentRequest
-	(*ArchiveDocumentResponse)(nil),           // 20: service.v1.ArchiveDocumentResponse
-	(*StartWorkflowRequest)(nil),              // 21: service.v1.StartWorkflowRequest
-	(*ApproveStepRequest)(nil),                // 22: service.v1.ApproveStepRequest
-	(*RejectStepRequest)(nil),                 // 23: service.v1.RejectStepRequest
-	(*RequestChangesRequest)(nil),             // 24: service.v1.RequestChangesRequest
-	(*SubmitWorkflowRequest)(nil),             // 25: service.v1.SubmitWorkflowRequest
-	(*ApproveWorkflowRequest)(nil),            // 26: service.v1.ApproveWorkflowRequest
-	(*RequestWorkflowChangesRequest)(nil),     // 27: service.v1.RequestWorkflowChangesRequest
-	(*StartSignatureRequest)(nil),             // 28: service.v1.StartSignatureRequest
-	(*SignatureSigner)(nil),                   // 29: service.v1.SignatureSigner
-	(*RecordSignatureCallbackRequest)(nil),    // 30: service.v1.RecordSignatureCallbackRequest
-	(*GetSignatureStatusRequest)(nil),         // 31: service.v1.GetSignatureStatusRequest
-	(*EmitNotificationRequest)(nil),           // 32: service.v1.EmitNotificationRequest
-	(*EmitNotificationResponse)(nil),          // 33: service.v1.EmitNotificationResponse
-	(*RetryFailedNotificationsRequest)(nil),   // 34: service.v1.RetryFailedNotificationsRequest
-	(*RetryFailedNotificationsResponse)(nil),  // 35: service.v1.RetryFailedNotificationsResponse
-	(*SyncSearchProjectionRequest)(nil),       // 36: service.v1.SyncSearchProjectionRequest
-	(*SyncSearchProjectionResponse)(nil),      // 37: service.v1.SyncSearchProjectionResponse
+	(*BoardMember)(nil),                       // 7: service.v1.BoardMember
+	(*TaskAttachment)(nil),                    // 8: service.v1.TaskAttachment
+	(*Task)(nil),                              // 9: service.v1.Task
+	(*CreateTaskRequest)(nil),                 // 10: service.v1.CreateTaskRequest
+	(*CreateTaskResponse)(nil),                // 11: service.v1.CreateTaskResponse
+	(*UpdateTaskStatusRequest)(nil),           // 12: service.v1.UpdateTaskStatusRequest
+	(*UpdateTaskStatusResponse)(nil),          // 13: service.v1.UpdateTaskStatusResponse
+	(*AddTaskAttachmentsRequest)(nil),         // 14: service.v1.AddTaskAttachmentsRequest
+	(*AddTaskAttachmentsResponse)(nil),        // 15: service.v1.AddTaskAttachmentsResponse
+	(*RemoveTaskAttachmentRequest)(nil),       // 16: service.v1.RemoveTaskAttachmentRequest
+	(*GetTaskBoardRequest)(nil),               // 17: service.v1.GetTaskBoardRequest
+	(*CreateTaskBoardRequest)(nil),            // 18: service.v1.CreateTaskBoardRequest
+	(*ListTaskBoardsRequest)(nil),             // 19: service.v1.ListTaskBoardsRequest
+	(*TaskBoard)(nil),                         // 20: service.v1.TaskBoard
+	(*TaskBoardSummary)(nil),                  // 21: service.v1.TaskBoardSummary
+	(*ListTaskBoardsResponse)(nil),            // 22: service.v1.ListTaskBoardsResponse
+	(*GetTaskBoardResponse)(nil),              // 23: service.v1.GetTaskBoardResponse
+	(*CreateTaskBoardResponse)(nil),           // 24: service.v1.CreateTaskBoardResponse
+	(*GetTaskDetailsRequest)(nil),             // 25: service.v1.GetTaskDetailsRequest
+	(*GetTaskDetailsResponse)(nil),            // 26: service.v1.GetTaskDetailsResponse
+	(*AvailableApproversRequest)(nil),         // 27: service.v1.AvailableApproversRequest
+	(*AvailableApproversResponse)(nil),        // 28: service.v1.AvailableApproversResponse
+	(*ListOrganizationMembersRequest)(nil),    // 29: service.v1.ListOrganizationMembersRequest
+	(*ListOrganizationMembersResponse)(nil),   // 30: service.v1.ListOrganizationMembersResponse
+	(*AddTaskBoardMemberRequest)(nil),         // 31: service.v1.AddTaskBoardMemberRequest
+	(*AddTaskBoardMemberResponse)(nil),        // 32: service.v1.AddTaskBoardMemberResponse
+	(*DocumentItem)(nil),                      // 33: service.v1.DocumentItem
+	(*AvailableDocumentsRequest)(nil),         // 34: service.v1.AvailableDocumentsRequest
+	(*AvailableDocumentsResponse)(nil),        // 35: service.v1.AvailableDocumentsResponse
+	(*SignatureRequest)(nil),                  // 36: service.v1.SignatureRequest
+	(*CreateDraftRequest)(nil),                // 37: service.v1.CreateDraftRequest
+	(*UpdateDraftRequest)(nil),                // 38: service.v1.UpdateDraftRequest
+	(*GetDocumentRequest)(nil),                // 39: service.v1.GetDocumentRequest
+	(*GetEditorControlProfileRequest)(nil),    // 40: service.v1.GetEditorControlProfileRequest
+	(*UpdateEditorControlProfileRequest)(nil), // 41: service.v1.UpdateEditorControlProfileRequest
+	(*CreateExportPayload)(nil),               // 42: service.v1.CreateExportPayload
+	(*GetExportRequestRequest)(nil),           // 43: service.v1.GetExportRequestRequest
+	(*DownloadExportArtifactRequest)(nil),     // 44: service.v1.DownloadExportArtifactRequest
+	(*DownloadExportArtifactResponse)(nil),    // 45: service.v1.DownloadExportArtifactResponse
+	(*SearchDocumentsRequest)(nil),            // 46: service.v1.SearchDocumentsRequest
+	(*SearchDocumentsResponse)(nil),           // 47: service.v1.SearchDocumentsResponse
+	(*ArchiveDocumentRequest)(nil),            // 48: service.v1.ArchiveDocumentRequest
+	(*ArchiveDocumentResponse)(nil),           // 49: service.v1.ArchiveDocumentResponse
+	(*StartWorkflowRequest)(nil),              // 50: service.v1.StartWorkflowRequest
+	(*ApproveStepRequest)(nil),                // 51: service.v1.ApproveStepRequest
+	(*RejectStepRequest)(nil),                 // 52: service.v1.RejectStepRequest
+	(*RequestChangesRequest)(nil),             // 53: service.v1.RequestChangesRequest
+	(*SubmitWorkflowRequest)(nil),             // 54: service.v1.SubmitWorkflowRequest
+	(*ApproveWorkflowRequest)(nil),            // 55: service.v1.ApproveWorkflowRequest
+	(*RequestWorkflowChangesRequest)(nil),     // 56: service.v1.RequestWorkflowChangesRequest
+	(*StartSignatureRequest)(nil),             // 57: service.v1.StartSignatureRequest
+	(*SignatureSigner)(nil),                   // 58: service.v1.SignatureSigner
+	(*RecordSignatureCallbackRequest)(nil),    // 59: service.v1.RecordSignatureCallbackRequest
+	(*GetSignatureStatusRequest)(nil),         // 60: service.v1.GetSignatureStatusRequest
+	(*EmitNotificationRequest)(nil),           // 61: service.v1.EmitNotificationRequest
+	(*EmitNotificationResponse)(nil),          // 62: service.v1.EmitNotificationResponse
+	(*RetryFailedNotificationsRequest)(nil),   // 63: service.v1.RetryFailedNotificationsRequest
+	(*RetryFailedNotificationsResponse)(nil),  // 64: service.v1.RetryFailedNotificationsResponse
+	(*SyncSearchProjectionRequest)(nil),       // 65: service.v1.SyncSearchProjectionRequest
+	(*SyncSearchProjectionResponse)(nil),      // 66: service.v1.SyncSearchProjectionResponse
 }
 var file_service_proto_depIdxs = []int32{
 	4,  // 0: service.v1.ExportRequest.artifact:type_name -> service.v1.ExportArtifact
-	2,  // 1: service.v1.SearchDocumentsResponse.items:type_name -> service.v1.Document
-	29, // 2: service.v1.StartSignatureRequest.signers:type_name -> service.v1.SignatureSigner
-	0,  // 3: service.v1.ExampleService.Ping:input_type -> service.v1.PingRequest
-	8,  // 4: service.v1.DocumentWorkflowService.CreateDraft:input_type -> service.v1.CreateDraftRequest
-	9,  // 5: service.v1.DocumentWorkflowService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
-	10, // 6: service.v1.DocumentWorkflowService.GetDocument:input_type -> service.v1.GetDocumentRequest
-	11, // 7: service.v1.DocumentWorkflowService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
-	12, // 8: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
-	13, // 9: service.v1.DocumentWorkflowService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
-	14, // 10: service.v1.DocumentWorkflowService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
-	15, // 11: service.v1.DocumentWorkflowService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
-	17, // 12: service.v1.DocumentWorkflowService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
-	25, // 13: service.v1.DocumentWorkflowService.SubmitWorkflow:input_type -> service.v1.SubmitWorkflowRequest
-	26, // 14: service.v1.DocumentWorkflowService.ApproveWorkflow:input_type -> service.v1.ApproveWorkflowRequest
-	27, // 15: service.v1.DocumentWorkflowService.RequestWorkflowChanges:input_type -> service.v1.RequestWorkflowChangesRequest
-	19, // 16: service.v1.DocumentWorkflowService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
-	36, // 17: service.v1.SearchNotificationService.SyncSearchProjection:input_type -> service.v1.SyncSearchProjectionRequest
-	17, // 18: service.v1.SearchNotificationService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
-	32, // 19: service.v1.SearchNotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
-	34, // 20: service.v1.SearchNotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
-	8,  // 21: service.v1.DocumentService.CreateDraft:input_type -> service.v1.CreateDraftRequest
-	9,  // 22: service.v1.DocumentService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
-	10, // 23: service.v1.DocumentService.GetDocument:input_type -> service.v1.GetDocumentRequest
-	11, // 24: service.v1.DocumentService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
-	12, // 25: service.v1.DocumentService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
-	13, // 26: service.v1.DocumentService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
-	14, // 27: service.v1.DocumentService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
-	15, // 28: service.v1.DocumentService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
-	17, // 29: service.v1.DocumentService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
-	19, // 30: service.v1.DocumentService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
-	21, // 31: service.v1.WorkflowService.StartWorkflow:input_type -> service.v1.StartWorkflowRequest
-	22, // 32: service.v1.WorkflowService.ApproveStep:input_type -> service.v1.ApproveStepRequest
-	23, // 33: service.v1.WorkflowService.RejectStep:input_type -> service.v1.RejectStepRequest
-	24, // 34: service.v1.WorkflowService.RequestChanges:input_type -> service.v1.RequestChangesRequest
-	28, // 35: service.v1.SignatureService.StartSignature:input_type -> service.v1.StartSignatureRequest
-	30, // 36: service.v1.SignatureService.RecordSignatureCallback:input_type -> service.v1.RecordSignatureCallbackRequest
-	31, // 37: service.v1.SignatureService.GetSignatureStatus:input_type -> service.v1.GetSignatureStatusRequest
-	32, // 38: service.v1.NotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
-	34, // 39: service.v1.NotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
-	1,  // 40: service.v1.ExampleService.Ping:output_type -> service.v1.PingResponse
-	2,  // 41: service.v1.DocumentWorkflowService.CreateDraft:output_type -> service.v1.Document
-	2,  // 42: service.v1.DocumentWorkflowService.UpdateDraft:output_type -> service.v1.Document
-	2,  // 43: service.v1.DocumentWorkflowService.GetDocument:output_type -> service.v1.Document
-	3,  // 44: service.v1.DocumentWorkflowService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	3,  // 45: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	5,  // 46: service.v1.DocumentWorkflowService.CreateExportRequest:output_type -> service.v1.ExportRequest
-	5,  // 47: service.v1.DocumentWorkflowService.GetExportRequest:output_type -> service.v1.ExportRequest
-	16, // 48: service.v1.DocumentWorkflowService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
-	18, // 49: service.v1.DocumentWorkflowService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
-	6,  // 50: service.v1.DocumentWorkflowService.SubmitWorkflow:output_type -> service.v1.WorkflowInstance
-	6,  // 51: service.v1.DocumentWorkflowService.ApproveWorkflow:output_type -> service.v1.WorkflowInstance
-	6,  // 52: service.v1.DocumentWorkflowService.RequestWorkflowChanges:output_type -> service.v1.WorkflowInstance
-	20, // 53: service.v1.DocumentWorkflowService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
-	37, // 54: service.v1.SearchNotificationService.SyncSearchProjection:output_type -> service.v1.SyncSearchProjectionResponse
-	18, // 55: service.v1.SearchNotificationService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
-	33, // 56: service.v1.SearchNotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
-	35, // 57: service.v1.SearchNotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
-	2,  // 58: service.v1.DocumentService.CreateDraft:output_type -> service.v1.Document
-	2,  // 59: service.v1.DocumentService.UpdateDraft:output_type -> service.v1.Document
-	2,  // 60: service.v1.DocumentService.GetDocument:output_type -> service.v1.Document
-	3,  // 61: service.v1.DocumentService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	3,  // 62: service.v1.DocumentService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	5,  // 63: service.v1.DocumentService.CreateExportRequest:output_type -> service.v1.ExportRequest
-	5,  // 64: service.v1.DocumentService.GetExportRequest:output_type -> service.v1.ExportRequest
-	16, // 65: service.v1.DocumentService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
-	18, // 66: service.v1.DocumentService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
-	20, // 67: service.v1.DocumentService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
-	6,  // 68: service.v1.WorkflowService.StartWorkflow:output_type -> service.v1.WorkflowInstance
-	6,  // 69: service.v1.WorkflowService.ApproveStep:output_type -> service.v1.WorkflowInstance
-	6,  // 70: service.v1.WorkflowService.RejectStep:output_type -> service.v1.WorkflowInstance
-	6,  // 71: service.v1.WorkflowService.RequestChanges:output_type -> service.v1.WorkflowInstance
-	7,  // 72: service.v1.SignatureService.StartSignature:output_type -> service.v1.SignatureRequest
-	7,  // 73: service.v1.SignatureService.RecordSignatureCallback:output_type -> service.v1.SignatureRequest
-	7,  // 74: service.v1.SignatureService.GetSignatureStatus:output_type -> service.v1.SignatureRequest
-	33, // 75: service.v1.NotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
-	35, // 76: service.v1.NotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
-	40, // [40:77] is the sub-list for method output_type
-	3,  // [3:40] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	8,  // 1: service.v1.Task.attachments:type_name -> service.v1.TaskAttachment
+	9,  // 2: service.v1.CreateTaskResponse.task:type_name -> service.v1.Task
+	9,  // 3: service.v1.UpdateTaskStatusResponse.task:type_name -> service.v1.Task
+	8,  // 4: service.v1.AddTaskAttachmentsRequest.attachments:type_name -> service.v1.TaskAttachment
+	8,  // 5: service.v1.AddTaskAttachmentsResponse.attachments:type_name -> service.v1.TaskAttachment
+	7,  // 6: service.v1.TaskBoard.members:type_name -> service.v1.BoardMember
+	9,  // 7: service.v1.TaskBoard.tasks:type_name -> service.v1.Task
+	8,  // 8: service.v1.TaskBoard.available_documents:type_name -> service.v1.TaskAttachment
+	7,  // 9: service.v1.TaskBoard.available_approvers:type_name -> service.v1.BoardMember
+	21, // 10: service.v1.ListTaskBoardsResponse.boards:type_name -> service.v1.TaskBoardSummary
+	20, // 11: service.v1.GetTaskBoardResponse.board:type_name -> service.v1.TaskBoard
+	21, // 12: service.v1.CreateTaskBoardResponse.board:type_name -> service.v1.TaskBoardSummary
+	9,  // 13: service.v1.GetTaskDetailsResponse.task:type_name -> service.v1.Task
+	7,  // 14: service.v1.GetTaskDetailsResponse.members:type_name -> service.v1.BoardMember
+	7,  // 15: service.v1.AvailableApproversResponse.items:type_name -> service.v1.BoardMember
+	7,  // 16: service.v1.ListOrganizationMembersResponse.items:type_name -> service.v1.BoardMember
+	7,  // 17: service.v1.AddTaskBoardMemberResponse.member:type_name -> service.v1.BoardMember
+	33, // 18: service.v1.AvailableDocumentsResponse.items:type_name -> service.v1.DocumentItem
+	2,  // 19: service.v1.SearchDocumentsResponse.items:type_name -> service.v1.Document
+	58, // 20: service.v1.StartSignatureRequest.signers:type_name -> service.v1.SignatureSigner
+	0,  // 21: service.v1.ExampleService.Ping:input_type -> service.v1.PingRequest
+	37, // 22: service.v1.DocumentWorkflowService.CreateDraft:input_type -> service.v1.CreateDraftRequest
+	38, // 23: service.v1.DocumentWorkflowService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
+	39, // 24: service.v1.DocumentWorkflowService.GetDocument:input_type -> service.v1.GetDocumentRequest
+	40, // 25: service.v1.DocumentWorkflowService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
+	41, // 26: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
+	42, // 27: service.v1.DocumentWorkflowService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
+	43, // 28: service.v1.DocumentWorkflowService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
+	44, // 29: service.v1.DocumentWorkflowService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
+	46, // 30: service.v1.DocumentWorkflowService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
+	54, // 31: service.v1.DocumentWorkflowService.SubmitWorkflow:input_type -> service.v1.SubmitWorkflowRequest
+	55, // 32: service.v1.DocumentWorkflowService.ApproveWorkflow:input_type -> service.v1.ApproveWorkflowRequest
+	56, // 33: service.v1.DocumentWorkflowService.RequestWorkflowChanges:input_type -> service.v1.RequestWorkflowChangesRequest
+	48, // 34: service.v1.DocumentWorkflowService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
+	65, // 35: service.v1.SearchNotificationService.SyncSearchProjection:input_type -> service.v1.SyncSearchProjectionRequest
+	46, // 36: service.v1.SearchNotificationService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
+	61, // 37: service.v1.SearchNotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
+	63, // 38: service.v1.SearchNotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
+	37, // 39: service.v1.DocumentService.CreateDraft:input_type -> service.v1.CreateDraftRequest
+	38, // 40: service.v1.DocumentService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
+	39, // 41: service.v1.DocumentService.GetDocument:input_type -> service.v1.GetDocumentRequest
+	40, // 42: service.v1.DocumentService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
+	41, // 43: service.v1.DocumentService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
+	42, // 44: service.v1.DocumentService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
+	43, // 45: service.v1.DocumentService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
+	44, // 46: service.v1.DocumentService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
+	46, // 47: service.v1.DocumentService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
+	48, // 48: service.v1.DocumentService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
+	50, // 49: service.v1.WorkflowService.StartWorkflow:input_type -> service.v1.StartWorkflowRequest
+	51, // 50: service.v1.WorkflowService.ApproveStep:input_type -> service.v1.ApproveStepRequest
+	52, // 51: service.v1.WorkflowService.RejectStep:input_type -> service.v1.RejectStepRequest
+	53, // 52: service.v1.WorkflowService.RequestChanges:input_type -> service.v1.RequestChangesRequest
+	57, // 53: service.v1.SignatureService.StartSignature:input_type -> service.v1.StartSignatureRequest
+	59, // 54: service.v1.SignatureService.RecordSignatureCallback:input_type -> service.v1.RecordSignatureCallbackRequest
+	60, // 55: service.v1.SignatureService.GetSignatureStatus:input_type -> service.v1.GetSignatureStatusRequest
+	61, // 56: service.v1.NotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
+	63, // 57: service.v1.NotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
+	18, // 58: service.v1.TaskOrchestrationService.CreateTaskBoard:input_type -> service.v1.CreateTaskBoardRequest
+	10, // 59: service.v1.TaskOrchestrationService.CreateTask:input_type -> service.v1.CreateTaskRequest
+	12, // 60: service.v1.TaskOrchestrationService.UpdateTaskStatus:input_type -> service.v1.UpdateTaskStatusRequest
+	14, // 61: service.v1.TaskOrchestrationService.AddTaskAttachments:input_type -> service.v1.AddTaskAttachmentsRequest
+	16, // 62: service.v1.TaskOrchestrationService.RemoveTaskAttachment:input_type -> service.v1.RemoveTaskAttachmentRequest
+	19, // 63: service.v1.TaskOrchestrationService.ListTaskBoards:input_type -> service.v1.ListTaskBoardsRequest
+	17, // 64: service.v1.TaskOrchestrationService.GetTaskBoard:input_type -> service.v1.GetTaskBoardRequest
+	25, // 65: service.v1.TaskOrchestrationService.GetTaskDetails:input_type -> service.v1.GetTaskDetailsRequest
+	27, // 66: service.v1.TaskOrchestrationService.GetAvailableApprovers:input_type -> service.v1.AvailableApproversRequest
+	34, // 67: service.v1.TaskOrchestrationService.GetAvailableDocuments:input_type -> service.v1.AvailableDocumentsRequest
+	29, // 68: service.v1.TaskOrchestrationService.ListOrganizationMembers:input_type -> service.v1.ListOrganizationMembersRequest
+	31, // 69: service.v1.TaskOrchestrationService.AddTaskBoardMember:input_type -> service.v1.AddTaskBoardMemberRequest
+	1,  // 70: service.v1.ExampleService.Ping:output_type -> service.v1.PingResponse
+	2,  // 71: service.v1.DocumentWorkflowService.CreateDraft:output_type -> service.v1.Document
+	2,  // 72: service.v1.DocumentWorkflowService.UpdateDraft:output_type -> service.v1.Document
+	2,  // 73: service.v1.DocumentWorkflowService.GetDocument:output_type -> service.v1.Document
+	3,  // 74: service.v1.DocumentWorkflowService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	3,  // 75: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	5,  // 76: service.v1.DocumentWorkflowService.CreateExportRequest:output_type -> service.v1.ExportRequest
+	5,  // 77: service.v1.DocumentWorkflowService.GetExportRequest:output_type -> service.v1.ExportRequest
+	45, // 78: service.v1.DocumentWorkflowService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
+	47, // 79: service.v1.DocumentWorkflowService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
+	6,  // 80: service.v1.DocumentWorkflowService.SubmitWorkflow:output_type -> service.v1.WorkflowInstance
+	6,  // 81: service.v1.DocumentWorkflowService.ApproveWorkflow:output_type -> service.v1.WorkflowInstance
+	6,  // 82: service.v1.DocumentWorkflowService.RequestWorkflowChanges:output_type -> service.v1.WorkflowInstance
+	49, // 83: service.v1.DocumentWorkflowService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
+	66, // 84: service.v1.SearchNotificationService.SyncSearchProjection:output_type -> service.v1.SyncSearchProjectionResponse
+	47, // 85: service.v1.SearchNotificationService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
+	62, // 86: service.v1.SearchNotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
+	64, // 87: service.v1.SearchNotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
+	2,  // 88: service.v1.DocumentService.CreateDraft:output_type -> service.v1.Document
+	2,  // 89: service.v1.DocumentService.UpdateDraft:output_type -> service.v1.Document
+	2,  // 90: service.v1.DocumentService.GetDocument:output_type -> service.v1.Document
+	3,  // 91: service.v1.DocumentService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	3,  // 92: service.v1.DocumentService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	5,  // 93: service.v1.DocumentService.CreateExportRequest:output_type -> service.v1.ExportRequest
+	5,  // 94: service.v1.DocumentService.GetExportRequest:output_type -> service.v1.ExportRequest
+	45, // 95: service.v1.DocumentService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
+	47, // 96: service.v1.DocumentService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
+	49, // 97: service.v1.DocumentService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
+	6,  // 98: service.v1.WorkflowService.StartWorkflow:output_type -> service.v1.WorkflowInstance
+	6,  // 99: service.v1.WorkflowService.ApproveStep:output_type -> service.v1.WorkflowInstance
+	6,  // 100: service.v1.WorkflowService.RejectStep:output_type -> service.v1.WorkflowInstance
+	6,  // 101: service.v1.WorkflowService.RequestChanges:output_type -> service.v1.WorkflowInstance
+	36, // 102: service.v1.SignatureService.StartSignature:output_type -> service.v1.SignatureRequest
+	36, // 103: service.v1.SignatureService.RecordSignatureCallback:output_type -> service.v1.SignatureRequest
+	36, // 104: service.v1.SignatureService.GetSignatureStatus:output_type -> service.v1.SignatureRequest
+	62, // 105: service.v1.NotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
+	64, // 106: service.v1.NotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
+	24, // 107: service.v1.TaskOrchestrationService.CreateTaskBoard:output_type -> service.v1.CreateTaskBoardResponse
+	11, // 108: service.v1.TaskOrchestrationService.CreateTask:output_type -> service.v1.CreateTaskResponse
+	13, // 109: service.v1.TaskOrchestrationService.UpdateTaskStatus:output_type -> service.v1.UpdateTaskStatusResponse
+	15, // 110: service.v1.TaskOrchestrationService.AddTaskAttachments:output_type -> service.v1.AddTaskAttachmentsResponse
+	9,  // 111: service.v1.TaskOrchestrationService.RemoveTaskAttachment:output_type -> service.v1.Task
+	22, // 112: service.v1.TaskOrchestrationService.ListTaskBoards:output_type -> service.v1.ListTaskBoardsResponse
+	23, // 113: service.v1.TaskOrchestrationService.GetTaskBoard:output_type -> service.v1.GetTaskBoardResponse
+	26, // 114: service.v1.TaskOrchestrationService.GetTaskDetails:output_type -> service.v1.GetTaskDetailsResponse
+	28, // 115: service.v1.TaskOrchestrationService.GetAvailableApprovers:output_type -> service.v1.AvailableApproversResponse
+	35, // 116: service.v1.TaskOrchestrationService.GetAvailableDocuments:output_type -> service.v1.AvailableDocumentsResponse
+	30, // 117: service.v1.TaskOrchestrationService.ListOrganizationMembers:output_type -> service.v1.ListOrganizationMembersResponse
+	32, // 118: service.v1.TaskOrchestrationService.AddTaskBoardMember:output_type -> service.v1.AddTaskBoardMemberResponse
+	70, // [70:119] is the sub-list for method output_type
+	21, // [21:70] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_service_proto_init() }
@@ -2906,9 +5109,9 @@ func file_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   38,
+			NumMessages:   67,
 			NumExtensions: 0,
-			NumServices:   7,
+			NumServices:   8,
 		},
 		GoTypes:           file_service_proto_goTypes,
 		DependencyIndexes: file_service_proto_depIdxs,
