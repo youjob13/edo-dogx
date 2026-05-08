@@ -16,13 +16,13 @@ import {
   DashboardConflictError,
   OrganizationMember,
 } from '../../domain/dashboard/dashboard.models';
-import { DashboardApiPort, DASHBOARD_API_PORT } from '../../ports/outbound/dashboard-api.port';
 import { TaskResponse } from '@edo/types';
+import { TASK_BOARDS_API_PORT, TaskBoardsApiPort } from '../../ports/outbound/task-boards-api.port';
 
 
 @Injectable({ providedIn: 'root' })
-export class DashboardUseCases {
-  private readonly api: DashboardApiPort = inject(DASHBOARD_API_PORT);
+export class TaskBoardUseCases {
+  private readonly api: TaskBoardsApiPort = inject(TASK_BOARDS_API_PORT);
 
   public parseConflictError(error: unknown): DashboardConflictError | null {
     if (!(error instanceof Error) || !error.message.includes('VERSION_CONFLICT')) {

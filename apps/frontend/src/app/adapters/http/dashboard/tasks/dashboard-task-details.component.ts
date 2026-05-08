@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, take } from 'rxjs';
-import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import {
   KanbanTask,
   KanbanTaskDetails,
   KanbanTaskStatus,
 } from '../../../../domain/dashboard/dashboard.models';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
+import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-task-details',
@@ -18,7 +18,7 @@ import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../.
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardTaskDetailsComponent {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly useCases = inject(TaskBoardUseCases);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 

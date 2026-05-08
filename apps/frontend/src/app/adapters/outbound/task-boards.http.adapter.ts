@@ -16,8 +16,8 @@ import {
   KanbanBoardCreatePayload,
   OrganizationMember,
 } from '../../domain/dashboard/dashboard.models';
-import { DashboardApiPort } from '../../ports/outbound/dashboard-api.port';
 import type { CreateTaskRequest, TaskResponse } from '@edo/types';
+import { TaskBoardsApiPort } from '../../ports/outbound/task-boards-api.port';
 
 interface GatewayTaskBoardsResponse {
   boards: Array<KanbanBoardSummary>;
@@ -40,7 +40,7 @@ interface GatewayOrganizationMembersResponse {
 }
 
 @Injectable({ providedIn: 'root' })
-export class DashboardMockHttpAdapter implements DashboardApiPort {
+export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = '/api';
 

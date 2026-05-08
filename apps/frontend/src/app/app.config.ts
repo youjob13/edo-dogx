@@ -4,11 +4,11 @@ import { provideRouter } from '@angular/router';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { DOCUMENT_API_PORT } from './ports/outbound/document-api.port';
-import { DashboardMockHttpAdapter } from './adapters/outbound/dashboard-mock-http.adapter';
 
 import { routes } from './app.routes';
-import { DashboardHttpAdapter } from "./adapters/outbound/dashboard/documents.http.adapter";
-import { DASHBOARD_API_PORT } from "./ports/outbound/dashboard-api.port";
+import { DashboardHttpAdapter } from "./adapters/outbound/documents.http.adapter";
+import { TaskBoardsHttpAdapter } from "./adapters/outbound/task-boards.http.adapter";
+import { TASK_BOARDS_API_PORT } from "./ports/outbound/task-boards-api.port";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -18,8 +18,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
     provideTaiga(),
     {
-      provide: DASHBOARD_API_PORT,
-      useExisting: DashboardMockHttpAdapter,
+      provide: TASK_BOARDS_API_PORT,
+      useExisting: TaskBoardsHttpAdapter,
     },
     {
       provide: DOCUMENT_API_PORT,

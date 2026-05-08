@@ -25,7 +25,7 @@ export const authGuard: CanActivateFn = () => {
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse && err.status === 401) {
         if (retries > 10) {
-          return of(router.parseUrl('/guest'));
+          throw new Error('Failed to authenticate. Client emitted')
         }
         retries += 1;
         return of(router.parseUrl('/guest'));

@@ -17,7 +17,7 @@ import {
 } from '../../domain/dashboard/dashboard.models';
 import { TaskResponse } from '@edo/types';
 
-export interface DashboardApiPort {
+export interface TaskBoardsApiPort {
   getTaskBoards(organizationId: string): Observable<Array<KanbanBoardSummary>>;
   createTaskBoard(payload: KanbanBoardCreatePayload): Observable<KanbanBoardSummary>;
   getTaskBoard(boardId: string): Observable<KanbanBoardDetails>;
@@ -45,6 +45,6 @@ export interface DashboardApiPort {
   addBoardMember(boardId: string, userId: string): Observable<{ member: OrganizationMember }>;
 }
 
-export const DASHBOARD_API_PORT = new InjectionToken<DashboardApiPort>(
-  'DASHBOARD_API_PORT',
+export const TASK_BOARDS_API_PORT = new InjectionToken<TaskBoardsApiPort>(
+  'TASK_BOARDS_API_PORT',
 );

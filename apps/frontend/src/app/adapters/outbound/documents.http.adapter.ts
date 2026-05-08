@@ -21,8 +21,8 @@ import {
   StorageUsage,
   DashboardUpdateEditorControlProfilePayload,
   WeeklyVolumePoint,
-} from '../../../domain/dashboard/dashboard.models';
-import { DocumentApiPort } from '../../../ports/outbound/document-api.port';
+} from '../../domain/dashboard/dashboard.models';
+import { DocumentApiPort } from '../../ports/outbound/document-api.port';
 import { Params } from '@angular/router';
 
 const MOCK_WEEKLY_VOLUME: Array<WeeklyVolumePoint> = [

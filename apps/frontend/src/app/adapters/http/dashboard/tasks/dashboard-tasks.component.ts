@@ -3,7 +3,6 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, take } from 'rxjs';
-import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import {
   AvailableApproverItem,
   AvailableDocumentItem,
@@ -18,6 +17,7 @@ import {
   TaskType,
 } from '../../../../domain/dashboard/dashboard.models';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
+import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
 
 interface TaskGroupView {
   readonly id: string;
@@ -39,7 +39,7 @@ interface TaskColumnView {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardTasksComponent {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly useCases = inject(TaskBoardUseCases);
   private readonly router = inject(Router);
   private readonly statusOrder: Array<KanbanTaskStatus> = ['pending', 'in_review', 'approved', 'declined'];
 

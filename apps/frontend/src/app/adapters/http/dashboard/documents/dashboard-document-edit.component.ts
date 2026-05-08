@@ -11,7 +11,6 @@ import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { finalize, take } from 'rxjs';
-import { DashboardUseCases } from '../../../../application/dashboard/dashboard.use-cases';
 import {
   DashboardDocumentStatus,
   DashboardEditorControlProfile,
@@ -28,6 +27,7 @@ import {
 } from './dashboard-rich-editor-toolbar';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 import Placeholder from '@tiptap/extension-placeholder';
+import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-document-edit',
@@ -38,7 +38,7 @@ import Placeholder from '@tiptap/extension-placeholder';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardDocumentEditComponent implements UnsavedChangesAware, AfterViewInit, OnDestroy {
-  private readonly useCases = inject(DashboardUseCases);
+  private readonly useCases = inject(TaskBoardUseCases);
   private readonly documentUseCases = inject(DocumentUseCases);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
