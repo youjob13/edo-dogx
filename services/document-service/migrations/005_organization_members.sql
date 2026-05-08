@@ -21,9 +21,9 @@ ON CONFLICT (organization_id, user_id) DO NOTHING;
 
 INSERT INTO organization_members (organization_id, user_id, full_name, department, email)
 VALUES
-    ('org-main', 'approver-001', 'Maria Garcia', 'Legal', 'maria.garcia@example.com'),
-    ('org-main', 'approver-002', 'Ahmed Hassan', 'Finance', 'ahmed.hassan@example.com'),
-    ('org-main', 'approver-003', 'Sophie Laurent', 'HR', 'sophie.laurent@example.com')
+    ('org-main', 'approver-001', 'Мария Курапова', 'Legal', 'maria.kurapova@example.com'),
+    ('org-main', 'approver-002', 'Алексей Долматов', 'Finance', 'alexey.dolmatov@example.com'),
+    ('org-main', 'approver-003', 'Александр Ваш', 'HR', 'sashka.vash@example.com')
 ON CONFLICT (organization_id, user_id) DO NOTHING;
 
 CREATE INDEX IF NOT EXISTS idx_organization_members_org_id ON organization_members(organization_id);

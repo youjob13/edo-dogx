@@ -38,30 +38,24 @@ const MOCK_WEEKLY_VOLUME: Array<WeeklyVolumePoint> = [
 const MOCK_ACTIVITY: Array<ActivityItem> = [
   {
     id: 'a1',
-    actor: 'Сара Миллер',
-    description: 'подтвердила Procurement_04.pdf',
+    actor: 'Антов Власов',
+    description: 'подтвердил Паспорт_изделия_№PS-178/26.pdf',
     timestampLabel: '12 минут назад',
     linkedDocumentId: 'd1',
   },
   {
     id: 'a2',
     actor: 'Система',
-    description: 'загрузила 124 записи из API_Inbound',
+    description: 'загрузила 124 записи',
     timestampLabel: '45 минут назад',
   },
   {
     id: 'a3',
-    actor: 'Дэвид Чен',
-    description: 'отметил несоответствие в Tax_Return_2023.pdf',
+    actor: 'Денис Кукояка',
+    description: 'отклонил Ответ_на_поставки_№785.pdf',
     timestampLabel: '1 час назад',
     linkedDocumentId: 'd6',
-  },
-  {
-    id: 'a4',
-    actor: 'Внешний доступ',
-    description: 'предоставлен группе Legal Partners Group',
-    timestampLabel: '2 часа назад',
-  },
+  }
 ];
 
 

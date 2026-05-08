@@ -76,7 +76,7 @@ export class DashboardDocumentsComponent {
 
   protected readonly categoryOptions: Array<{ value: DashboardDocumentCategory | 'all'; label: string }> = [
     { value: 'all', label: 'Все категории' },
-    { value: 'HR', label: 'HR' },
+    { value: 'HR', label: 'Кадровый' },
     { value: 'FINANCE', label: 'Финансы' },
     { value: 'GENERAL', label: 'Общее' },
   ];
@@ -201,15 +201,6 @@ export class DashboardDocumentsComponent {
     const current = this.pagination();
     const maxPage = Math.max(1, Math.ceil(current.totalItems / current.pageSize));
     this.pagination.update((state) => ({ ...state, page: Math.min(maxPage, state.page + 1) }));
-    this.syncQueryParams();
-  }
-
-  protected onToolbarSortPressed(): void {
-    const sort = this.sortState();
-    this.sortState.set({
-      key: sort.key,
-      direction: sort.direction === 'asc' ? 'desc' : 'asc',
-    });
     this.syncQueryParams();
   }
 
@@ -348,7 +339,7 @@ export class DashboardDocumentsComponent {
 
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
     const labels: Record<DashboardDocumentCategory, string> = {
-      HR: 'HR',
+      HR: 'Кадровый',
       FINANCE: 'Финансы',
       GENERAL: 'Общее',
     };

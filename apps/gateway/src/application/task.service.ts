@@ -124,9 +124,9 @@ export class TaskService {
     
     // Return a hardcoded list of approvers (can be extended to query from directory service)
     return [
-      { userId: 'approver-001', userName: 'Maria Garcia' },
-      { userId: 'approver-002', userName: 'Ahmed Hassan' },
-      { userId: 'approver-003', userName: 'Sophie Laurent' },
+      { userId: 'approver-001', userName: 'Мария Курапова' },
+      { userId: 'approver-002', userName: 'Алексей Долматов' },
+      { userId: 'approver-003', userName: 'Александр Ваш' },
     ];
   }
 

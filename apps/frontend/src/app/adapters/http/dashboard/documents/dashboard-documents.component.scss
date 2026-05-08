@@ -34,6 +34,10 @@
   padding: 0.4rem 0.65rem;
 }
 
+.dashboard-documents__filters option {
+  color: var(--edo-ui-text-dark);
+}
+
 .dashboard-documents__preview {
   display: grid;
   gap: 0.875rem;

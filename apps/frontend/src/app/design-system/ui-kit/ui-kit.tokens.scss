@@ -36,6 +36,10 @@
   --edo-ui-space-page: 20px;
 
   --edo-ui-shadow-floating: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  td {
+    color: #000 !important;
+  }
 }
 
 .theme-dark {
@@ -48,6 +52,7 @@
   --edo-ui-outline: #3a434b;
   --edo-ui-outline-strong: #647180;
   --edo-ui-primary: #f6f8fb;
+  --edo-ui-text-dark: #000;
   --edo-ui-primary-ink: #101214;
   --edo-ui-success: #44d088;
   --edo-ui-success-soft: rgba(68, 208, 136, 0.2);
@@ -62,4 +67,8 @@
   --edo-ui-focus: #7ec1ff;
   --edo-ui-sidebar-bg: #13171a;
   --edo-ui-topbar-bg: rgba(20, 24, 27, 0.92);
+
+  td {
+    color: #fff !important;
+  }
 }

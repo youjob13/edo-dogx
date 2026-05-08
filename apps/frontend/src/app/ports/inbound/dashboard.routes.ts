@@ -41,20 +41,6 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
-        path: 'signatures',
-        loadComponent: () =>
-          import('../../adapters/http/dashboard/signature-panel.component').then(
-            (m) => m.SignaturePanelComponent,
-          ),
-      },
-      {
-        path: 'category-workflow',
-        loadComponent: () =>
-          import('../../adapters/http/dashboard/category-workflow.component').then(
-            (m) => m.CategoryWorkflowComponent,
-          ),
-      },
-      {
         path: 'tasks/:boardId/task/:taskId',
         loadComponent: () =>
           import('../../adapters/http/dashboard/tasks/dashboard-task-details.component').then(

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { UiKitPaginationState, UiKitSortState } from '../ui-kit.models';
+import { UiKitPaginationState } from '../ui-kit.models';
 
 @Component({
   selector: 'edo-dogx-table-toolbar',
@@ -10,16 +10,6 @@ import { UiKitPaginationState, UiKitSortState } from '../ui-kit.models';
       </div>
 
       <div class="edo-ui-kit-table-toolbar__right">
-        @if (sort()) {
-          <button
-            type="button"
-            aria-label="Переключить сортировку таблицы"
-            (click)="sortPressed.emit()"
-          >
-            Сортировка: {{ sortLabel() }}
-          </button>
-        }
-
         @if (pagination()) {
           <div class="edo-ui-kit-table-toolbar__pagination">
             <button
@@ -48,18 +38,7 @@ import { UiKitPaginationState, UiKitSortState } from '../ui-kit.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TableToolbarComponent {
-  public readonly sort = input<UiKitSortState | null>(null);
   public readonly pagination = input<UiKitPaginationState | null>(null);
-
-  protected readonly sortLabel = computed(() => {
-    const sort = this.sort();
-    if (!sort) {
-      return '';
-    }
-
-    const direction = sort.direction === 'asc' ? 'по возрастанию' : 'по убыванию';
-    return `${sort.key} (${direction})`;
-  });
 
   protected readonly pageText = computed(() => {
     const pagination = this.pagination();

@@ -315,7 +315,7 @@ export class DashboardHomeComponent {
 
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
     const labels: Record<DashboardDocumentCategory, string> = {
-      HR: 'HR',
+      HR: 'Кадровый',
       FINANCE: 'Финансы',
       GENERAL: 'Общее',
     };

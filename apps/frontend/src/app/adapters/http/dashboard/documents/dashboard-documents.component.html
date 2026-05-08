@@ -1,8 +1,8 @@
 <edo-dogx-page-section
   title="Документы"
-  subtitle="Фильтрация, сортировка и действия с мок-данными"
+  subtitle="Фильтрация, сортировка и действия"
 >
-  <edo-dogx-card title="Список документов" subtitle="Все элементы страницы кликабельны и обрабатываются">
+  <edo-dogx-card title="Список документов" subtitle="Отображаются все доступные пользователю документы">
     <div class="dashboard-documents__actions">
       <edo-dogx-button
         label="Создать документ"
@@ -46,9 +46,7 @@
     />
 
     <edo-dogx-table-toolbar
-      [sort]="sortState()"
       [pagination]="pagination()"
-      (sortPressed)="onToolbarSortPressed()"
       (previousPagePressed)="onPreviousPage()"
       (nextPagePressed)="onNextPage()"
     />
