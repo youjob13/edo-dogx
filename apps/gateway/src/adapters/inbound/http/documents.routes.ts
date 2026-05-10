@@ -5,10 +5,7 @@ import {
   GrpcClientError,
 } from '../../outbound/grpc/document.client.js';
 
-const allowedStatuses = new Set<DocumentStatus>(['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED']);
 const documentClient = new DocumentServiceClient();
-
-type DocumentStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
 
 function toContentDocumentJSON(contentDocument: Record<string, unknown> | undefined): string | undefined {
   if (contentDocument === undefined) {
@@ -97,7 +94,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
   fastify.patch<{
     Params: { documentId: string };
-    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown>; status?: DocumentStatus };
+    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown> };
   }>(
     '/:documentId',
     {
@@ -117,14 +114,13 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
             title: { type: 'string', minLength: 1 },
             expectedVersion: { type: 'integer', minimum: 1 },
             contentDocument: { type: 'object', additionalProperties: true },
-            status: { type: 'string', enum: ['DRAFT', 'IN_REVIEW', 'APPROVED', 'ARCHIVED'] },
           },
         },
       },
     },
     async (request, reply) => {
       const { documentId } = request.params;
-      const { title, expectedVersion, contentDocument, status } = request.body;
+      const { title, expectedVersion, contentDocument } = request.body;
 
       if (typeof documentId !== 'string' || documentId.trim() === '') {
         return reply.code(400).send({ error: 'documentId is required' });
@@ -144,7 +140,6 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           title: title.trim(),
           content_document_json: contentDocumentJSON,
           expected_version: expectedVersion,
-          status: status || 'DRAFT',
         });
         return reply.send(response);
       } catch (error) {
@@ -190,7 +185,6 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
   fastify.get<{
     Querystring: {
       q?: string;
-      status?: DocumentStatus;
       category?: string;
       limit?: number;
       offset?: number;
@@ -204,7 +198,6 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           type: 'object',
           properties: {
             q: { type: 'string' },
-            status: { type: 'string' },
             category: { type: 'string' },
             limit: { type: 'integer', minimum: 1, maximum: 100 },
             offset: { type: 'integer', minimum: 0 },
@@ -214,10 +207,6 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
     },
     async (request, reply) => {
       const q = typeof request.query.q === 'string' ? request.query.q : undefined;
-      const status =
-        typeof request.query.status === 'string' && allowedStatuses.has(request.query.status)
-          ? request.query.status
-          : undefined;
       const category =
         typeof request.query.category === 'string' ? request.query.category : undefined;
       const limit =
@@ -229,15 +218,10 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           ? request.query.offset
           : 0;
 
-      if (request.query.status && !status) {
-        return reply.code(400).send({ error: 'invalid status filter' });
-      }
-
       try {
         const response = await documentClient.searchDocuments({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           query: q,
-          status,
           category,
           limit,
           offset,
@@ -245,6 +229,47 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.send(response);
       } catch (error) {
         request.log.error({ error }, 'document-service search failed');
+        return mapGrpcError(reply, error);
+      }
+    },
+  );
+
+  fastify.get<{ Params: { documentId: string }; Querystring: { limit?: number; offset?: number } }>(
+    '/:documentId/versions',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('documents.read')],
+    },
+    async (request, reply) => {
+      try {
+        const response = await documentClient.listDocumentVersions({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: request.params.documentId,
+          limit: request.query.limit ?? 20,
+          offset: request.query.offset ?? 0,
+        });
+        return reply.send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service list versions failed');
+        return mapGrpcError(reply, error);
+      }
+    },
+  );
+
+  fastify.get<{ Params: { documentId: string; versionNumber: string } }>(
+    '/:documentId/versions/:versionNumber',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('documents.read')],
+    },
+    async (request, reply) => {
+      try {
+        const response = await documentClient.getDocumentVersion({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: request.params.documentId,
+          version_number: Number(request.params.versionNumber),
+        });
+        return reply.send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service get version failed');
         return mapGrpcError(reply, error);
       }
     },

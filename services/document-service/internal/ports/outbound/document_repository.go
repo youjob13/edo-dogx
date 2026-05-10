@@ -21,7 +21,6 @@ type DocumentRepository interface {
 
 type SearchDocumentsInput struct {
 	Query    string
-	Status   model.DocumentStatus
 	Category string
 	Limit    int
 	Offset   int
@@ -32,7 +31,6 @@ type UpdateDraftInput struct {
 	ExpectedVersion int64
 	Title           string
 	ContentDocument map[string]any
-	Status          model.DocumentStatus
 	ActorUserID     string
 }
 
@@ -65,5 +63,6 @@ type CompleteExportRequestSuccessInput struct {
 }
 
 type DocumentVersionRepository interface {
-	AppendVersion(ctx context.Context, document model.Document, actorUserID string, changeSummary string) error
+	ListVersions(ctx context.Context, documentID string, limit int, offset int) ([]model.DocumentVersion, int64, error)
+	GetVersion(ctx context.Context, documentID string, versionNumber int64) (model.DocumentVersion, error)
 }

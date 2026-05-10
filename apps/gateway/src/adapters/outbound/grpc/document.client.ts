@@ -70,6 +70,14 @@ export class DocumentServiceClient {
     return this.call('SearchDocuments', payload);
   }
 
+  listDocumentVersions(payload: unknown): Promise<unknown> {
+    return this.call('ListDocumentVersions', payload);
+  }
+
+  getDocumentVersion(payload: unknown): Promise<unknown> {
+    return this.call('GetDocumentVersion', payload);
+  }
+
   submitWorkflow(payload: unknown): Promise<unknown> {
     return this.call('SubmitWorkflow', payload);
   }

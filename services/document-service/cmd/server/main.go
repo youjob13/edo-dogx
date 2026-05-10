@@ -32,6 +32,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
+	if err := ensureDocumentSchema(db); err != nil {
+		slog.Error("failed to ensure document schema", "err", err)
+		os.Exit(1)
+	}
 
 	minioClient, bucketName, err := connectMinIO()
 	if err != nil {
@@ -64,8 +68,8 @@ func main() {
 		bucketName,
 		time.Duration(presignedExpirySeconds)*time.Second,
 	)
+	versionRepository := postgresadapter.NewDocumentVersionRepository(db, minioClient, bucketName)
 	taskRepository := postgresadapter.NewTaskRepository(db)
-	versionRepository := postgresadapter.NewDocumentVersionRepository(db)
 	lifecycleService := appservice.NewDocumentLifecycleService(documentRepository, versionRepository)
 
 	lis, err := net.Listen("tcp", addr)
@@ -117,6 +121,46 @@ func connectPostgres() (*sql.DB, error) {
 	return db, nil
 }
 
+func ensureDocumentSchema(db *sql.DB) error {
+	statements := []string{
+		`ALTER TABLE documents
+			ADD COLUMN IF NOT EXISTS current_version_number BIGINT`,
+		`ALTER TABLE documents
+			ADD COLUMN IF NOT EXISTS current_object_key TEXT`,
+		`ALTER TABLE documents
+			ADD COLUMN IF NOT EXISTS current_object_version_id TEXT`,
+		`ALTER TABLE documents
+			ADD COLUMN IF NOT EXISTS owner_user_name TEXT`,
+		`ALTER TABLE document_versions
+			ADD COLUMN IF NOT EXISTS object_key TEXT`,
+		`ALTER TABLE document_versions
+			ADD COLUMN IF NOT EXISTS object_version_id TEXT`,
+		`DO $$
+		BEGIN
+			IF EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_name = 'document_versions'
+				  AND column_name = 'status'
+			) THEN
+				ALTER TABLE document_versions ALTER COLUMN status DROP NOT NULL;
+			END IF;
+		END $$`,
+		`UPDATE documents SET current_version_number = COALESCE(current_version_number, version, 1)`,
+		`ALTER TABLE documents ALTER COLUMN current_version_number SET DEFAULT 1`,
+		`ALTER TABLE documents ALTER COLUMN current_version_number SET NOT NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_document_versions_document_id_version ON document_versions(document_id, version_number DESC)`,
+	}
+
+	for _, statement := range statements {
+		if _, err := db.Exec(statement); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func connectMinIO() (*minio.Client, string, error) {
 	endpoint := getEnv("MINIO_ENDPOINT", "minio:9000")
 	bucketName := getEnv("MINIO_BUCKET", "edo-exports")
@@ -136,6 +180,9 @@ func connectMinIO() (*minio.Client, string, error) {
 		if err := client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{}); err != nil {
 			return nil, "", err
 		}
+	}
+	if err := client.EnableVersioning(ctx, bucketName); err != nil {
+		return nil, "", err
 	}
 
 	return client, bucketName, nil

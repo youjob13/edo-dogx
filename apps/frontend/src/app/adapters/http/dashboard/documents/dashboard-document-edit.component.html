@@ -10,16 +10,6 @@
         [errorText]="'Укажите название (до 300 символов)'"
       />
 
-      <label class="dashboard-document-edit__field">
-        <span>Статус</span>
-        <select [formControl]="statusControl">
-          <option value="DRAFT">Ожидает</option>
-          <option value="IN_REVIEW">На проверке</option>
-          <option value="APPROVED">Утвержден</option>
-          <option value="ARCHIVED">В архиве</option>
-        </select>
-      </label>
-
        <section class="editor dashboard-rich-editor" aria-label="Редактор содержимого">
         <div class="editor__toolbar">
           @for (group of toolbarGroups; track group.id) {

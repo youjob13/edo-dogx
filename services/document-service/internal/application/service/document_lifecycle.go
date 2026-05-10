@@ -41,7 +41,6 @@ type UpdateDraftInput struct {
 	Title           string
 	ExpectedVersion int64
 	ContentDocument map[string]any
-	Status          model.DocumentStatus
 }
 
 type GetEditorControlProfileInput struct {
@@ -84,10 +83,22 @@ type GetDocumentInput struct {
 	DocumentID  string
 }
 
+type ListDocumentVersionsInput struct {
+	ActorUserID string
+	DocumentID  string
+	Limit       int
+	Offset      int
+}
+
+type GetDocumentVersionInput struct {
+	ActorUserID   string
+	DocumentID    string
+	VersionNumber int64
+}
+
 type SearchDocumentsInput struct {
 	ActorUserID string
 	Query       string
-	Status      model.DocumentStatus
 	Category    string
 	Limit       int
 	Offset      int
@@ -119,19 +130,15 @@ func (s *DocumentLifecycleService) CreateDraft(ctx context.Context, input Create
 	document := model.Document{
 		Title:           title,
 		Category:        input.Category,
-		Status:          model.DocumentStatusDraft,
 		ContentDocument: contentDocument,
 		OwnerUser:       input.ActorUserID,
+		OwnerUserName:   input.ActorUserID,
 		Version:         1,
 		UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
 	}
 
 	created, err := s.documents.CreateDraft(ctx, document)
 	if err != nil {
-		return model.Document{}, err
-	}
-
-	if err := s.versions.AppendVersion(ctx, created, input.ActorUserID, "document draft created"); err != nil {
 		return model.Document{}, err
 	}
 
@@ -157,7 +164,6 @@ func (s *DocumentLifecycleService) UpdateDraft(ctx context.Context, input Update
 		ExpectedVersion: input.ExpectedVersion,
 		Title:           title,
 		ContentDocument: input.ContentDocument,
-		Status:          input.Status,
 		ActorUserID:     input.ActorUserID,
 	})
 	if err != nil {
@@ -172,10 +178,19 @@ func (s *DocumentLifecycleService) GetDocument(ctx context.Context, input GetDoc
 	return s.documents.GetByID(ctx, input.DocumentID)
 }
 
+func (s *DocumentLifecycleService) ListDocumentVersions(ctx context.Context, input ListDocumentVersionsInput) ([]model.DocumentVersion, int64, error) {
+	_ = input.ActorUserID
+	return s.versions.ListVersions(ctx, input.DocumentID, input.Limit, input.Offset)
+}
+
+func (s *DocumentLifecycleService) GetDocumentVersion(ctx context.Context, input GetDocumentVersionInput) (model.DocumentVersion, error) {
+	_ = input.ActorUserID
+	return s.versions.GetVersion(ctx, input.DocumentID, input.VersionNumber)
+}
+
 func (s *DocumentLifecycleService) SearchDocuments(ctx context.Context, input SearchDocumentsInput) ([]model.Document, int64, error) {
 	return s.documents.SearchDocuments(ctx, outbound.SearchDocumentsInput{
 		Query:    input.Query,
-		Status:   input.Status,
 		Category: input.Category,
 		Limit:    input.Limit,
 		Offset:   input.Offset,
@@ -240,15 +255,31 @@ func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, inpu
 		)
 		return model.ExportRequest{}, err
 	}
-	if document.Version != input.SourceVersion {
-		slog.Error("create export request version conflict",
+	if input.SourceVersion <= 0 {
+		slog.Error("create export request invalid source version",
 			"actorUserId", input.ActorUserID,
 			"documentId", input.DocumentID,
 			"sourceVersion", input.SourceVersion,
-			"currentVersion", document.Version,
 		)
 		return model.ExportRequest{}, model.NewVersionConflictError(input.SourceVersion, document.Version)
 	}
+
+	versionSnapshot, err := s.versions.GetVersion(ctx, input.DocumentID, input.SourceVersion)
+	if err != nil {
+		slog.Error("create export request failed to load source version",
+			"actorUserId", input.ActorUserID,
+			"documentId", input.DocumentID,
+			"sourceVersion", input.SourceVersion,
+			"err", err,
+		)
+		return model.ExportRequest{}, err
+	}
+
+	exportDocument := document
+	exportDocument.Title = versionSnapshot.Title
+	exportDocument.Category = versionSnapshot.Category
+	exportDocument.ContentDocument = versionSnapshot.ContentDocument
+	exportDocument.Version = versionSnapshot.VersionNumber
 
 	request, err := s.documents.CreateExportRequest(ctx, outbound.CreateExportRequestInput{
 		DocumentID:      input.DocumentID,
@@ -267,7 +298,7 @@ func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, inpu
 		return model.ExportRequest{}, err
 	}
 
-	artifact, err := buildExportArtifact(document, input.Format)
+	artifact, err := buildExportArtifact(exportDocument, input.Format)
 	if err != nil {
 		slog.Error("create export request failed to build artifact",
 			"exportRequestId", request.ID,
@@ -352,12 +383,7 @@ func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbou
 	if !ok {
 		return model.Document{}, model.ErrDocumentNotFound
 	}
-	titleChanged := document.Title != input.Title
-	contentChanged := input.ContentDocument != nil && !documentContentEqual(document.ContentDocument, input.ContentDocument)
-	if (titleChanged || contentChanged) && !document.Status.IsEditable() {
-		return model.Document{}, model.ErrDocumentNotEditable
-	}
-	if (titleChanged || contentChanged) && document.Version != input.ExpectedVersion {
+	if document.Version != input.ExpectedVersion {
 		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, document.Version)
 	}
 
@@ -365,26 +391,12 @@ func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbou
 	if input.ContentDocument != nil {
 		document.ContentDocument = input.ContentDocument
 	}
-	document.Status = input.Status
-
-	if titleChanged || contentChanged {
-		document.Version++
-	}
+	document.Version++
 
 	document.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	r.items[input.DocumentID] = document
 
 	return document, nil
-}
-
-type inMemoryDocumentVersionRepository struct{}
-
-func newInMemoryDocumentVersionRepository() *inMemoryDocumentVersionRepository {
-	return &inMemoryDocumentVersionRepository{}
-}
-
-func (r *inMemoryDocumentVersionRepository) AppendVersion(_ context.Context, _ model.Document, _ string, _ string) error {
-	return nil
 }
 
 func (r *inMemoryDocumentRepository) SearchDocuments(_ context.Context, input outbound.SearchDocumentsInput) ([]model.Document, int64, error) {
@@ -396,9 +408,6 @@ func (r *inMemoryDocumentRepository) SearchDocuments(_ context.Context, input ou
 			if !strings.Contains(strings.ToLower(item.Title), query) && !strings.Contains(strings.ToLower(item.Category), query) {
 				continue
 			}
-		}
-		if input.Status != "" && item.Status != input.Status {
-			continue
 		}
 		if input.Category != "" && item.Category != input.Category {
 			continue
@@ -428,6 +437,20 @@ func (r *inMemoryDocumentRepository) SearchDocuments(_ context.Context, input ou
 	}
 
 	return filtered[start:end], total, nil
+}
+
+type inMemoryDocumentVersionRepository struct{}
+
+func newInMemoryDocumentVersionRepository() *inMemoryDocumentVersionRepository {
+	return &inMemoryDocumentVersionRepository{}
+}
+
+func (r *inMemoryDocumentVersionRepository) ListVersions(_ context.Context, _ string, _ int, _ int) ([]model.DocumentVersion, int64, error) {
+	return []model.DocumentVersion{}, 0, nil
+}
+
+func (r *inMemoryDocumentVersionRepository) GetVersion(_ context.Context, _ string, _ int64) (model.DocumentVersion, error) {
+	return model.DocumentVersion{}, model.ErrDocumentNotFound
 }
 
 func (r *inMemoryDocumentRepository) GetEditorControlProfileByContext(_ context.Context, contextType string, contextKey string) (model.EditorControlProfile, error) {

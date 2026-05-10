@@ -53,10 +53,6 @@ paths:
           schema:
             type: string
         - in: query
-          name: status
-          schema:
-            type: string
-        - in: query
           name: category
           schema:
             type: string
@@ -406,6 +402,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /api/documents/{documentId}/versions:
+    get:
+      tags: [documents]
+      summary: List document versions
+      operationId: listDocumentVersions
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Document version index
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentVersionsResponse"
+
+  /api/documents/{documentId}/versions/{versionNumber}:
+    get:
+      tags: [documents]
+      summary: Get specific document version
+      operationId: getDocumentVersion
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: versionNumber
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Document version snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentVersionResponse"
 
   /api/editor-control-profiles/{contextType}/{contextKey}:
     get:
@@ -976,7 +1031,7 @@ components:
 
     DocumentResponse:
       type: object
-      required: [id, title, category, status, version, updatedAt]
+      required: [id, title, category, version, updatedAt]
       properties:
         id:
           type: string
@@ -984,8 +1039,6 @@ components:
         title:
           type: string
         category:
-          type: string
-        status:
           type: string
         contentDocument:
           type: object
@@ -996,6 +1049,51 @@ components:
         updatedAt:
           type: string
           format: date-time
+        objectKey:
+          type: string
+        objectVersionId:
+          type: string
+
+    DocumentVersionResponse:
+      type: object
+      required: [documentId, versionNumber, title, category, createdAt, objectKey, objectVersionId]
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        versionNumber:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        category:
+          type: string
+        changedByUserId:
+          type: string
+        changeSummary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        objectKey:
+          type: string
+        objectVersionId:
+          type: string
+        contentDocument:
+          type: object
+          additionalProperties: true
+
+    DocumentVersionsResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentVersionResponse"
+        total:
+          type: integer
+          minimum: 0
 
     DocumentConflictResponse:
       type: object

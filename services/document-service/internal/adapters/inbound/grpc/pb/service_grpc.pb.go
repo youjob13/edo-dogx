@@ -134,6 +134,8 @@ const (
 	DocumentWorkflowService_GetExportRequest_FullMethodName           = "/service.v1.DocumentWorkflowService/GetExportRequest"
 	DocumentWorkflowService_DownloadExportArtifact_FullMethodName     = "/service.v1.DocumentWorkflowService/DownloadExportArtifact"
 	DocumentWorkflowService_SearchDocuments_FullMethodName            = "/service.v1.DocumentWorkflowService/SearchDocuments"
+	DocumentWorkflowService_ListDocumentVersions_FullMethodName       = "/service.v1.DocumentWorkflowService/ListDocumentVersions"
+	DocumentWorkflowService_GetDocumentVersion_FullMethodName         = "/service.v1.DocumentWorkflowService/GetDocumentVersion"
 	DocumentWorkflowService_SubmitWorkflow_FullMethodName             = "/service.v1.DocumentWorkflowService/SubmitWorkflow"
 	DocumentWorkflowService_ApproveWorkflow_FullMethodName            = "/service.v1.DocumentWorkflowService/ApproveWorkflow"
 	DocumentWorkflowService_RequestWorkflowChanges_FullMethodName     = "/service.v1.DocumentWorkflowService/RequestWorkflowChanges"
@@ -153,6 +155,8 @@ type DocumentWorkflowServiceClient interface {
 	GetExportRequest(ctx context.Context, in *GetExportRequestRequest, opts ...grpc.CallOption) (*ExportRequest, error)
 	DownloadExportArtifact(ctx context.Context, in *DownloadExportArtifactRequest, opts ...grpc.CallOption) (*DownloadExportArtifactResponse, error)
 	SearchDocuments(ctx context.Context, in *SearchDocumentsRequest, opts ...grpc.CallOption) (*SearchDocumentsResponse, error)
+	ListDocumentVersions(ctx context.Context, in *ListDocumentVersionsRequest, opts ...grpc.CallOption) (*ListDocumentVersionsResponse, error)
+	GetDocumentVersion(ctx context.Context, in *GetDocumentVersionRequest, opts ...grpc.CallOption) (*DocumentVersion, error)
 	SubmitWorkflow(ctx context.Context, in *SubmitWorkflowRequest, opts ...grpc.CallOption) (*WorkflowInstance, error)
 	ApproveWorkflow(ctx context.Context, in *ApproveWorkflowRequest, opts ...grpc.CallOption) (*WorkflowInstance, error)
 	RequestWorkflowChanges(ctx context.Context, in *RequestWorkflowChangesRequest, opts ...grpc.CallOption) (*WorkflowInstance, error)
@@ -257,6 +261,26 @@ func (c *documentWorkflowServiceClient) SearchDocuments(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *documentWorkflowServiceClient) ListDocumentVersions(ctx context.Context, in *ListDocumentVersionsRequest, opts ...grpc.CallOption) (*ListDocumentVersionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDocumentVersionsResponse)
+	err := c.cc.Invoke(ctx, DocumentWorkflowService_ListDocumentVersions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentWorkflowServiceClient) GetDocumentVersion(ctx context.Context, in *GetDocumentVersionRequest, opts ...grpc.CallOption) (*DocumentVersion, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DocumentVersion)
+	err := c.cc.Invoke(ctx, DocumentWorkflowService_GetDocumentVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *documentWorkflowServiceClient) SubmitWorkflow(ctx context.Context, in *SubmitWorkflowRequest, opts ...grpc.CallOption) (*WorkflowInstance, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WorkflowInstance)
@@ -310,6 +334,8 @@ type DocumentWorkflowServiceServer interface {
 	GetExportRequest(context.Context, *GetExportRequestRequest) (*ExportRequest, error)
 	DownloadExportArtifact(context.Context, *DownloadExportArtifactRequest) (*DownloadExportArtifactResponse, error)
 	SearchDocuments(context.Context, *SearchDocumentsRequest) (*SearchDocumentsResponse, error)
+	ListDocumentVersions(context.Context, *ListDocumentVersionsRequest) (*ListDocumentVersionsResponse, error)
+	GetDocumentVersion(context.Context, *GetDocumentVersionRequest) (*DocumentVersion, error)
 	SubmitWorkflow(context.Context, *SubmitWorkflowRequest) (*WorkflowInstance, error)
 	ApproveWorkflow(context.Context, *ApproveWorkflowRequest) (*WorkflowInstance, error)
 	RequestWorkflowChanges(context.Context, *RequestWorkflowChangesRequest) (*WorkflowInstance, error)
@@ -350,6 +376,12 @@ func (UnimplementedDocumentWorkflowServiceServer) DownloadExportArtifact(context
 }
 func (UnimplementedDocumentWorkflowServiceServer) SearchDocuments(context.Context, *SearchDocumentsRequest) (*SearchDocumentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchDocuments not implemented")
+}
+func (UnimplementedDocumentWorkflowServiceServer) ListDocumentVersions(context.Context, *ListDocumentVersionsRequest) (*ListDocumentVersionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDocumentVersions not implemented")
+}
+func (UnimplementedDocumentWorkflowServiceServer) GetDocumentVersion(context.Context, *GetDocumentVersionRequest) (*DocumentVersion, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDocumentVersion not implemented")
 }
 func (UnimplementedDocumentWorkflowServiceServer) SubmitWorkflow(context.Context, *SubmitWorkflowRequest) (*WorkflowInstance, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitWorkflow not implemented")
@@ -547,6 +579,42 @@ func _DocumentWorkflowService_SearchDocuments_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentWorkflowService_ListDocumentVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDocumentVersionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentWorkflowServiceServer).ListDocumentVersions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentWorkflowService_ListDocumentVersions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentWorkflowServiceServer).ListDocumentVersions(ctx, req.(*ListDocumentVersionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentWorkflowService_GetDocumentVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDocumentVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentWorkflowServiceServer).GetDocumentVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentWorkflowService_GetDocumentVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentWorkflowServiceServer).GetDocumentVersion(ctx, req.(*GetDocumentVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DocumentWorkflowService_SubmitWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitWorkflowRequest)
 	if err := dec(in); err != nil {
@@ -661,6 +729,14 @@ var DocumentWorkflowService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchDocuments",
 			Handler:    _DocumentWorkflowService_SearchDocuments_Handler,
+		},
+		{
+			MethodName: "ListDocumentVersions",
+			Handler:    _DocumentWorkflowService_ListDocumentVersions_Handler,
+		},
+		{
+			MethodName: "GetDocumentVersion",
+			Handler:    _DocumentWorkflowService_GetDocumentVersion_Handler,
 		},
 		{
 			MethodName: "SubmitWorkflow",
@@ -910,6 +986,8 @@ const (
 	DocumentService_GetExportRequest_FullMethodName           = "/service.v1.DocumentService/GetExportRequest"
 	DocumentService_DownloadExportArtifact_FullMethodName     = "/service.v1.DocumentService/DownloadExportArtifact"
 	DocumentService_SearchDocuments_FullMethodName            = "/service.v1.DocumentService/SearchDocuments"
+	DocumentService_ListDocumentVersions_FullMethodName       = "/service.v1.DocumentService/ListDocumentVersions"
+	DocumentService_GetDocumentVersion_FullMethodName         = "/service.v1.DocumentService/GetDocumentVersion"
 	DocumentService_ArchiveDocument_FullMethodName            = "/service.v1.DocumentService/ArchiveDocument"
 )
 
@@ -926,6 +1004,8 @@ type DocumentServiceClient interface {
 	GetExportRequest(ctx context.Context, in *GetExportRequestRequest, opts ...grpc.CallOption) (*ExportRequest, error)
 	DownloadExportArtifact(ctx context.Context, in *DownloadExportArtifactRequest, opts ...grpc.CallOption) (*DownloadExportArtifactResponse, error)
 	SearchDocuments(ctx context.Context, in *SearchDocumentsRequest, opts ...grpc.CallOption) (*SearchDocumentsResponse, error)
+	ListDocumentVersions(ctx context.Context, in *ListDocumentVersionsRequest, opts ...grpc.CallOption) (*ListDocumentVersionsResponse, error)
+	GetDocumentVersion(ctx context.Context, in *GetDocumentVersionRequest, opts ...grpc.CallOption) (*DocumentVersion, error)
 	ArchiveDocument(ctx context.Context, in *ArchiveDocumentRequest, opts ...grpc.CallOption) (*ArchiveDocumentResponse, error)
 }
 
@@ -1027,6 +1107,26 @@ func (c *documentServiceClient) SearchDocuments(ctx context.Context, in *SearchD
 	return out, nil
 }
 
+func (c *documentServiceClient) ListDocumentVersions(ctx context.Context, in *ListDocumentVersionsRequest, opts ...grpc.CallOption) (*ListDocumentVersionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDocumentVersionsResponse)
+	err := c.cc.Invoke(ctx, DocumentService_ListDocumentVersions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *documentServiceClient) GetDocumentVersion(ctx context.Context, in *GetDocumentVersionRequest, opts ...grpc.CallOption) (*DocumentVersion, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DocumentVersion)
+	err := c.cc.Invoke(ctx, DocumentService_GetDocumentVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *documentServiceClient) ArchiveDocument(ctx context.Context, in *ArchiveDocumentRequest, opts ...grpc.CallOption) (*ArchiveDocumentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ArchiveDocumentResponse)
@@ -1050,6 +1150,8 @@ type DocumentServiceServer interface {
 	GetExportRequest(context.Context, *GetExportRequestRequest) (*ExportRequest, error)
 	DownloadExportArtifact(context.Context, *DownloadExportArtifactRequest) (*DownloadExportArtifactResponse, error)
 	SearchDocuments(context.Context, *SearchDocumentsRequest) (*SearchDocumentsResponse, error)
+	ListDocumentVersions(context.Context, *ListDocumentVersionsRequest) (*ListDocumentVersionsResponse, error)
+	GetDocumentVersion(context.Context, *GetDocumentVersionRequest) (*DocumentVersion, error)
 	ArchiveDocument(context.Context, *ArchiveDocumentRequest) (*ArchiveDocumentResponse, error)
 	mustEmbedUnimplementedDocumentServiceServer()
 }
@@ -1087,6 +1189,12 @@ func (UnimplementedDocumentServiceServer) DownloadExportArtifact(context.Context
 }
 func (UnimplementedDocumentServiceServer) SearchDocuments(context.Context, *SearchDocumentsRequest) (*SearchDocumentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchDocuments not implemented")
+}
+func (UnimplementedDocumentServiceServer) ListDocumentVersions(context.Context, *ListDocumentVersionsRequest) (*ListDocumentVersionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDocumentVersions not implemented")
+}
+func (UnimplementedDocumentServiceServer) GetDocumentVersion(context.Context, *GetDocumentVersionRequest) (*DocumentVersion, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDocumentVersion not implemented")
 }
 func (UnimplementedDocumentServiceServer) ArchiveDocument(context.Context, *ArchiveDocumentRequest) (*ArchiveDocumentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ArchiveDocument not implemented")
@@ -1274,6 +1382,42 @@ func _DocumentService_SearchDocuments_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentService_ListDocumentVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDocumentVersionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).ListDocumentVersions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_ListDocumentVersions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).ListDocumentVersions(ctx, req.(*ListDocumentVersionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DocumentService_GetDocumentVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDocumentVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentServiceServer).GetDocumentVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentService_GetDocumentVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentServiceServer).GetDocumentVersion(ctx, req.(*GetDocumentVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DocumentService_ArchiveDocument_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ArchiveDocumentRequest)
 	if err := dec(in); err != nil {
@@ -1334,6 +1478,14 @@ var DocumentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchDocuments",
 			Handler:    _DocumentService_SearchDocuments_Handler,
+		},
+		{
+			MethodName: "ListDocumentVersions",
+			Handler:    _DocumentService_ListDocumentVersions_Handler,
+		},
+		{
+			MethodName: "GetDocumentVersion",
+			Handler:    _DocumentService_GetDocumentVersion_Handler,
 		},
 		{
 			MethodName: "ArchiveDocument",

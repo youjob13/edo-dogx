@@ -16,15 +16,6 @@
       <edo-dogx-toolbar-search [control]="searchControl" placeholder="Поиск по имени файла" />
 
       <label>
-        <span>Статус</span>
-        <select [formControl]="statusFilterControl">
-          @for (option of statusOptions; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
         <span>Категория</span>
         <select [formControl]="categoryFilterControl">
           @for (option of categoryOptions; track option.value) {
@@ -34,16 +25,52 @@
       </label>
     </div>
 
-    <edo-dogx-data-table
-      [columns]="columns"
-      [rows]="rowView()"
-      [sort]="sortState()"
-      [actionMenuItems]="menuItems"
-      rowActionLabel="Действия"
-      (sortChanged)="onSortChanged($event)"
-      (rowAction)="onRowAction($event)"
-      (rowMenuAction)="onRowMenuAction($event)"
-    />
+<div class="dashboard-documents__table-wrap">
+      <table class="dashboard-documents__table">
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Владелец</th>
+            <th>Дата изменения</th>
+            <th>Версия</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rowView(); track row['id']) {
+            <tr>
+              <td>{{ row['title'] }}</td>
+              <td>{{ row['categoryLabel'] }}</td>
+              <td>{{ row['ownerUserName'] }}</td>
+              <td>{{ row['modifiedAtLabel'] }}</td>
+              <td>
+                <select
+                  [value]="selectedVersion(row['id'])"
+                  (change)="setSelectedVersion(row['id'], $any($event.target).value)"
+                >
+                  @for (version of versionOptions(row['id']); track version) {
+                    <option [value]="version">v{{ version }}</option>
+                  }
+                </select>
+               </td>
+              <td>
+                <div class="dashboard-documents__row-actions">
+                  <button type="button" (click)="previewVersion(row['id'])">Предпросмотр</button>
+                  <button type="button" (click)="editVersion(row['id'])">Редактировать</button>
+                  <button type="button" (click)="downloadVersion(row['id'], 'PDF')">PDF</button>
+                  <button type="button" (click)="downloadVersion(row['id'], 'DOCX')">DOCX</button>
+                </div>
+               </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">Нет данных</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
 
     <edo-dogx-table-toolbar
       [pagination]="pagination()"
@@ -75,12 +102,6 @@
             <div>
               <dt>Категория</dt>
               <dd>{{ getCategoryLabel(preview.category) }}</dd>
-            </div>
-            <div>
-              <dt>Статус</dt>
-              <dd>
-                <edo-dogx-status-chip [label]="getStatusLabel(preview.status)" [tone]="getStatusTone(preview.status)" />
-              </dd>
             </div>
             <div>
               <dt>Версия</dt>
@@ -124,17 +145,6 @@
           <label>
             <span>Имя файла</span>
             <input type="text" [formControl]="editFilenameControl" />
-          </label>
-
-          <label>
-            <span>Статус</span>
-            <select [formControl]="editStatusControl">
-              @for (option of statusOptions; track option.value) {
-                @if (option.value !== 'all') {
-                  <option [value]="option.value">{{ option.label }}</option>
-                }
-              }
-            </select>
           </label>
 
           <edo-dogx-button label="Сохранить" appearance="primary" size="m" (pressed)="saveEdit()" />

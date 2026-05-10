@@ -37,10 +37,25 @@ type Document struct {
 	ID              string
 	Title           string
 	Category        string
-	Status          DocumentStatus
 	ContentDocument map[string]any
 	OwnerUser       string
 	OwnerUserName   string
 	Version         int64
 	UpdatedAt       string
+	CreatedAt       string
+	ObjectKey       string
+	ObjectVersionID string
+}
+
+type DocumentVersion struct {
+	DocumentID      string
+	VersionNumber   int64
+	Title           string
+	Category        string
+	ChangedByUserID string
+	ChangeSummary   string
+	CreatedAt       string
+	ObjectKey       string
+	ObjectVersionID string
+	ContentDocument map[string]any
 }

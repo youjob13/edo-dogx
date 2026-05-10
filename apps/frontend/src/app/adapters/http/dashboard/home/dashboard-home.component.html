@@ -49,9 +49,6 @@
   <div class="dashboard-home__side">
     <edo-dogx-card title="Активные фильтры" subtitle="Состояние панели">
       <p class="dashboard-home__text">Поиск сверху: {{ globalSearch() || 'не задан' }}</p>
-      <p class="dashboard-home__text">
-        Быстрый фильтр: {{ quickStatusFilter() ? getStatusLabel(quickStatusFilter()!) : 'не задан' }}
-      </p>
       <p class="dashboard-home__text">Выбранный день: {{ selectedDay() ?? 'не выбран' }}</p>
       <button type="button" class="dashboard-home__link-button" (click)="resetQuickFilters()">
         Сбросить быстрые фильтры
@@ -85,12 +82,6 @@
           <div>
             <dt>Категория</dt>
             <dd>{{ getCategoryLabel(preview.category) }}</dd>
-          </div>
-          <div>
-            <dt>Статус</dt>
-            <dd>
-              <edo-dogx-status-chip [label]="getStatusLabel(preview.status)" [tone]="getStatusTone(preview.status)" />
-            </dd>
           </div>
           <div>
             <dt>Версия</dt>
@@ -134,16 +125,6 @@
         <label>
           <span>Имя файла</span>
           <input type="text" [formControl]="editFilenameControl" />
-        </label>
-
-        <label>
-          <span>Статус</span>
-          <select [formControl]="editStatusControl">
-            <option value="DRAFT">Ожидает</option>
-            <option value="IN_REVIEW">На проверке</option>
-            <option value="APPROVED">Утвержден</option>
-            <option value="ARCHIVED">В архиве</option>
-          </select>
         </label>
 
         <edo-dogx-button label="Сохранить" appearance="primary" size="m" (pressed)="saveEdit()" />

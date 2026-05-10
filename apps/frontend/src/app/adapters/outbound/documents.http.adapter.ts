@@ -10,7 +10,6 @@ import {
   DashboardEditorControlProfile,
   DashboardExportRequest,
   DashboardDocumentCategory,
-  DashboardDocumentStatus,
   DashboardEditDocumentPayload,
   DashboardPreviewDocument,
   DashboardQuery,
@@ -68,7 +67,6 @@ interface GatewayDocumentResponse {
   id: string;
   title: string;
   category: DashboardDocumentCategory;
-  status: DashboardDocumentStatus;
   ownerUserId?: string;
   owner_user_id?: string;
   owner_user_name?: string;
@@ -113,7 +111,6 @@ const normalizeGatewayDocument = (
   id: response.id,
   title: response.title,
   category: response.category,
-  status: response.status,
   version: typeof response.version === 'string' ? Number(response.version) : response.version ?? 1,
   contentDocument:
     parseGatewayContentDocument(response.contentDocument) ??
@@ -126,7 +123,6 @@ const normalizeDocumentItem = (response: GatewayDocumentResponse): DocumentItem 
   id: response.id,
   title: response.title,
   category: response.category,
-  status: response.status,
   updatedAt: response.updatedAt ?? response.updated_at ?? '',
   sizeKb: 0,
   version: typeof response.version === 'string' ? Number(response.version) : response.version,
@@ -165,7 +161,6 @@ const normalizePreviewDocument = (response: GatewayDocumentResponse): DashboardP
     id: response.id,
     title: response.title,
     category: response.category,
-    status: response.status,
     version: typeof response.version === 'string' ? Number(response.version) : response.version ?? 1,
     updatedAt: response.updatedAt ?? response.updated_at ?? '',
     body: extractRichContentText(contentDocument),
@@ -241,9 +236,6 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     if (query.text) {
       params['q'] = query.text;
     }
-    if (query.status) {
-      params['status'] = query.status;
-    }
     if (query.category) {
       params['category'] = query.category;
     }
@@ -299,7 +291,7 @@ export class DashboardHttpAdapter implements DocumentApiPort {
 
   public createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {
     return this.http
-      .post<{ id: string; title: string; category: DashboardDocumentCategory; status: DashboardDocumentStatus; version?: number }>(
+      .post<{ id: string; title: string; category: DashboardDocumentCategory; version?: number }>(
         '/api/documents',
         payload,
       )
@@ -309,7 +301,6 @@ export class DashboardHttpAdapter implements DocumentApiPort {
             id: response.id,
             title: response.title,
             category: response.category,
-            status: response.status,
             contentDocument: payload.contentDocument ?? emptyRichDocument(),
             version: response.version ?? 1,
           };
@@ -323,6 +314,24 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     );
   }
 
+  public getDocumentVersions(
+    id: string,
+    options: { limit?: number; offset?: number } = {},
+  ): Observable<{ items: Array<Record<string, unknown>>; total: number }> {
+    const params: Params = {};
+    if (options.limit !== undefined) {
+      params['limit'] = options.limit;
+    }
+    if (options.offset !== undefined) {
+      params['offset'] = options.offset;
+    }
+    return this.http.get<{ items: Array<Record<string, unknown>>; total: number }>(`/api/documents/${id}/versions`, { params });
+  }
+
+  public getDocumentVersion(id: string, versionNumber: number): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`/api/documents/${id}/versions/${versionNumber}`);
+  }
+
    updateDocument(
     id: string,
     payload: DashboardEditDocumentPayload,
@@ -331,14 +340,12 @@ export class DashboardHttpAdapter implements DocumentApiPort {
       .patch<GatewayDocumentResponse>(`/api/documents/${id}`, {
         title: payload.title,
         expectedVersion: payload.expectedVersion ?? 1,
-        status: payload.status,
         contentDocument: payload.contentDocument,
       })
       .pipe(
         map((response) => ({
           id: response.id,
           title: response.title,
-          status: response.status,
           category: response.category,
           updatedAt: response.updatedAt ?? response.updated_at ?? '',
           sizeKb: 0,

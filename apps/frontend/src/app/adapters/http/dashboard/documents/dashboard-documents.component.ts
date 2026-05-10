@@ -6,28 +6,22 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   ButtonComponent,
   CardComponent,
-  DataTableComponent,
   DrawerComponent,
   ModalComponent,
   PageSectionComponent,
-  StatusChipComponent,
   TableToolbarComponent,
   ToolbarSearchComponent,
-  UiKitChipTone,
-  UiKitDropdownItem,
   UiKitPaginationState,
   UiKitSortState,
-  UiKitTableColumn,
 } from '../../../../design-system/ui-kit';
 import {
   DashboardEditDocumentPayload,
   DashboardExportFormat,
   DashboardPreviewDocument,
   DashboardDocumentCategory,
-  DashboardDocumentStatus,
   DocumentItem,
 } from '../../../../domain/dashboard/dashboard.models';
-import { debounceTime, filter, finalize, merge, switchMap, take, throwError, timer } from 'rxjs';
+import { debounceTime, filter, finalize, forkJoin, map, merge, switchMap, take, throwError, timer } from 'rxjs';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 
 @Component({
@@ -36,13 +30,11 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
     ReactiveFormsModule,
     PageSectionComponent,
     CardComponent,
-    DataTableComponent,
     TableToolbarComponent,
     ToolbarSearchComponent,
     DrawerComponent,
     ModalComponent,
     ButtonComponent,
-    StatusChipComponent,
   ],
   templateUrl: './dashboard-documents.component.html',
   styleUrl: './dashboard-documents.component.scss',
@@ -58,40 +50,19 @@ export class DashboardDocumentsComponent {
   private readonly defaultSort: UiKitSortState = { key: 'modifiedAtLabel', direction: 'desc' };
   private readonly defaultPageSize = 5;
 
-  protected readonly columns: Array<UiKitTableColumn> = [
-    { key: 'title', label: 'Документ', sortable: true },
-    { key: 'categoryLabel', label: 'Категория', sortable: true },
-    { key: 'statusLabel', label: 'Статус', sortable: true },
-    { key: 'ownerUserName', label: 'Владелец', sortable: false },
-    { key: 'modifiedAtLabel', label: 'Изменен', sortable: true },
-  ];
-
-  protected readonly statusOptions: Array<{ value: DashboardDocumentStatus | 'all'; label: string }> = [
-    { value: 'all', label: 'Все статусы' },
-    { value: 'DRAFT', label: 'Ожидает' },
-    { value: 'IN_REVIEW', label: 'На проверке' },
-    { value: 'APPROVED', label: 'Утвержден' },
-    { value: 'ARCHIVED', label: 'В архиве' },
-  ];
-
-  protected readonly categoryOptions: Array<{ value: DashboardDocumentCategory | 'all'; label: string }> = [
+ protected readonly categoryOptions: Array<{ value: DashboardDocumentCategory | 'all'; label: string }> = [
     { value: 'all', label: 'Все категории' },
     { value: 'HR', label: 'Кадровый' },
     { value: 'FINANCE', label: 'Финансы' },
     { value: 'GENERAL', label: 'Общее' },
   ];
 
-  protected readonly statusFilterControl = new FormControl<DashboardDocumentStatus | 'all'>('all', {
-    nonNullable: true,
-  });
+
   protected readonly categoryFilterControl = new FormControl<DashboardDocumentCategory | 'all'>('all', {
     nonNullable: true,
   });
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly editFilenameControl = new FormControl('', { nonNullable: true });
-  protected readonly editStatusControl = new FormControl<DashboardDocumentStatus>('DRAFT', {
-    nonNullable: true,
-  });
 
   protected readonly sortState = signal<UiKitSortState>(this.defaultSort);
   protected readonly pagination = signal<UiKitPaginationState>({
@@ -106,17 +77,36 @@ export class DashboardDocumentsComponent {
   protected readonly previewOpen = signal(false);
   protected readonly editOpen = signal(false);
   protected readonly message = signal('');
+  protected readonly versionsByDocument = signal<Record<string, Array<number>>>({});
+  protected readonly selectedVersionByDocument = signal<Record<string, number>>({});
 
-  protected readonly rowView = computed<Array<Record<string, string>>>(() =>
-    this.documents().map((item) => ({
+  protected readonly rowView = computed<Array<Record<string, string>>>(() => {
+    const sort = this.sortState();
+    const rows = [...this.documents()];
+    rows.sort((left, right) => {
+      if (sort.key === 'title') {
+        return sort.direction === 'asc'
+          ? left.title.localeCompare(right.title, 'ru')
+          : right.title.localeCompare(left.title, 'ru');
+      }
+      if (sort.key === 'categoryLabel') {
+        return sort.direction === 'asc'
+          ? left.category.localeCompare(right.category, 'ru')
+          : right.category.localeCompare(left.category, 'ru');
+      }
+      return sort.direction === 'asc'
+        ? left.updatedAt.localeCompare(right.updatedAt, 'ru')
+        : right.updatedAt.localeCompare(left.updatedAt, 'ru');
+    });
+
+    return rows.map((item) => ({
       id: item.id,
       title: item.title,
       categoryLabel: this.getCategoryLabel(item.category),
-      statusLabel: this.getStatusLabel(item.status),
       ownerUserName: item.ownerUserName ?? '-',
       modifiedAtLabel: item.updatedAt,
-    })),
-  );
+    }));
+  });
 
   protected readonly selectedDocument = computed(() => {
     const selectedId = this.selectedDocumentId();
@@ -127,13 +117,6 @@ export class DashboardDocumentsComponent {
     return this.documents().find((item) => item.id === selectedId) ?? null;
   });
 
-  protected readonly menuItems: Array<UiKitDropdownItem> = [
-    { id: 'preview', label: 'Открыть предпросмотр', icon: 'preview' },
-    { id: 'edit', label: 'Редактировать в отдельной странице', icon: 'edit' },
-    { id: 'download-pdf', label: 'Скачать PDF', icon: 'download' },
-    { id: 'download-docx', label: 'Скачать DOCX', icon: 'download' },
-  ];
-
   protected openCreatePage(): void {
     this.router.navigate(['/dashboard/documents/new']);
   }
@@ -141,7 +124,6 @@ export class DashboardDocumentsComponent {
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const query = params.get('q')?.trim() ?? '';
-      const status = params.get('status');
       const category = params.get('category');
       const sort = params.get('sort');
       const dir = params.get('dir');
@@ -150,11 +132,6 @@ export class DashboardDocumentsComponent {
 
       if (this.searchControl.value !== query) {
         this.searchControl.setValue(query, { emitEvent: false });
-      }
-
-      const normalizedStatus = this.isStatus(status) ? status : 'all';
-      if (this.statusFilterControl.value !== normalizedStatus) {
-        this.statusFilterControl.setValue(normalizedStatus, { emitEvent: false });
       }
 
       const normalizedCategory = this.isCategory(category) ? category : 'all';
@@ -173,7 +150,7 @@ export class DashboardDocumentsComponent {
       this.loadDocuments();
     });
 
-    merge(this.statusFilterControl.valueChanges, this.categoryFilterControl.valueChanges, this.searchControl.valueChanges)
+    merge(this.categoryFilterControl.valueChanges, this.searchControl.valueChanges)
       .pipe(debounceTime(150), takeUntilDestroyed())
       .subscribe(() => {
         this.pagination.update((state) => ({ ...state, page: 1 }));
@@ -184,11 +161,6 @@ export class DashboardDocumentsComponent {
   protected onSortChanged(state: UiKitSortState): void {
     this.sortState.set(state);
     this.pagination.update((value) => ({ ...value, page: 1 }));
-    this.syncQueryParams();
-  }
-
-  protected onPageChanged(page: number): void {
-    this.pagination.update((state) => ({ ...state, page }));
     this.syncQueryParams();
   }
 
@@ -204,45 +176,62 @@ export class DashboardDocumentsComponent {
     this.syncQueryParams();
   }
 
-  protected onRowAction(row: Record<string, unknown>): void {
-    this.selectedDocumentId.set(String(row['id'] ?? ''));
+  protected versionOptions(documentId: string): Array<number> {
+    return this.versionsByDocument()[documentId] ?? [];
   }
 
-  protected onRowMenuAction(event: { row: Record<string, unknown>; actionId: string }): void {
-    this.selectedDocumentId.set(String(event.row['id'] ?? ''));
-    this.onMenuAction(event.actionId);
+  protected selectedVersion(documentId: string): number {
+    return this.selectedVersionByDocument()[documentId] ?? 1;
   }
 
-  protected onMenuAction(actionId: string): void {
-    const selectedId = this.selectedDocumentId();
-    if (!selectedId) {
+  protected setSelectedVersion(documentId: string, rawValue: string): void {
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
       return;
     }
+    this.selectedVersionByDocument.update((state) => ({ ...state, [documentId]: parsed }));
+  }
 
-    if (actionId === 'preview') {
-      this.documentUseCases
-        .previewDocument(selectedId)
-        .pipe(take(1))
-        .subscribe((preview) => {
-          this.previewDocument.set(preview);
-          this.previewOpen.set(true);
-          this.message.set('Предпросмотр открыт.');
-        });
-      return;
-    }
+  protected previewVersion(documentId: string): void {
+    const version = this.selectedVersion(documentId);
+    this.documentUseCases.getDocumentVersion(documentId, version).pipe(take(1)).subscribe((payload) => {
+      const raw = String(payload['content_document_json'] ?? payload['contentDocumentJson'] ?? '{}');
+      let contentDocument: DashboardPreviewDocument['contentDocument'] | undefined;
+      try {
+        contentDocument = JSON.parse(raw) as DashboardPreviewDocument['contentDocument'];
+      } catch {
+        contentDocument = undefined;
+      }
 
-    if (actionId === 'edit') {
-      const selected = this.selectedDocument();
-      if (!selected) {
+      const base = this.documents().find((item) => item.id === documentId);
+      if (!base) {
         return;
       }
-      this.router.navigate(['/dashboard/documents', selected.id, 'edit']);
-      return;
-    }
 
-    if (actionId === 'download' || actionId === 'download-pdf' || actionId === 'download-docx') {
-      this.downloadDocumentExport(selectedId, actionId === 'download-docx' ? 'DOCX' : 'PDF');
-    }
+      this.previewDocument.set({
+        id: documentId,
+        title: String(payload['title'] ?? base.title),
+        category: base.category,
+        version,
+        updatedAt: String(payload['created_at'] ?? base.updatedAt),
+        body: contentDocument ? JSON.stringify(contentDocument) : 'Не удалось загрузить содержимое документа.',
+        contentDocument,
+        contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
+        ownerUserId: base.ownerUserId,
+        ownerUserName: base.ownerUserName,
+      });
+      this.previewOpen.set(true);
+    });
+  }
+
+  protected editVersion(documentId: string): void {
+    this.router.navigate(['/dashboard/documents', documentId, 'edit'], {
+      queryParams: { version: this.selectedVersion(documentId) },
+    });
+  }
+
+  protected downloadVersion(documentId: string, format: DashboardExportFormat): void {
+    this.downloadDocumentExport(documentId, format, this.selectedVersion(documentId));
   }
 
   protected closePreview(): void {
@@ -262,7 +251,6 @@ export class DashboardDocumentsComponent {
 
     const payload: DashboardEditDocumentPayload = {
       title: this.editFilenameControl.value,
-      status: this.editStatusControl.value,
       expectedVersion: 1,
     };
 
@@ -270,14 +258,10 @@ export class DashboardDocumentsComponent {
       .updateDocument(selectedId, payload)
       .pipe(take(1))
       .subscribe((result) => {
-        this.message.set(`Документ ${result.title} обновлен.`);
+        this.message.set(`Документ ${result.title} сохранен.`);
         this.editOpen.set(false);
         this.loadDocuments();
       });
-  }
-
-  protected getStatusTone(status: DashboardDocumentStatus): UiKitChipTone {
-    return status.toLowerCase() as UiKitChipTone;
   }
 
   private loadDocuments(): void {
@@ -289,10 +273,6 @@ export class DashboardDocumentsComponent {
     this.documentUseCases
       .getDocuments({
         text: this.searchControl.value,
-        status:
-          this.statusFilterControl.value === 'all'
-            ? undefined
-            : this.statusFilterControl.value,
         category:
           this.categoryFilterControl.value === 'all'
             ? undefined
@@ -309,32 +289,56 @@ export class DashboardDocumentsComponent {
       .subscribe((result) => {
         this.documents.set(result.items);
         this.pagination.update((state) => ({ ...state, totalItems: result.total }));
+        this.loadVersionOptions(result.items);
+      });
+  }
+
+  private loadVersionOptions(items: Array<DocumentItem>): void {
+    if (items.length === 0) {
+      this.versionsByDocument.set({});
+      this.selectedVersionByDocument.set({});
+      return;
+    }
+
+    forkJoin(
+      items.map((item) =>
+        this.documentUseCases.getDocumentVersions(item.id, { limit: 100, offset: 0 }).pipe(
+          map((response) => ({
+            id: item.id,
+            versions: response.items
+              .map((entry) => Number(entry['version_number'] ?? entry['versionNumber']))
+              .filter((value) => Number.isFinite(value) && value > 0)
+              .sort((a, b) => b - a),
+            fallback: item.version ?? 1,
+          })),
+        ),
+      ),
+    )
+      .pipe(take(1))
+      .subscribe((rows) => {
+        const versionsMap: Record<string, Array<number>> = {};
+        const selectedMap: Record<string, number> = {};
+        for (const row of rows) {
+          const versions = row.versions.length > 0 ? row.versions : [row.fallback];
+          versionsMap[row.id] = versions;
+          selectedMap[row.id] = versions[0];
+        }
+        this.versionsByDocument.set(versionsMap);
+        this.selectedVersionByDocument.set(selectedMap);
       });
   }
 
   private toDomainSortKey(key: string): 'title' | 'category' | 'status' | 'updatedAt' {
-    if (key === 'title' || key === 'categoryLabel' || key === 'statusLabel') {
+    if (key === 'title' || key === 'categoryLabel') {
       const mapped: Record<string, 'title' | 'category' | 'status'> = {
         title: 'title',
         categoryLabel: 'category',
-        statusLabel: 'status',
       };
 
       return mapped[key];
     }
 
     return 'updatedAt';
-  }
-
-  protected getStatusLabel(status: DashboardDocumentStatus): string {
-    const labels: Record<DashboardDocumentStatus, string> = {
-      DRAFT: 'Ожидает',
-      IN_REVIEW: 'На проверке',
-      APPROVED: 'Утвержден',
-      ARCHIVED: 'В архиве',
-    };
-
-    return labels[status];
   }
 
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
@@ -356,7 +360,6 @@ export class DashboardDocumentsComponent {
       relativeTo: this.route,
       queryParams: {
         q: q || null,
-        status: this.statusFilterControl.value === 'all' ? null : this.statusFilterControl.value,
         category: this.categoryFilterControl.value === 'all' ? null : this.categoryFilterControl.value,
         sort: sort.key === this.defaultSort.key ? null : sort.key,
         dir: sort.direction === this.defaultSort.direction ? null : sort.direction,
@@ -368,16 +371,12 @@ export class DashboardDocumentsComponent {
     });
   }
 
-  private isStatus(value: string | null): value is DashboardDocumentStatus {
-    return value === 'DRAFT' || value === 'IN_REVIEW' || value === 'APPROVED' || value === 'ARCHIVED';
-  }
-
   private isCategory(value: string | null): value is DashboardDocumentCategory {
     return value === 'HR' || value === 'FINANCE' || value === 'GENERAL';
   }
 
-  private downloadDocumentExport(documentId: string, format: DashboardExportFormat): void {
-    this.message.set(`Готовим ${format}. Скачивание начнется автоматически.`);
+  private downloadDocumentExport(documentId: string, format: DashboardExportFormat, sourceVersion?: number): void {
+    this.message.set(`Формат ${format}. Поддерживается только PDF и DOCX.`);
 
     this.documentUseCases
       .getDocumentById(documentId)
@@ -385,7 +384,7 @@ export class DashboardDocumentsComponent {
         switchMap((document) =>
           this.documentUseCases.createExportRequest(documentId, {
             format,
-            sourceVersion: document.version,
+            sourceVersion: sourceVersion ?? document.version,
           }),
         ),
         switchMap((request) => this.waitForExport(documentId, request.id)),
@@ -395,10 +394,10 @@ export class DashboardDocumentsComponent {
       .subscribe({
         next: (request) => {
           this.startExportDownload(documentId, request.id);
-          this.message.set('Файл готов. Скачивание началось.');
+          this.message.set('Экспорт запущен. Ожидайте завершения.');
         },
         error: (error: unknown) => {
-          const message = error instanceof Error ? error.message : 'Не удалось скачать документ';
+          const message = error instanceof Error ? error.message : 'Не удалось запустить экспорт';
           this.message.set(message);
         },
       });
@@ -411,7 +410,7 @@ export class DashboardDocumentsComponent {
       take(1),
       switchMap((request) =>
         request.status === 'FAILED'
-          ? throwError(() => new Error(request.errorMessage ?? 'Экспорт завершился с ошибкой.'))
+          ? throwError(() => new Error(request.errorMessage ?? '������� ���������� � �������.'))
           : [request],
       ),
     );
@@ -432,6 +431,6 @@ export class DashboardDocumentsComponent {
   }
 
   private isSortKey(value: string | null): value is UiKitSortState['key'] {
-    return value === 'title' || value === 'categoryLabel' || value === 'statusLabel' || value === 'modifiedAtLabel';
+    return value === 'title' || value === 'categoryLabel' || value === 'modifiedAtLabel';
   }
 }

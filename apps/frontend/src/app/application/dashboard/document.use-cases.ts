@@ -59,6 +59,17 @@ export class DocumentUseCases {
     return this.api.getDocumentById(id);
   }
 
+  public getDocumentVersions(
+    id: string,
+    options?: { limit?: number; offset?: number },
+  ): Observable<{ items: Array<Record<string, unknown>>; total: number }> {
+    return this.api.getDocumentVersions(id, options);
+  }
+
+  public getDocumentVersion(id: string, versionNumber: number): Observable<Record<string, unknown>> {
+    return this.api.getDocumentVersion(id, versionNumber);
+  }
+
   public updateDocument(
     id: string,
     payload: DashboardEditDocumentPayload,

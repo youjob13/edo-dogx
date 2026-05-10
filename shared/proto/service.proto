@@ -19,6 +19,8 @@ service DocumentWorkflowService {
   rpc GetExportRequest(GetExportRequestRequest) returns (ExportRequest);
   rpc DownloadExportArtifact(DownloadExportArtifactRequest) returns (DownloadExportArtifactResponse);
   rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+  rpc ListDocumentVersions(ListDocumentVersionsRequest) returns (ListDocumentVersionsResponse);
+  rpc GetDocumentVersion(GetDocumentVersionRequest) returns (DocumentVersion);
   rpc SubmitWorkflow(SubmitWorkflowRequest) returns (WorkflowInstance);
   rpc ApproveWorkflow(ApproveWorkflowRequest) returns (WorkflowInstance);
   rpc RequestWorkflowChanges(RequestWorkflowChangesRequest) returns (WorkflowInstance);
@@ -42,6 +44,8 @@ service DocumentService {
   rpc GetExportRequest(GetExportRequestRequest) returns (ExportRequest);
   rpc DownloadExportArtifact(DownloadExportArtifactRequest) returns (DownloadExportArtifactResponse);
   rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+  rpc ListDocumentVersions(ListDocumentVersionsRequest) returns (ListDocumentVersionsResponse);
+  rpc GetDocumentVersion(GetDocumentVersionRequest) returns (DocumentVersion);
   rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
 }
 
@@ -75,12 +79,26 @@ message Document {
   string id = 1;
   string title = 2;
   string category = 3;
-  string status = 4;
-  string owner_user_id = 5;
-  int64 version = 6;
-  string updated_at = 7;
-  string content_document_json = 8;
-  string owner_user_name = 9;
+  string owner_user_id = 4;
+  int64 version = 5;
+  string updated_at = 6;
+  string content_document_json = 7;
+  string owner_user_name = 8;
+  string object_key = 9;
+  string object_version_id = 10;
+}
+
+message DocumentVersion {
+  string document_id = 1;
+  int64 version_number = 2;
+  string title = 3;
+  string category = 4;
+  string changed_by_user_id = 5;
+  string change_summary = 6;
+  string created_at = 7;
+  string object_key = 8;
+  string object_version_id = 9;
+  string content_document_json = 10;
 }
 
 message EditorControlProfile {
@@ -135,7 +153,6 @@ message TaskAttachment {
   string document_id = 1;
   string title = 2;
   string category = 3;
-  string status = 4;
 }
 
 message Task {
@@ -307,10 +324,9 @@ message DocumentItem {
   string id = 1;
   string title = 2;
   string category = 3;
-  string status = 4;
-  string updated_at = 5;
-  int32 size_kb = 6;
-  int32 version = 7;
+  string updated_at = 4;
+  int32 size_kb = 5;
+  int32 version = 6;
 }
 
 message AvailableDocumentsRequest {
@@ -362,7 +378,6 @@ message UpdateDraftRequest {
   string title = 3;
   int64 expected_version = 4;
   string content_document_json = 5;
-  string status = 6;
 }
 
 message GetDocumentRequest {
@@ -412,15 +427,32 @@ message DownloadExportArtifactResponse {
 message SearchDocumentsRequest {
   string actor_user_id = 1;
   string query = 2;
-  string status = 3;
-  string category = 4;
-  int32 limit = 5;
-  int32 offset = 6;
+  string category = 3;
+  int32 limit = 4;
+  int32 offset = 5;
 }
 
 message SearchDocumentsResponse {
   repeated Document items = 1;
   int32 total = 2;
+}
+
+message ListDocumentVersionsRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message ListDocumentVersionsResponse {
+  repeated DocumentVersion items = 1;
+  int32 total = 2;
+}
+
+message GetDocumentVersionRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  int64 version_number = 3;
 }
 
 message ArchiveDocumentRequest {

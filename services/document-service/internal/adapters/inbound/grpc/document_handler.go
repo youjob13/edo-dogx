@@ -73,18 +73,12 @@ func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRe
 		return nil, status.Error(codes.InvalidArgument, "invalid content_document_json")
 	}
 
-	status := model.DocumentStatus(req.GetStatus())
-	if status == "" {
-		status = model.DocumentStatusDraft // default
-	}
-
 	document, err := h.lifecycle.UpdateDraft(ctx, appservice.UpdateDraftInput{
 		ActorUserID:     req.GetActorUserId(),
 		DocumentID:      req.GetDocumentId(),
 		Title:           req.GetTitle(),
 		ExpectedVersion: req.GetExpectedVersion(),
 		ContentDocument: contentDocument,
-		Status:          status,
 	})
 	if err != nil {
 		slog.Error("grpc update draft failed",
@@ -92,7 +86,6 @@ func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRe
 			"documentId", req.GetDocumentId(),
 			"title", req.GetTitle(),
 			"expectedVersion", req.GetExpectedVersion(),
-			"status", req.GetStatus(),
 			"err", err,
 		)
 		return nil, toStatusError(err)
@@ -122,7 +115,6 @@ func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDoc
 	documents, total, err := h.lifecycle.SearchDocuments(ctx, appservice.SearchDocumentsInput{
 		ActorUserID: req.GetActorUserId(),
 		Query:       req.GetQuery(),
-		Status:      model.DocumentStatus(req.GetStatus()),
 		Category:    req.GetCategory(),
 		Limit:       int(req.GetLimit()),
 		Offset:      int(req.GetOffset()),
@@ -131,7 +123,6 @@ func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDoc
 		slog.Error("grpc search documents failed",
 			"actorUserId", req.GetActorUserId(),
 			"query", req.GetQuery(),
-			"status", req.GetStatus(),
 			"category", req.GetCategory(),
 			"err", err,
 		)
@@ -157,16 +148,75 @@ func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDoc
 			Id:                  document.ID,
 			Title:               document.Title,
 			Category:            document.Category,
-			Status:              string(document.Status),
 			OwnerUserId:         document.OwnerUser,
 			OwnerUserName:       document.OwnerUserName,
 			Version:             document.Version,
 			UpdatedAt:           document.UpdatedAt,
 			ContentDocumentJson: contentJSON,
+			ObjectKey:           document.ObjectKey,
+			ObjectVersionId:     document.ObjectVersionID,
 		})
 	}
 
 	return &pb.SearchDocumentsResponse{Items: items, Total: int32(total)}, nil
+}
+
+func (h *DocumentHandler) ListDocumentVersions(ctx context.Context, req *pb.ListDocumentVersionsRequest) (*pb.ListDocumentVersionsResponse, error) {
+	items, total, err := h.lifecycle.ListDocumentVersions(ctx, appservice.ListDocumentVersionsInput{
+		ActorUserID: req.GetActorUserId(),
+		DocumentID:  req.GetDocumentId(),
+		Limit:       int(req.GetLimit()),
+		Offset:      int(req.GetOffset()),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	responseItems := make([]*pb.DocumentVersion, 0, len(items))
+	for _, item := range items {
+		responseItems = append(responseItems, &pb.DocumentVersion{
+			DocumentId:      item.DocumentID,
+			VersionNumber:   item.VersionNumber,
+			Title:           item.Title,
+			Category:        item.Category,
+			ChangedByUserId: item.ChangedByUserID,
+			ChangeSummary:   item.ChangeSummary,
+			CreatedAt:       item.CreatedAt,
+			ObjectKey:       item.ObjectKey,
+			ObjectVersionId: item.ObjectVersionID,
+		})
+	}
+	return &pb.ListDocumentVersionsResponse{Items: responseItems, Total: int32(total)}, nil
+}
+
+func (h *DocumentHandler) GetDocumentVersion(ctx context.Context, req *pb.GetDocumentVersionRequest) (*pb.DocumentVersion, error) {
+	item, err := h.lifecycle.GetDocumentVersion(ctx, appservice.GetDocumentVersionInput{
+		ActorUserID:   req.GetActorUserId(),
+		DocumentID:    req.GetDocumentId(),
+		VersionNumber: req.GetVersionNumber(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	contentJSON := ""
+	if item.ContentDocument != nil {
+		payload, err := json.Marshal(item.ContentDocument)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to marshal document content")
+		}
+		contentJSON = string(payload)
+	}
+	return &pb.DocumentVersion{
+		DocumentId:          item.DocumentID,
+		VersionNumber:       item.VersionNumber,
+		Title:               item.Title,
+		Category:            item.Category,
+		ChangedByUserId:     item.ChangedByUserID,
+		ChangeSummary:       item.ChangeSummary,
+		CreatedAt:           item.CreatedAt,
+		ObjectKey:           item.ObjectKey,
+		ObjectVersionId:     item.ObjectVersionID,
+		ContentDocumentJson: contentJSON,
+	}, nil
 }
 
 func (h *DocumentHandler) GetEditorControlProfile(ctx context.Context, req *pb.GetEditorControlProfileRequest) (*pb.EditorControlProfile, error) {
@@ -330,11 +380,13 @@ func mapDocument(document model.Document) (*pb.Document, error) {
 		Id:                  document.ID,
 		Title:               document.Title,
 		Category:            document.Category,
-		Status:              string(document.Status),
 		OwnerUserId:         document.OwnerUser,
+		OwnerUserName:       document.OwnerUserName,
 		Version:             document.Version,
 		UpdatedAt:           document.UpdatedAt,
 		ContentDocumentJson: contentJSON,
+		ObjectKey:           document.ObjectKey,
+		ObjectVersionId:     document.ObjectVersionID,
 	}, nil
 }
 

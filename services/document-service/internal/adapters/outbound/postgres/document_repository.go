@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"reflect"
 	"time"
 
 	"edo/services/document-service/internal/domain/model"
@@ -24,6 +23,7 @@ type DocumentRepository struct {
 	presignClient *minio.Client
 	bucketName    string
 	presignedTTL  time.Duration
+	versions      *DocumentVersionRepository
 }
 
 func NewDocumentRepository(db *sql.DB, objectClient *minio.Client, presignClient *minio.Client, bucketName string, presignedTTL time.Duration) *DocumentRepository {
@@ -40,48 +40,82 @@ func NewDocumentRepository(db *sql.DB, objectClient *minio.Client, presignClient
 		presignClient: presignClient,
 		bucketName:    bucketName,
 		presignedTTL:  presignedTTL,
+		versions:      NewDocumentVersionRepository(db, objectClient, bucketName),
 	}
 }
 
 func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Document) (model.Document, error) {
-	content, err := json.Marshal(document.ContentDocument)
+	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return model.Document{}, err
 	}
+	defer tx.Rollback()
 
 	const query = `
-		INSERT INTO documents (title, category, status, content_document_json, owner_user_id, owner_user_name, version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, updated_at
+		INSERT INTO documents (title, category, owner_user_id, owner_user_name, current_version_number)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_at, updated_at
 	`
-
-	row := r.db.QueryRowContext(ctx, query, document.Title, document.Category, string(document.Status), content, document.OwnerUser, document.OwnerUserName, document.Version)
-	if err := row.Scan(&document.ID, &document.UpdatedAt); err != nil {
+	row := tx.QueryRowContext(ctx, query, document.Title, document.Category, document.OwnerUser, document.OwnerUserName, 1)
+	if err := row.Scan(&document.ID, &document.CreatedAt, &document.UpdatedAt); err != nil {
 		return model.Document{}, err
 	}
 
+	objectKey := buildDocumentContentKey(document.ID)
+	objectVersionID, err := r.versions.StoreContent(ctx, objectKey, document.ContentDocument)
+	if err != nil {
+		return model.Document{}, err
+	}
+	if err := r.versions.AppendVersionTx(ctx, tx, model.DocumentVersion{
+		DocumentID:      document.ID,
+		VersionNumber:   1,
+		Title:           document.Title,
+		Category:        document.Category,
+		ChangedByUserID: document.OwnerUser,
+		ChangeSummary:   "document draft created",
+		ObjectKey:       objectKey,
+		ObjectVersionID: objectVersionID,
+	}); err != nil {
+		return model.Document{}, err
+	}
+
+	const headUpdate = `
+		UPDATE documents
+		SET current_object_key = $2, current_object_version_id = $3, updated_at = NOW()
+		WHERE id = $1
+	`
+	if _, err := tx.ExecContext(ctx, headUpdate, document.ID, objectKey, objectVersionID); err != nil {
+		return model.Document{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return model.Document{}, err
+	}
+
+	document.Version = 1
+	document.ObjectKey = objectKey
+	document.ObjectVersionID = objectVersionID
 	return document, nil
 }
 
 func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Document, error) {
 	const query = `
-		SELECT id, title, category, status, content_document_json, owner_user_id, owner_user_name, version, updated_at
+		SELECT id, title, category, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
 		FROM documents
 		WHERE id = $1
 	`
 
 	var document model.Document
-	var status string
-	var contentRaw []byte
 	if err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&document.ID,
 		&document.Title,
 		&document.Category,
-		&status,
-		&contentRaw,
 		&document.OwnerUser,
 		&document.OwnerUserName,
 		&document.Version,
+		&document.ObjectKey,
+		&document.ObjectVersionID,
+		&document.CreatedAt,
 		&document.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -90,12 +124,11 @@ func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Docu
 		return model.Document{}, err
 	}
 
-	document.Status = model.DocumentStatus(status)
-	if len(contentRaw) > 0 {
-		if err := json.Unmarshal(contentRaw, &document.ContentDocument); err != nil {
-			return model.Document{}, err
-		}
+	content, err := r.versions.LoadContent(ctx, document.ObjectKey, document.ObjectVersionID)
+	if err != nil {
+		return model.Document{}, err
 	}
+	document.ContentDocument = content
 	return document, nil
 }
 
@@ -107,24 +140,23 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 	defer tx.Rollback()
 
 	const selectQuery = `
-		SELECT id, title, category, status, content_document_json, owner_user_id, owner_user_name, version, updated_at
+		SELECT id, title, category, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
 		FROM documents
 		WHERE id = $1
 		FOR UPDATE
 	`
 
 	var current model.Document
-	var status string
-	var contentRaw []byte
 	if err := tx.QueryRowContext(ctx, selectQuery, input.DocumentID).Scan(
 		&current.ID,
 		&current.Title,
 		&current.Category,
-		&status,
-		&contentRaw,
 		&current.OwnerUser,
 		&current.OwnerUserName,
 		&current.Version,
+		&current.ObjectKey,
+		&current.ObjectVersionID,
+		&current.CreatedAt,
 		&current.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -132,69 +164,46 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		}
 		return model.Document{}, err
 	}
-	current.Status = model.DocumentStatus(status)
-	if len(contentRaw) > 0 {
-		if err := json.Unmarshal(contentRaw, &current.ContentDocument); err != nil {
-			return model.Document{}, err
-		}
+	content, err := r.versions.LoadContent(ctx, current.ObjectKey, current.ObjectVersionID)
+	if err != nil {
+		return model.Document{}, err
 	}
-
+	current.ContentDocument = content
 	newContent := current.ContentDocument
 	if input.ContentDocument != nil {
 		newContent = input.ContentDocument
 	}
-	content, err := json.Marshal(newContent)
+	if current.Version != input.ExpectedVersion {
+		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, current.Version)
+	}
+	newVersion := current.Version + 1
+	objectVersionID, err := r.versions.StoreContent(ctx, current.ObjectKey, newContent)
 	if err != nil {
 		return model.Document{}, err
 	}
 
-	// Document versions track content revisions. Status-only updates do not
-	// create a new document version and must not fail on a stale version token.
-	titleChanged := current.Title != input.Title
-	contentChanged := input.ContentDocument != nil && !documentsContentEqual(current.ContentDocument, input.ContentDocument)
-	shouldIncrementVersion := titleChanged || contentChanged
-
-	if shouldIncrementVersion && !current.Status.IsEditable() {
-		return model.Document{}, model.ErrDocumentNotEditable
-	}
-
-	if shouldIncrementVersion && current.Version != input.ExpectedVersion {
-		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, current.Version)
-	}
-
-	newVersion := current.Version
-	if shouldIncrementVersion {
-		newVersion = current.Version + 1
-	}
-
 	const updateQuery = `
 		UPDATE documents
-		SET title = $2, status = $3, content_document_json = $4, version = $5, updated_at = $6
+		SET title = $2, current_version_number = $3, current_object_key = $4, current_object_version_id = $5, updated_at = $6
 		WHERE id = $1
 		RETURNING updated_at
 	`
 
 	updatedAt := time.Now().UTC().Format(time.RFC3339)
-	if err := tx.QueryRowContext(ctx, updateQuery, current.ID, input.Title, string(input.Status), content, newVersion, updatedAt).Scan(&current.UpdatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, updateQuery, current.ID, input.Title, newVersion, current.ObjectKey, objectVersionID, updatedAt).Scan(&current.UpdatedAt); err != nil {
 		return model.Document{}, err
 	}
-
-	if shouldIncrementVersion {
-		const versionQuery = `
-			INSERT INTO document_versions (document_id, version_number, title, category, status, changed_by_user_id, change_summary, content_document_json)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		`
-		changeSummary := "updated by " + input.ActorUserID
-		if titleChanged && contentChanged {
-			changeSummary = "title and content updated by " + input.ActorUserID
-		} else if titleChanged {
-			changeSummary = "title updated by " + input.ActorUserID
-		} else if contentChanged {
-			changeSummary = "content updated by " + input.ActorUserID
-		}
-		if _, err := tx.ExecContext(ctx, versionQuery, current.ID, newVersion, input.Title, current.Category, string(input.Status), input.ActorUserID, changeSummary, content); err != nil {
-			return model.Document{}, err
-		}
+	if err := r.versions.AppendVersionTx(ctx, tx, model.DocumentVersion{
+		DocumentID:      current.ID,
+		VersionNumber:   newVersion,
+		Title:           input.Title,
+		Category:        current.Category,
+		ChangedByUserID: input.ActorUserID,
+		ChangeSummary:   "updated by " + input.ActorUserID,
+		ObjectKey:       current.ObjectKey,
+		ObjectVersionID: objectVersionID,
+	}); err != nil {
+		return model.Document{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -203,21 +212,9 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 
 	current.Title = input.Title
 	current.ContentDocument = newContent
-	current.Status = input.Status
-	if shouldIncrementVersion {
-		current.Version = newVersion
-	}
+	current.Version = newVersion
+	current.ObjectVersionID = objectVersionID
 	return current, nil
-}
-
-func documentsContentEqual(left map[string]any, right map[string]any) bool {
-	leftJSON, leftErr := json.Marshal(left)
-	rightJSON, rightErr := json.Marshal(right)
-	if leftErr != nil || rightErr != nil {
-		return reflect.DeepEqual(left, right)
-	}
-
-	return bytes.Equal(leftJSON, rightJSON)
 }
 
 func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound.SearchDocumentsInput) ([]model.Document, int64, error) {
@@ -238,12 +235,6 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 		argIdx += 2
 	}
 
-	if input.Status != "" {
-		where += fmt.Sprintf(" AND status = $%d", argIdx)
-		args = append(args, string(input.Status))
-		argIdx++
-	}
-
 	if input.Category != "" {
 		where += fmt.Sprintf(" AND category = $%d", argIdx)
 		args = append(args, input.Category)
@@ -257,7 +248,7 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, title, category, status, content_document_json, owner_user_id, owner_user_name, version, updated_at
+		SELECT id, title, category, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
 		FROM documents
 		%s
 		ORDER BY updated_at DESC
@@ -274,26 +265,19 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	documents := make([]model.Document, 0)
 	for rows.Next() {
 		var document model.Document
-		var statusValue string
-		var contentRaw []byte
 		if err := rows.Scan(
 			&document.ID,
 			&document.Title,
 			&document.Category,
-			&statusValue,
-			&contentRaw,
 			&document.OwnerUser,
 			&document.OwnerUserName,
 			&document.Version,
+			&document.ObjectKey,
+			&document.ObjectVersionID,
+			&document.CreatedAt,
 			&document.UpdatedAt,
 		); err != nil {
 			return nil, 0, err
-		}
-		document.Status = model.DocumentStatus(statusValue)
-		if len(contentRaw) > 0 {
-			if err := json.Unmarshal(contentRaw, &document.ContentDocument); err != nil {
-				return nil, 0, err
-			}
 		}
 		documents = append(documents, document)
 	}
@@ -303,6 +287,14 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	}
 
 	return documents, total, nil
+}
+
+func (r *DocumentRepository) ListVersions(ctx context.Context, documentID string, limit int, offset int) ([]model.DocumentVersion, int64, error) {
+	return r.versions.ListVersions(ctx, documentID, limit, offset)
+}
+
+func (r *DocumentRepository) GetVersion(ctx context.Context, documentID string, versionNumber int64) (model.DocumentVersion, error) {
+	return r.versions.GetVersion(ctx, documentID, versionNumber)
 }
 
 func (r *DocumentRepository) GetEditorControlProfileByContext(ctx context.Context, contextType string, contextKey string) (model.EditorControlProfile, error) {

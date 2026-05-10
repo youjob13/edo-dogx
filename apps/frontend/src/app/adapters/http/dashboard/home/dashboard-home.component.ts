@@ -20,11 +20,9 @@ import {
   UiKitTableColumn,
   UiKitActivityItem,
   UiKitChartBar,
-  UiKitChipTone,
 } from '../../../../design-system/ui-kit';
 import {
   DashboardDocumentCategory,
-  DashboardDocumentStatus,
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
   DashboardExportFormat,
@@ -64,12 +62,10 @@ export class DashboardHomeComponent {
 
   protected readonly recentDocumentColumns: Array<UiKitTableColumn> = [
     { key: 'title', label: 'Документ', sortable: true },
-    { key: 'statusLabel', label: 'Статус', sortable: true },
     { key: 'modifiedAtLabel', label: 'Обновлен', sortable: true },
   ];
 
   protected readonly documentSort = signal<UiKitSortState>({ key: 'modifiedAtLabel', direction: 'desc' });
-  protected readonly quickStatusFilter = signal<DashboardDocumentStatus | null>(null);
   protected readonly globalSearch = signal('');
   protected readonly recentDocuments = signal<Array<DocumentItem>>([]);
   protected readonly selectedDocumentId = signal<string | null>(null);
@@ -79,9 +75,7 @@ export class DashboardHomeComponent {
   protected readonly editOpen = signal(false);
   protected readonly storageDetailsOpen = signal(false);
   protected readonly editFilenameControl = new FormControl('', { nonNullable: true });
-  protected readonly editStatusControl = new FormControl<DashboardDocumentStatus>('DRAFT', {
-    nonNullable: true,
-  });
+
 
   protected readonly pendingApprovalCount = signal(0);
   protected readonly pendingApprovalDelta = signal(0);
@@ -116,21 +110,14 @@ export class DashboardHomeComponent {
     this.filteredRecentDocuments().map((item) => ({
       id: item.id,
       title: item.title,
-      statusLabel: this.getStatusLabel(item.status),
       modifiedAtLabel: item.updatedAt,
     })),
   );
 
   protected readonly filteredRecentDocuments = computed(() => {
-    const selectedStatus = this.quickStatusFilter();
     const selectedDay = this.selectedDay();
 
     return this.recentDocuments().filter((item) => {
-      const statusMatch = !selectedStatus || item.status === selectedStatus;
-      if (!statusMatch) {
-        return false;
-      }
-
       if (!selectedDay) {
         return true;
       }
@@ -161,7 +148,6 @@ export class DashboardHomeComponent {
   }
 
   protected onMetricPressed(metric: 'DRAFT' | 'IN_REVIEW'): void {
-    this.quickStatusFilter.set(metric === 'DRAFT' ? 'DRAFT' : 'IN_REVIEW');
     this.message.set(
       metric === 'DRAFT'
         ? 'Быстрый фильтр: ожидают подтверждения.'
@@ -222,7 +208,7 @@ export class DashboardHomeComponent {
         .subscribe((document) => {
           this.editableDocument.set(document);
           this.editFilenameControl.setValue(document.title);
-          this.editStatusControl.setValue(document.status);
+          // this.editStatusControl.setValue(document.status);
           this.editOpen.set(true);
         });
       return;
@@ -293,24 +279,8 @@ export class DashboardHomeComponent {
   }
 
   protected resetQuickFilters(): void {
-    this.quickStatusFilter.set(null);
     this.selectedDay.set(null);
     this.message.set('Быстрые фильтры сброшены.');
-  }
-
-  protected getStatusTone(status: DashboardDocumentStatus): UiKitChipTone {
-    return status.toLowerCase() as UiKitChipTone;
-  }
-
-  protected getStatusLabel(status: DashboardDocumentStatus): string {
-    const labels: Record<DashboardDocumentStatus, string> = {
-      DRAFT: 'Ожидает',
-      IN_REVIEW: 'На проверке',
-      APPROVED: 'Утвержден',
-      ARCHIVED: 'В архиве',
-    };
-
-    return labels[status];
   }
 
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
@@ -324,10 +294,11 @@ export class DashboardHomeComponent {
   }
 
   private updateSummaryFromDocuments(items: Array<DocumentItem>): void {
-    this.pendingApprovalCount.set(items.filter((documentItem) => documentItem.status === 'DRAFT').length);
-    this.pendingApprovalDelta.set(2);
-    this.actionItemsCount.set(items.filter((documentItem) => documentItem.status === 'IN_REVIEW').length);
-    this.overdueNoticesCount.set(3);
+    // ToDo: this should be not document status but tasks status
+    // this.pendingApprovalCount.set(items.filter((documentItem) => documentItem.status === 'DRAFT').length);
+    // this.pendingApprovalDelta.set(2);
+    // this.actionItemsCount.set(items.filter((documentItem) => documentItem.status === 'IN_REVIEW').length);
+    // this.overdueNoticesCount.set(3);
   }
 
   private loadWeeklyVolume(): void {
@@ -388,7 +359,6 @@ export class DashboardHomeComponent {
   private createEditPayload(document: DashboardEditableDocument): DashboardEditDocumentPayload {
     return {
       title: this.editFilenameControl.value,
-      status: this.editStatusControl.value,
       contentDocument: document.contentDocument,
       expectedVersion: document.version,
     };

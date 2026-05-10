@@ -27,6 +27,11 @@ export interface DocumentApiPort {
   downloadDocument(id: string): Observable<void>;
   createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument>;
   getDocumentById(id: string): Observable<DashboardEditableDocument>;
+  getDocumentVersions(
+    id: string,
+    options?: { limit?: number; offset?: number },
+  ): Observable<{ items: Array<Record<string, unknown>>; total: number }>;
+  getDocumentVersion(id: string, versionNumber: number): Observable<Record<string, unknown>>;
   updateDocument(id: string, payload: DashboardEditDocumentPayload): Observable<DocumentItem>;
   getEditorControlProfile(contextType: DashboardEditorContextType, contextKey: string): Observable<DashboardEditorControlProfile>;
   updateEditorControlProfile(

@@ -38,6 +38,39 @@
   color: var(--edo-ui-text-dark);
 }
 
+.dashboard-documents__table-wrap {
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-documents__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-documents__table th,
+.dashboard-documents__table td {
+  padding: 0.55rem;
+  border-bottom: 1px solid var(--edo-ui-border-subtle);
+  text-align: left;
+}
+
+.dashboard-documents__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.dashboard-documents__row-actions button {
+  border: 1px solid var(--edo-ui-border-subtle);
+  border-radius: var(--edo-ui-radius-s);
+  background: var(--edo-ui-surface-primary);
+  color: var(--edo-ui-ink-primary);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.25rem 0.5rem;
+}
+
 .dashboard-documents__preview {
   display: grid;
   gap: 0.875rem;

@@ -1,9 +1,3 @@
-export type DashboardDocumentStatus =
-  | 'IN_REVIEW'
-  | 'DRAFT'
-  | 'ARCHIVED'
-  | 'APPROVED';
-
 export type DashboardDocumentCategory = 'HR' | 'FINANCE' | 'GENERAL';
 
 export interface WeeklyVolumePoint {
@@ -15,7 +9,6 @@ export interface DocumentItem {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
-  readonly status: DashboardDocumentStatus;
   readonly updatedAt: string;
   readonly sizeKb: number;
   readonly version?: number;
@@ -39,7 +32,6 @@ export interface StorageUsage {
 
 export interface DashboardQuery {
   readonly text?: string;
-  readonly status?: DashboardDocumentStatus;
   readonly category?: DashboardDocumentCategory;
   readonly sortBy?: 'title' | 'category' | 'status' | 'updatedAt';
   readonly sortDirection?: 'asc' | 'desc';
@@ -56,7 +48,6 @@ export interface PaginatedResult<T> {
 
 export interface DashboardEditDocumentPayload {
   readonly title: string;
-  readonly status: DashboardDocumentStatus;
   readonly contentDocument?: DashboardRichContentDocument;
   readonly expectedVersion?: number;
 }
@@ -88,7 +79,6 @@ export interface DashboardEditableDocument {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
-  readonly status: DashboardDocumentStatus;
   readonly version: number;
   readonly contentDocument?: DashboardRichContentDocument;
 }
@@ -154,7 +144,6 @@ export interface DashboardPreviewDocument {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
-  readonly status: DashboardDocumentStatus;
   readonly version: number;
   readonly updatedAt: string;
   readonly body: string;
@@ -186,7 +175,6 @@ export interface TaskAttachment {
   readonly documentId: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
-  readonly status: DashboardDocumentStatus;
 }
 
 export type TaskType = 'approval' | 'general';
