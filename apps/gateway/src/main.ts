@@ -6,6 +6,8 @@ import Redis from 'ioredis';
 import { buildApp } from './adapters/inbound/http/app.js';
 import { RedisSessionAdapter } from './adapters/outbound/redis/session-store.adapter.js';
 import { KeycloakAdapter } from './adapters/outbound/oidc/keycloak.adapter.js';
+import { TaskOrchestrationServiceClient } from './adapters/outbound/grpc/task.client.js';
+import { OrganizationMemberProvisioningAdapter } from './adapters/outbound/grpc/organization-member-provisioning.adapter.js';
 import { AuthService } from './application/auth.service.js';
 
 function requireEnv(key: string): string {
@@ -47,7 +49,9 @@ async function main(): Promise<void> {
   });
 
   const sessionStore = new RedisSessionAdapter(redis);
-  const authService = new AuthService(keycloakAdapter);
+  const taskGrpcClient = new TaskOrchestrationServiceClient();
+  const organizationMemberProvisioning = new OrganizationMemberProvisioningAdapter(taskGrpcClient);
+  const authService = new AuthService(keycloakAdapter, organizationMemberProvisioning);
 
   const app = buildApp({
     authService,

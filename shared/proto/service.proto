@@ -320,6 +320,20 @@ message AddTaskBoardMemberResponse {
   BoardMember member = 1;
 }
 
+message CreateOrganizationMemberRequest {
+  string actor_user_id = 1;
+  string organization_id = 2;
+  string user_id = 3;
+  string full_name = 4;
+  string department = 5;
+  string email = 6;
+}
+
+message CreateOrganizationMemberResponse {
+  BoardMember member = 1;
+  bool created = 2;
+}
+
 message DocumentItem {
   string id = 1;
   string title = 2;
@@ -355,6 +369,7 @@ service TaskOrchestrationService {
   rpc GetAvailableDocuments(AvailableDocumentsRequest) returns (AvailableDocumentsResponse);
   rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse);
   rpc AddTaskBoardMember(AddTaskBoardMemberRequest) returns (AddTaskBoardMemberResponse);
+  rpc CreateOrganizationMember(CreateOrganizationMemberRequest) returns (CreateOrganizationMemberResponse);
 }
 
 message SignatureRequest {

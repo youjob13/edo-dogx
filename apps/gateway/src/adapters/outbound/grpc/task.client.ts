@@ -77,4 +77,8 @@ export class TaskOrchestrationServiceClient {
   addTaskBoardMember(payload: unknown): Promise<unknown> {
     return this.call('AddTaskBoardMember', payload);
   }
+
+  createOrganizationMember(payload: unknown): Promise<unknown> {
+    return this.call('CreateOrganizationMember', payload);
+  }
 }

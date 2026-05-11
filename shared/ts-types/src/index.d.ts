@@ -4,6 +4,8 @@ export interface HealthResponse {
 export interface UserProfile {
     userId: string;
     userName: string;
+    fullName?: string;
+    department?: string;
     email: string;
     roles: string[];
 }
@@ -22,11 +24,10 @@ export interface DocumentResponse {
     id: string;
     title: string;
     category: DocumentCategory;
+    status: string;
     contentDocument?: Record<string, unknown>;
     version?: number;
     updatedAt?: string;
-    objectKey?: string;
-    objectVersionId?: string;
 }
 export type EditorContextType = 'CATEGORY' | 'TEMPLATE';
 export interface EditorControlProfileResponse {
@@ -120,6 +121,7 @@ export interface DocumentItem {
     id: string;
     title: string;
     category: string;
+    status: string;
     updatedAt: string;
     sizeKb: number;
     version: number;
@@ -209,5 +211,5 @@ export interface TaskResponse {
 }
 /**
  * /Tasks --->
- */ 
+ */
 //# sourceMappingURL=index.d.ts.map

@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
+import { AuthSessionStore } from '../../../../application/auth-session.store';
 
 @Component({
   selector: 'edo-dogx-dashboard-profile',
@@ -10,9 +11,11 @@ import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../.
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardProfileComponent {
-  protected readonly fullNameControl = new FormControl('Алексей Петров', { nonNullable: true });
-  protected readonly emailControl = new FormControl('a.petrov@edo.local', { nonNullable: true });
-  protected readonly departmentControl = new FormControl('Юридический департамент', { nonNullable: true });
+  private readonly authSessionStore = inject(AuthSessionStore);
+
+  protected readonly fullNameControl = new FormControl('', { nonNullable: true });
+  protected readonly emailControl = new FormControl('', { nonNullable: true });
+  protected readonly departmentControl = new FormControl('', { nonNullable: true });
   protected readonly positionControl = new FormControl('Старший специалист по документообороту', {
     nonNullable: true,
   });
@@ -24,6 +27,19 @@ export class DashboardProfileComponent {
 
   protected readonly avatarUrl = signal<string | null>(null);
   protected readonly message = signal('');
+
+  constructor() {
+    effect(() => {
+      const profile = this.authSessionStore.currentUser();
+      if (!profile) {
+        return;
+      }
+
+      this.fullNameControl.setValue(profile.fullName || profile.userName || profile.email || '');
+      this.emailControl.setValue(profile.email || '');
+      this.departmentControl.setValue(profile.department || '');
+    });
+  }
 
   protected onAvatarSelected(event: Event): void {
     const input = event.target as HTMLInputElement;

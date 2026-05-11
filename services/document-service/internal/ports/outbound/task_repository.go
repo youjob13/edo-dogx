@@ -16,6 +16,7 @@ type TaskRepository interface {
 	ListTaskBoards(ctx context.Context, filter TaskBoardFilter) ([]model.TaskBoardSummary, int, error)
 	ListOrganizationMembers(ctx context.Context, organizationID string, limit int, offset int) ([]model.TaskBoardMember, int, error)
 	AddTaskBoardMember(ctx context.Context, boardID string, userID string) (model.TaskBoardMember, error)
+	CreateOrganizationMember(ctx context.Context, organizationID string, member model.TaskBoardMember) (bool, error)
 	AddTaskAttachments(ctx context.Context, taskID string, attachments []model.TaskAttachment) error
 	GetTaskAttachments(ctx context.Context, taskID string) ([]model.TaskAttachment, error)
 }

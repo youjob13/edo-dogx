@@ -627,3 +627,23 @@ func (r *TaskRepository) AddTaskBoardMember(ctx context.Context, boardID string,
 
 	return member, nil
 }
+
+func (r *TaskRepository) CreateOrganizationMember(ctx context.Context, organizationID string, member model.TaskBoardMember) (bool, error) {
+	const query = `
+		INSERT INTO organization_members (organization_id, user_id, full_name, department, email)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (organization_id, user_id) DO NOTHING
+	`
+
+	result, err := r.db.ExecContext(ctx, query, organizationID, member.UserID, member.FullName, member.Department, member.Email)
+	if err != nil {
+		return false, fmt.Errorf("failed to create organization member: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("failed to check organization member insert result: %w", err)
+	}
+
+	return rowsAffected > 0, nil
+}

@@ -22,6 +22,25 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-keycloak:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      POSTGRES_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:?KEYCLOAK_POSTGRES_PASSWORD is required}
+    volumes:
+      - keycloak_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - edo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_POSTGRES_USER:-keycloak_user} -d ${KEYCLOAK_POSTGRES_DB:-keycloak}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -102,9 +121,9 @@ services:
     command: start-dev --import-realm --health-enabled=true
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-edo}
-      KC_DB_USERNAME: ${POSTGRES_USER:-edo_user}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/${KEYCLOAK_POSTGRES_DB:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:?KEYCLOAK_POSTGRES_PASSWORD is required}
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
     volumes:
@@ -112,7 +131,7 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
+      postgres-keycloak:
         condition: service_healthy
     networks:
       - edo-network
@@ -234,6 +253,7 @@ services:
 
 volumes:
   postgres_data:
+  keycloak_postgres_data:
   redis_data:
   elasticsearch_data:
   minio_data:

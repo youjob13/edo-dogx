@@ -119,10 +119,19 @@ export class KeycloakAdapter implements OidcClientPort {
     const realmAccess = accessPayload['realm_access'] as
       | { roles?: string[] }
       | undefined;
+    const givenName = asString(claims['given_name']);
+    const familyName = asString(claims['family_name']);
+    const fullName = [givenName, familyName].filter(Boolean).join(' ').trim() || asString(claims['name']) || (claims.sub as string);
+    const department =
+      asString(claims['department']) ||
+      asString(accessPayload['department']) ||
+      asString((claims['attributes'] as Record<string, unknown> | undefined)?.['department']);
 
     return {
       userId: claims.sub,
       email: (claims['email'] as string) ?? '',
+      fullName,
+      department,
       roles: realmAccess?.roles ?? [],
       accessToken,
       refreshToken,
@@ -132,10 +141,22 @@ export class KeycloakAdapter implements OidcClientPort {
   }
 
   buildLogoutUrl(idToken: string): string {
-    return this.client.endSessionUrl({
+    const logoutUrl = this.client.endSessionUrl({
       id_token_hint: idToken,
       post_logout_redirect_uri: this.config.postLogoutRedirectUri,
     });
+
+    // Rewrite internal Docker hostname to the public URL so the browser can reach Keycloak
+    if (this.config.publicUrl) {
+      const parsed = new URL(logoutUrl);
+      const pub = new URL(this.config.publicUrl);
+      parsed.hostname = pub.hostname;
+      parsed.port = pub.port;
+      parsed.protocol = pub.protocol;
+      return parsed.toString();
+    }
+
+    return logoutUrl;
   }
 
   buildRegisterUrl(pkceState: PkceState): string {
@@ -145,12 +166,17 @@ export class KeycloakAdapter implements OidcClientPort {
       state: pkceState.state,
       code_challenge: generators.codeChallenge(pkceState.codeVerifier),
       code_challenge_method: 'S256',
-      kc_action: 'register',
     });
+    const registrationParsed = new URL(authUrl);
+    registrationParsed.pathname = registrationParsed.pathname.replace(
+      '/protocol/openid-connect/auth',
+      '/protocol/openid-connect/registrations',
+    );
+    const registrationUrl = registrationParsed.toString();
 
     // Rewrite internal Docker hostname to the public URL so the browser can reach Keycloak
     if (this.config.publicUrl) {
-      const parsed = new URL(authUrl);
+      const parsed = new URL(registrationUrl);
       const pub = new URL(this.config.publicUrl);
       parsed.hostname = pub.hostname;
       parsed.port = pub.port;
@@ -158,7 +184,7 @@ export class KeycloakAdapter implements OidcClientPort {
       return parsed.toString();
     }
 
-    return authUrl;
+    return registrationUrl;
   }
 }
 
@@ -169,4 +195,8 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
   }
   const json = Buffer.from(base64, 'base64url').toString('utf8');
   return JSON.parse(json) as Record<string, unknown>;
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }

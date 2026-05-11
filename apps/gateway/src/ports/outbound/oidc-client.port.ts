@@ -3,6 +3,8 @@ import type { PkceState } from '../../domain/auth.js';
 export interface TokenData {
   readonly userId: string;
   readonly email: string;
+  readonly fullName: string;
+  readonly department: string;
   readonly roles: string[];
   readonly accessToken: string;
   readonly refreshToken: string;

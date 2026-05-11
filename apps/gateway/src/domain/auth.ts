@@ -1,6 +1,8 @@
 export interface AuthSession {
   readonly userId: string;
   readonly email: string;
+  readonly fullName: string;
+  readonly department: string;
   readonly roles: string[];
   readonly accessToken: string;
   readonly refreshToken: string;

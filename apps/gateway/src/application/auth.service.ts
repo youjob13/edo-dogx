@@ -5,9 +5,13 @@ import type {
   InitiateLoginResult,
 } from '../ports/inbound/auth.port.js';
 import type { OidcClientPort } from '../ports/outbound/oidc-client.port.js';
+import type { OrganizationMemberProvisioningPort } from '../ports/outbound/organization-member-provisioning.port.js';
 
 export class AuthService implements AuthPort {
-  constructor(private readonly oidcClient: OidcClientPort) {}
+  constructor(
+    private readonly oidcClient: OidcClientPort,
+    private readonly memberProvisioning: OrganizationMemberProvisioningPort,
+  ) {}
 
   initiateLogin(loginHint?: string): InitiateLoginResult {
     const pkceState = this.oidcClient.generatePkceState();
@@ -26,9 +30,20 @@ export class AuthService implements AuthPort {
     pkceState: PkceState,
   ): Promise<AuthSession> {
     const tokenData = await this.oidcClient.exchangeCode(params, pkceState);
+    if (tokenData.department) {
+      await this.memberProvisioning.ensureMemberExists({
+        userId: tokenData.userId,
+        fullName: tokenData.fullName,
+        department: tokenData.department,
+        email: tokenData.email,
+      });
+    }
+
     return {
       userId: tokenData.userId,
       email: tokenData.email,
+      fullName: tokenData.fullName,
+      department: tokenData.department,
       roles: tokenData.roles,
       accessToken: tokenData.accessToken,
       refreshToken: tokenData.refreshToken,
@@ -44,7 +59,9 @@ export class AuthService implements AuthPort {
   getCurrentUser(session: AuthSession): UserProfile {
     return {
       userId: session.userId,
-      userName: session.email, // temporary use email instead of name
+      userName: session.email,
+      fullName: session.fullName || session.email,
+      department: session.department || '',
       email: session.email,
       roles: session.roles,
     };

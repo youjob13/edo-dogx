@@ -2031,18 +2031,19 @@ var NotificationService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	TaskOrchestrationService_CreateTaskBoard_FullMethodName         = "/service.v1.TaskOrchestrationService/CreateTaskBoard"
-	TaskOrchestrationService_CreateTask_FullMethodName              = "/service.v1.TaskOrchestrationService/CreateTask"
-	TaskOrchestrationService_UpdateTaskStatus_FullMethodName        = "/service.v1.TaskOrchestrationService/UpdateTaskStatus"
-	TaskOrchestrationService_AddTaskAttachments_FullMethodName      = "/service.v1.TaskOrchestrationService/AddTaskAttachments"
-	TaskOrchestrationService_RemoveTaskAttachment_FullMethodName    = "/service.v1.TaskOrchestrationService/RemoveTaskAttachment"
-	TaskOrchestrationService_ListTaskBoards_FullMethodName          = "/service.v1.TaskOrchestrationService/ListTaskBoards"
-	TaskOrchestrationService_GetTaskBoard_FullMethodName            = "/service.v1.TaskOrchestrationService/GetTaskBoard"
-	TaskOrchestrationService_GetTaskDetails_FullMethodName          = "/service.v1.TaskOrchestrationService/GetTaskDetails"
-	TaskOrchestrationService_GetAvailableApprovers_FullMethodName   = "/service.v1.TaskOrchestrationService/GetAvailableApprovers"
-	TaskOrchestrationService_GetAvailableDocuments_FullMethodName   = "/service.v1.TaskOrchestrationService/GetAvailableDocuments"
-	TaskOrchestrationService_ListOrganizationMembers_FullMethodName = "/service.v1.TaskOrchestrationService/ListOrganizationMembers"
-	TaskOrchestrationService_AddTaskBoardMember_FullMethodName      = "/service.v1.TaskOrchestrationService/AddTaskBoardMember"
+	TaskOrchestrationService_CreateTaskBoard_FullMethodName          = "/service.v1.TaskOrchestrationService/CreateTaskBoard"
+	TaskOrchestrationService_CreateTask_FullMethodName               = "/service.v1.TaskOrchestrationService/CreateTask"
+	TaskOrchestrationService_UpdateTaskStatus_FullMethodName         = "/service.v1.TaskOrchestrationService/UpdateTaskStatus"
+	TaskOrchestrationService_AddTaskAttachments_FullMethodName       = "/service.v1.TaskOrchestrationService/AddTaskAttachments"
+	TaskOrchestrationService_RemoveTaskAttachment_FullMethodName     = "/service.v1.TaskOrchestrationService/RemoveTaskAttachment"
+	TaskOrchestrationService_ListTaskBoards_FullMethodName           = "/service.v1.TaskOrchestrationService/ListTaskBoards"
+	TaskOrchestrationService_GetTaskBoard_FullMethodName             = "/service.v1.TaskOrchestrationService/GetTaskBoard"
+	TaskOrchestrationService_GetTaskDetails_FullMethodName           = "/service.v1.TaskOrchestrationService/GetTaskDetails"
+	TaskOrchestrationService_GetAvailableApprovers_FullMethodName    = "/service.v1.TaskOrchestrationService/GetAvailableApprovers"
+	TaskOrchestrationService_GetAvailableDocuments_FullMethodName    = "/service.v1.TaskOrchestrationService/GetAvailableDocuments"
+	TaskOrchestrationService_ListOrganizationMembers_FullMethodName  = "/service.v1.TaskOrchestrationService/ListOrganizationMembers"
+	TaskOrchestrationService_AddTaskBoardMember_FullMethodName       = "/service.v1.TaskOrchestrationService/AddTaskBoardMember"
+	TaskOrchestrationService_CreateOrganizationMember_FullMethodName = "/service.v1.TaskOrchestrationService/CreateOrganizationMember"
 )
 
 // TaskOrchestrationServiceClient is the client API for TaskOrchestrationService service.
@@ -2061,6 +2062,7 @@ type TaskOrchestrationServiceClient interface {
 	GetAvailableDocuments(ctx context.Context, in *AvailableDocumentsRequest, opts ...grpc.CallOption) (*AvailableDocumentsResponse, error)
 	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
 	AddTaskBoardMember(ctx context.Context, in *AddTaskBoardMemberRequest, opts ...grpc.CallOption) (*AddTaskBoardMemberResponse, error)
+	CreateOrganizationMember(ctx context.Context, in *CreateOrganizationMemberRequest, opts ...grpc.CallOption) (*CreateOrganizationMemberResponse, error)
 }
 
 type taskOrchestrationServiceClient struct {
@@ -2191,6 +2193,16 @@ func (c *taskOrchestrationServiceClient) AddTaskBoardMember(ctx context.Context,
 	return out, nil
 }
 
+func (c *taskOrchestrationServiceClient) CreateOrganizationMember(ctx context.Context, in *CreateOrganizationMemberRequest, opts ...grpc.CallOption) (*CreateOrganizationMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateOrganizationMemberResponse)
+	err := c.cc.Invoke(ctx, TaskOrchestrationService_CreateOrganizationMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskOrchestrationServiceServer is the server API for TaskOrchestrationService service.
 // All implementations must embed UnimplementedTaskOrchestrationServiceServer
 // for forward compatibility.
@@ -2207,6 +2219,7 @@ type TaskOrchestrationServiceServer interface {
 	GetAvailableDocuments(context.Context, *AvailableDocumentsRequest) (*AvailableDocumentsResponse, error)
 	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
 	AddTaskBoardMember(context.Context, *AddTaskBoardMemberRequest) (*AddTaskBoardMemberResponse, error)
+	CreateOrganizationMember(context.Context, *CreateOrganizationMemberRequest) (*CreateOrganizationMemberResponse, error)
 	mustEmbedUnimplementedTaskOrchestrationServiceServer()
 }
 
@@ -2252,6 +2265,9 @@ func (UnimplementedTaskOrchestrationServiceServer) ListOrganizationMembers(conte
 }
 func (UnimplementedTaskOrchestrationServiceServer) AddTaskBoardMember(context.Context, *AddTaskBoardMemberRequest) (*AddTaskBoardMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddTaskBoardMember not implemented")
+}
+func (UnimplementedTaskOrchestrationServiceServer) CreateOrganizationMember(context.Context, *CreateOrganizationMemberRequest) (*CreateOrganizationMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateOrganizationMember not implemented")
 }
 func (UnimplementedTaskOrchestrationServiceServer) mustEmbedUnimplementedTaskOrchestrationServiceServer() {
 }
@@ -2491,6 +2507,24 @@ func _TaskOrchestrationService_AddTaskBoardMember_Handler(srv interface{}, ctx c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskOrchestrationService_CreateOrganizationMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateOrganizationMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskOrchestrationServiceServer).CreateOrganizationMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskOrchestrationService_CreateOrganizationMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskOrchestrationServiceServer).CreateOrganizationMember(ctx, req.(*CreateOrganizationMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskOrchestrationService_ServiceDesc is the grpc.ServiceDesc for TaskOrchestrationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2545,6 +2579,10 @@ var TaskOrchestrationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddTaskBoardMember",
 			Handler:    _TaskOrchestrationService_AddTaskBoardMember_Handler,
+		},
+		{
+			MethodName: "CreateOrganizationMember",
+			Handler:    _TaskOrchestrationService_CreateOrganizationMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -105,6 +105,8 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
             properties: {
               userId: { type: 'string' },
               userName: { type: 'string' },
+              fullName: { type: 'string' },
+              department: { type: 'string' },
               email: { type: 'string' },
               roles: { type: 'array', items: { type: 'string' } },
             },

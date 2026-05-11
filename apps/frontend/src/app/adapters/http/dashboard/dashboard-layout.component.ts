@@ -67,6 +67,7 @@ export class DashboardLayoutComponent {
       icon: 'settings',
     },
     { id: 'settings', label: 'Настройки', icon: 'settings' },
+    { id: 'logout', label: 'Выйти', icon: 'account' },
   ]);
 
   protected readonly notificationItems: Array<UiKitDropdownItem> = [
@@ -133,6 +134,14 @@ export class DashboardLayoutComponent {
     if (id === 'settings') {
       this.accountOpen.set(false);
       this.router.navigate(['/dashboard/settings']);
+      return;
+    }
+
+    if (id === 'logout') {
+      this.accountOpen.set(false);
+      if (this.isBrowser) {
+        window.location.assign('/api/auth/logout');
+      }
       return;
     }
 

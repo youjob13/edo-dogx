@@ -4,6 +4,7 @@ import { inject, PLATFORM_ID } from '@angular/core';
 import { Router, type CanActivateFn } from '@angular/router';
 import { catchError, map, of, throwError } from 'rxjs';
 import type { UserProfile } from '@edo/types';
+import { AuthSessionStore } from '../application/auth-session.store';
 
 let retries = 0;
 /**
@@ -19,11 +20,16 @@ export const authGuard: CanActivateFn = () => {
 
   const http = inject(HttpClient);
   const router = inject(Router);
+  const authSessionStore = inject(AuthSessionStore);
 
   return http.get<UserProfile>('/api/auth/me').pipe(
-    map(() => true),
+    map((user) => {
+      authSessionStore.setCurrentUser(user);
+      return true;
+    }),
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse && err.status === 401) {
+        authSessionStore.clear();
         if (retries > 10) {
           throw new Error('Failed to authenticate. Client emitted')
         }

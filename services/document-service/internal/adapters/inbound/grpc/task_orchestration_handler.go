@@ -325,3 +325,37 @@ func (h *TaskOrchestrationHandler) AddTaskBoardMember(ctx context.Context, req *
 		},
 	}, nil
 }
+
+func (h *TaskOrchestrationHandler) CreateOrganizationMember(ctx context.Context, req *pb.CreateOrganizationMemberRequest) (*pb.CreateOrganizationMemberResponse, error) {
+	if strings.TrimSpace(req.GetOrganizationId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "organization_id is required")
+	}
+	if strings.TrimSpace(req.GetUserId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+	if strings.TrimSpace(req.GetDepartment()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "department is required")
+	}
+
+	member := model.TaskBoardMember{
+		UserID:     strings.TrimSpace(req.GetUserId()),
+		FullName:   strings.TrimSpace(req.GetFullName()),
+		Department: strings.TrimSpace(req.GetDepartment()),
+		Email:      strings.TrimSpace(req.GetEmail()),
+	}
+
+	created, err := h.taskRepository.CreateOrganizationMember(ctx, strings.TrimSpace(req.GetOrganizationId()), member)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.CreateOrganizationMemberResponse{
+		Member: &pb.BoardMember{
+			Id:         member.UserID,
+			FullName:   member.FullName,
+			Department: member.Department,
+			Email:      member.Email,
+		},
+		Created: created,
+	}, nil
+}

@@ -21,7 +21,7 @@ RUN pnpm build
 
 # Produce a self-contained deployment bundle with all production deps resolved
 WORKDIR /repo
-RUN pnpm --filter gateway deploy --prod /gateway-deploy
+RUN pnpm --ignore-scripts --filter gateway deploy --prod /gateway-deploy
 
 # ── Runtime ──────────────────────────────────────────────────────────
 FROM node:24.15.0-alpine AS runner

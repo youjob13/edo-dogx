@@ -7,6 +7,7 @@
     "node": ">=24.15.0",
     "pnpm": ">=9"
   },
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/commit-msg",
     "dev:frontend": "pnpm --filter frontend dev",
