@@ -44,7 +44,6 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
     DataTableComponent,
     DrawerComponent,
     ModalComponent,
-    StatusChipComponent,
     ButtonComponent,
     ActivityFeedComponent,
     ProgressMeterComponent,

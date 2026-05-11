@@ -3,6 +3,9 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize, take } from 'rxjs';
+import { TuiFilterByInputPipe, TuiTextfield } from '@taiga-ui/core';
+import { tuiItemsHandlersProvider } from '@taiga-ui/core/directives/items-handlers';
+import { TuiChevron, TuiDataListWrapper, TuiInputChip, TuiMultiSelect } from '@taiga-ui/kit';
 import {
   AvailableApproverItem,
   AvailableDocumentItem,
@@ -33,7 +36,27 @@ interface TaskColumnView {
 
 @Component({
   selector: 'edo-dogx-dashboard-tasks',
-  imports: [ReactiveFormsModule, PageSectionComponent, CardComponent, ButtonComponent],
+  imports: [
+    ReactiveFormsModule,
+    PageSectionComponent,
+    CardComponent,
+    ButtonComponent,
+    TuiChevron,
+    TuiDataListWrapper,
+    TuiFilterByInputPipe,
+    TuiInputChip,
+    TuiTextfield,
+    TuiMultiSelect,
+  ],
+  providers: [
+    tuiItemsHandlersProvider<AvailableDocumentItem>({
+      stringify: signal((item: AvailableDocumentItem) => `${item.title} (${item.category})`),
+      identityMatcher: signal(
+        (item1: AvailableDocumentItem, item2: AvailableDocumentItem) =>
+          item1.documentId === item2.documentId,
+      ),
+    }),
+  ],
   templateUrl: './dashboard-tasks.component.html',
   styleUrl: './dashboard-tasks.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -80,7 +103,7 @@ export class DashboardTasksComponent {
     taskType: new FormControl<TaskType>('general', { nonNullable: true }),
     dueDate: new FormControl('', { nonNullable: true }),
     priority: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(5)] }),
-    attachmentIds: new FormControl<string[]>([], { nonNullable: true }),
+    attachments: new FormControl<AvailableDocumentItem[]>([], { nonNullable: true }),
   });
   protected readonly createBoardForm = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
@@ -228,7 +251,7 @@ export class DashboardTasksComponent {
     this.createTaskForm.reset({
       taskType: 'general',
       priority: 1,
-      attachmentIds: [],
+      attachments: [],
     });
   }
 
@@ -296,7 +319,10 @@ export class DashboardTasksComponent {
       taskType: formValue.taskType!,
       dueDate: formValue.dueDate || undefined,
       priority: formValue.priority,
-      attachmentIds: formValue.attachmentIds!.length > 0 ? formValue.attachmentIds : undefined,
+      attachmentIds:
+        formValue.attachments && formValue.attachments.length > 0
+          ? formValue.attachments.map((item) => item.documentId)
+          : undefined,
     };
 
     this.loading.set(true);
@@ -358,19 +384,6 @@ export class DashboardTasksComponent {
 
   protected canApproveTask(task: KanbanTask): boolean {
     return task.taskType === 'approval' && task.status === 'in_review' && task.approverId === 'current-user-id'; // TODO: get current user ID
-  }
-
-  protected onAttachmentToggle(documentId: string, checked: boolean): void {
-    const currentAttachments = this.createTaskForm.get('attachmentIds')?.value || [];
-    if (checked) {
-      this.createTaskForm.patchValue({
-        attachmentIds: [...currentAttachments, documentId]
-      });
-    } else {
-      this.createTaskForm.patchValue({
-        attachmentIds: currentAttachments.filter(id => id !== documentId)
-      });
-    }
   }
 
   protected getBoardMembers(): Array<KanbanBoardMember> {

@@ -114,7 +114,8 @@ CREATE TABLE IF NOT EXISTS task_attachments (
     title VARCHAR(300) NOT NULL,
     category VARCHAR(32) NOT NULL,
     status VARCHAR(32) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_task_attachments_task_document UNIQUE (task_id, document_id)
 );
 
 CREATE TABLE IF NOT EXISTS organization_members (

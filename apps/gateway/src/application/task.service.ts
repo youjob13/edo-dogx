@@ -44,6 +44,15 @@ export class TaskService {
       throw new Error('Task type is required');
     }
 
+    const attachmentIds = request.attachmentIds ?? [];
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    for (const attachmentId of attachmentIds) {
+      if (!uuidPattern.test(attachmentId)) {
+        throw new Error(`Invalid attachment document ID: ${attachmentId}`);
+      }
+    }
+
     // Call gRPC service to create task
     const response = await this.grpcClient.createTask({
       actor_user_id: currentUser.userId,
@@ -53,7 +62,7 @@ export class TaskService {
       assignee_user_id: request.assigneeId,
       approver_user_id: request.approverId || '',
       task_type: request.taskType,
-      attachment_document_ids: request.attachmentIds || [],
+      attachment_document_ids: attachmentIds,
       due_date: request.dueDate?.toISOString() || '',
     });
 
@@ -75,12 +84,10 @@ export class TaskService {
 
     // Call gRPC service to update status
     const response = await this.grpcClient.updateTaskStatus({
-      taskId: request.taskId,
+      task_id: request.taskId,
       status: request.status,
-      decision: request.decision || '',
-      decisionComment: request.decisionComment || '',
-      updatedByUserId: currentUser.userId,
-      updatedByUserName: currentUser.userName,
+      decision_comment: request.decisionComment || '',
+      actor_user_id: currentUser.userId,
     });
 
     return this.mapGrpcResponseToTask(response);
@@ -91,8 +98,8 @@ export class TaskService {
       throw new Error('Task ID is required');
     }
 
-    const response = await this.grpcClient.getTask({
-      taskId,
+    const response = await this.grpcClient.getTaskDetails({
+      task_id: taskId,
     });
 
     return this.mapGrpcResponseToTask(response);
@@ -140,8 +147,7 @@ export class TaskService {
       const response = await this.documentClient.searchDocuments({
         actor_user_id: currentUser?.userId ?? 'gateway-user',
         query: '',
-        status: 'published', // Only published documents can be attached
-        category: undefined,
+        category: '',
         limit,
         offset,
       });
@@ -157,7 +163,10 @@ export class TaskService {
 
       // Handle paginated response
       if (response && typeof response === 'object') {
-        const docs = (response as Record<string, unknown>).documents;
+        const payload = response as Record<string, unknown>;
+        const docs =
+          (Array.isArray(payload.items) ? payload.items : undefined) ??
+          (Array.isArray(payload.documents) ? payload.documents : undefined);
         if (Array.isArray(docs)) {
           return docs.map((doc: Record<string, unknown>) => ({
             documentId: String(doc.id || ''),
@@ -216,7 +225,14 @@ export class TaskService {
         ? response.attachmentIds.map((id) => String(id))
         : Array.isArray(response.attachment_document_ids)
           ? response.attachment_document_ids.map((id) => String(id))
-        : [],
+        : Array.isArray(response.attachments)
+          ? response.attachments
+              .map((item) => {
+                const attachment = item as Record<string, unknown>;
+                return attachment.document_id ? String(attachment.document_id) : '';
+              })
+              .filter((id) => id.length > 0)
+          : [],
       createdAt: response.createdAt
         ? new Date(String(response.createdAt))
         : response.created_at

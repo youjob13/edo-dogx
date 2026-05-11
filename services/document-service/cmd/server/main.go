@@ -150,6 +150,27 @@ func ensureDocumentSchema(db *sql.DB) error {
 		`ALTER TABLE documents ALTER COLUMN current_version_number SET DEFAULT 1`,
 		`ALTER TABLE documents ALTER COLUMN current_version_number SET NOT NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_document_versions_document_id_version ON document_versions(document_id, version_number DESC)`,
+		`ALTER TABLE tasks
+			ADD COLUMN IF NOT EXISTS board_id UUID REFERENCES task_boards(id) ON DELETE SET NULL`,
+		`ALTER TABLE task_attachments
+			ADD COLUMN IF NOT EXISTS document_id UUID REFERENCES documents(id) ON DELETE RESTRICT`,
+		`ALTER TABLE task_attachments
+			ADD COLUMN IF NOT EXISTS title VARCHAR(300) NOT NULL DEFAULT ''`,
+		`ALTER TABLE task_attachments
+			ADD COLUMN IF NOT EXISTS category VARCHAR(32) NOT NULL DEFAULT 'GENERAL'`,
+		`ALTER TABLE task_attachments
+			ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'DRAFT'`,
+		`DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1
+				FROM pg_constraint
+				WHERE conname = 'uq_task_attachments_task_document'
+			) THEN
+				ALTER TABLE task_attachments
+				ADD CONSTRAINT uq_task_attachments_task_document UNIQUE (task_id, document_id);
+			END IF;
+		END $$`,
 	}
 
 	for _, statement := range statements {

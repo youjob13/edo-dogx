@@ -12,15 +12,13 @@ type TaskType string
 type TaskDecision string
 
 type TaskAttachment struct {
-	ID                 string
-	TaskID             string
-	FileName           string
-	FilePath           string
-	FileSize           int64
-	MimeType           string
-	UploadedByUserID   string
-	UploadedByUserName string
-	UploadedAt         time.Time
+	ID         string
+	TaskID     string
+	DocumentID string
+	Title      string
+	Category   string
+	Status     string
+	CreatedAt  time.Time
 }
 
 type Task struct {
@@ -42,6 +40,7 @@ type Task struct {
 	DueDate           *time.Time
 	Priority          int
 	Metadata          map[string]interface{}
+	Attachments       []TaskAttachment
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	UpdatedByUserID   *string
@@ -96,9 +95,10 @@ const (
 )
 
 var (
-	ErrTaskNotFound       = errors.New("task not found")
-	ErrTaskBoardNotFound  = errors.New("task board not found")
-	ErrTaskMemberNotFound = errors.New("organization member not found")
+	ErrTaskNotFound                = errors.New("task not found")
+	ErrTaskBoardNotFound           = errors.New("task board not found")
+	ErrTaskMemberNotFound          = errors.New("organization member not found")
+	ErrAttachmentDocumentForbidden = errors.New("attachment document access forbidden")
 )
 
 func (s TaskStatus) IsFinal() bool {

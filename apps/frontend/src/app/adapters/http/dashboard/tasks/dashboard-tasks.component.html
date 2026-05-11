@@ -1,4 +1,4 @@
-<edo-dogx-page-section title="Задачи"
+﻿<edo-dogx-page-section title="Задачи"
   subtitle="Канбан-доски организации с группировкой по исполнителю, отделу и логическим группам">
   <edo-dogx-card title="Фильтры доски" subtitle="Выберите организацию, доску и способ группировки задач">
     <div class="dashboard-tasks__filters">
@@ -211,15 +211,21 @@
 
           <div class="form-group">
             <label>Прикрепленные документы</label>
-            <div class="attachments-list">
-              @for (doc of availableDocuments(); track doc.documentId) {
-              <label class="attachment-item">
-                <input type="checkbox" [value]="doc.documentId"
-                  (change)="onAttachmentToggle(doc.documentId, $any($event.target).checked)">
-                {{ doc.title }} ({{ doc.category }})
-              </label>
-              }
-            </div>
+            @if (loadingDocuments()) {
+            <p class="attachments-hint">Загрузка доступных документов...</p>
+            } @else if (availableDocuments().length === 0) {
+            <p class="attachments-hint">Нет доступных документов для прикрепления.</p>
+            } @else {
+            <tui-textfield multi tuiChevron [tuiTextfieldCleaner]="false">
+              <label tuiLabel>Выберите документы для прикрепления</label>
+              <input placeholder="Выберите документы" tuiInputChip [formControl]="createTaskForm.controls.attachments" />
+              <tui-input-chip *tuiItem />
+              <tui-data-list-wrapper
+                *tuiDropdown
+                tuiMultiSelectGroup
+                [items]="availableDocuments() | tuiFilterByInput" />
+            </tui-textfield>
+            }
           </div>
 
           <div class="modal-actions">
@@ -237,3 +243,4 @@
   <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
   }
 </edo-dogx-page-section>
+

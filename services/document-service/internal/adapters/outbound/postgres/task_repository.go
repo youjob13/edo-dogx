@@ -3,11 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
+	"strings"
 
 	"edo/services/document-service/internal/domain/model"
 	"edo/services/document-service/internal/ports/outbound"
+
+	"github.com/lib/pq"
 )
 
 type TaskRepository struct {
@@ -87,7 +89,7 @@ func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (mode
 		&board.Description,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return model.TaskBoardDetails{}, model.ErrTaskNotFound
+			return model.TaskBoardDetails{}, model.ErrTaskBoardNotFound
 		}
 		return model.TaskBoardDetails{}, fmt.Errorf("failed to get task board: %w", err)
 	}
@@ -98,7 +100,6 @@ func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (mode
 		WHERE board_id = $1
 		ORDER BY full_name ASC
 	`
-
 	memberRows, err := r.db.QueryContext(ctx, membersQuery, boardID)
 	if err != nil {
 		return model.TaskBoardDetails{}, fmt.Errorf("failed to load task board members: %w", err)
@@ -117,7 +118,7 @@ func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (mode
 	}
 
 	const tasksQuery = `
-		SELECT id, title, description, status, task_type,
+		SELECT id, board_id, title, description, status, task_type,
 		       creator_user_id, creator_user_name,
 		       assignee_user_id, assignee_user_name,
 		       approver_user_id, approver_user_name,
@@ -127,7 +128,6 @@ func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (mode
 		WHERE board_id = $1
 		ORDER BY created_at DESC
 	`
-
 	taskRows, err := r.db.QueryContext(ctx, tasksQuery, boardID)
 	if err != nil {
 		return model.TaskBoardDetails{}, fmt.Errorf("failed to load task board tasks: %w", err)
@@ -135,53 +135,15 @@ func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (mode
 	defer taskRows.Close()
 
 	for taskRows.Next() {
-		var task model.Task
-		var taskType, status string
-		var dueDate sql.NullTime
-		var approverUserID, approverUserName sql.NullString
-		var decision, decisionComment sql.NullString
-
-		if err := taskRows.Scan(
-			&task.ID,
-			&task.Title,
-			&task.Description,
-			&status,
-			&taskType,
-			&task.CreatedByUserID,
-			&task.CreatedByUserName,
-			&task.AssignedUserID,
-			&task.AssignedUserName,
-			&approverUserID,
-			&approverUserName,
-			&decision,
-			&decisionComment,
-			&dueDate,
-			&task.CreatedAt,
-			&task.UpdatedAt,
-		); err != nil {
-			return model.TaskBoardDetails{}, fmt.Errorf("failed to scan task board task: %w", err)
+		task, err := scanTask(taskRows)
+		if err != nil {
+			return model.TaskBoardDetails{}, err
 		}
-
-		task.TaskType = model.TaskType(taskType)
-		task.Status = model.TaskStatus(status)
-
-		if dueDate.Valid {
-			task.DueDate = &dueDate.Time
+		attachments, err := r.GetTaskAttachments(ctx, task.ID)
+		if err != nil {
+			return model.TaskBoardDetails{}, fmt.Errorf("failed to load task attachments: %w", err)
 		}
-		if approverUserID.Valid {
-			task.ApproverUserID = &approverUserID.String
-		}
-		if approverUserName.Valid {
-			task.ApproverUserName = &approverUserName.String
-		}
-		if decision.Valid {
-			decisionValue := model.TaskDecision(decision.String)
-			task.Decision = &decisionValue
-		}
-		if decisionComment.Valid {
-			task.DecisionComment = &decisionComment.String
-		}
-
+		task.Attachments = attachments
 		board.Tasks = append(board.Tasks, task)
 	}
 	if err := taskRows.Err(); err != nil {
@@ -193,23 +155,34 @@ func (r *TaskRepository) GetTaskBoard(ctx context.Context, boardID string) (mode
 }
 
 func (r *TaskRepository) CreateTask(ctx context.Context, task model.Task) (model.Task, error) {
-	const query = `
+	return r.CreateTaskWithAttachments(ctx, task, task.CreatedByUserID, nil)
+}
+
+func (r *TaskRepository) CreateTaskWithAttachments(ctx context.Context, task model.Task, actorUserID string, documentIDs []string) (model.Task, error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return model.Task{}, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	const insertTaskQuery = `
 		INSERT INTO tasks (
 			board_id, title, description, status, task_type,
 			creator_user_id, creator_user_name,
 			assignee_user_id, assignee_user_name,
 			approver_user_id, approver_user_name,
+			decision, decision_comment,
 			due_date
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING id, created_at, updated_at
 	`
 
-	row := r.db.QueryRowContext(ctx, query,
+	if err := tx.QueryRowContext(ctx, insertTaskQuery,
 		task.BoardID,
 		task.Title,
 		task.Description,
-		string(task.Status),
+		strings.ToUpper(string(task.Status)),
 		string(task.TaskType),
 		task.CreatedByUserID,
 		task.CreatedByUserName,
@@ -217,11 +190,79 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task model.Task) (model
 		task.AssignedUserName,
 		task.ApproverUserID,
 		task.ApproverUserName,
+		task.Decision,
+		task.DecisionComment,
 		task.DueDate,
-	)
-
-	if err := row.Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
+	).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
 		return model.Task{}, fmt.Errorf("failed to create task: %w", err)
+	}
+
+	if len(documentIDs) > 0 {
+		dedup := make([]string, 0, len(documentIDs))
+		seen := make(map[string]struct{}, len(documentIDs))
+		for _, rawID := range documentIDs {
+			id := strings.TrimSpace(rawID)
+			if id == "" {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			dedup = append(dedup, id)
+		}
+
+		const accessQuery = `
+			SELECT id::text, title, category
+			FROM documents
+			WHERE id = ANY($1::uuid[])
+			  AND owner_user_id = $2
+		`
+		rows, err := tx.QueryContext(ctx, accessQuery, pq.Array(dedup), actorUserID)
+		if err != nil {
+			return model.Task{}, fmt.Errorf("failed to verify document access: %w", err)
+		}
+
+		allowed := make(map[string]model.TaskAttachment, len(dedup))
+		for rows.Next() {
+			var attachment model.TaskAttachment
+			if err := rows.Scan(&attachment.DocumentID, &attachment.Title, &attachment.Category); err != nil {
+				rows.Close()
+				return model.Task{}, fmt.Errorf("failed to scan accessible document: %w", err)
+			}
+			attachment.TaskID = task.ID
+			attachment.Status = "DRAFT"
+			allowed[attachment.DocumentID] = attachment
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return model.Task{}, fmt.Errorf("failed to iterate accessible documents: %w", err)
+		}
+		rows.Close()
+
+		if len(allowed) != len(dedup) {
+			return model.Task{}, model.ErrAttachmentDocumentForbidden
+		}
+
+		const insertAttachmentQuery = `
+			INSERT INTO task_attachments (task_id, document_id, title, category, status)
+			VALUES ($1, $2::uuid, $3, $4, $5)
+			ON CONFLICT (task_id, document_id) DO NOTHING
+		`
+		for _, documentID := range dedup {
+			item, ok := allowed[documentID]
+			if !ok {
+				return model.Task{}, model.ErrAttachmentDocumentForbidden
+			}
+			if _, err := tx.ExecContext(ctx, insertAttachmentQuery, task.ID, item.DocumentID, item.Title, item.Category, item.Status); err != nil {
+				return model.Task{}, fmt.Errorf("failed to insert task attachment: %w", err)
+			}
+			task.Attachments = append(task.Attachments, item)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return model.Task{}, fmt.Errorf("failed to commit task creation: %w", err)
 	}
 
 	return task, nil
@@ -230,11 +271,11 @@ func (r *TaskRepository) CreateTask(ctx context.Context, task model.Task) (model
 func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, taskID string, newStatus model.TaskStatus, updatedByUserID string, updatedByUserName string) error {
 	const query = `
 		UPDATE tasks
-		SET status = $1, updated_by_user_id = $2, updated_by_user_name = $3, updated_at = NOW()
-		WHERE id = $4
+		SET status = $1, updated_at = NOW()
+		WHERE id = $2
 	`
 
-	result, err := r.db.ExecContext(ctx, query, string(newStatus), updatedByUserID, updatedByUserName, taskID)
+	result, err := r.db.ExecContext(ctx, query, strings.ToUpper(string(newStatus)), taskID)
 	if err != nil {
 		return fmt.Errorf("failed to update task status: %w", err)
 	}
@@ -243,105 +284,81 @@ func (r *TaskRepository) UpdateTaskStatus(ctx context.Context, taskID string, ne
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-
 	if rowsAffected == 0 {
 		return model.ErrTaskNotFound
 	}
 
+	_ = updatedByUserID
+	_ = updatedByUserName
 	return nil
 }
 
 func (r *TaskRepository) GetTask(ctx context.Context, taskID string) (model.Task, error) {
 	const query = `
-		SELECT id, document_id, task_type, title, description, status,
-			   assigned_user_id, assigned_user_name, created_by_user_id,
-			   created_by_user_name, due_date, priority, metadata_json,
-			   created_at, updated_at, updated_by_user_id, updated_by_user_name
+		SELECT id, board_id, title, description, status, task_type,
+		       creator_user_id, creator_user_name,
+		       assignee_user_id, assignee_user_name,
+		       approver_user_id, approver_user_name,
+		       decision, decision_comment, due_date,
+		       created_at, updated_at
 		FROM tasks
 		WHERE id = $1
 	`
 
-	var task model.Task
-	var taskType, status string
-	var metadataJSON []byte
-	var dueDate sql.NullTime
-	var updatedByUserID, updatedByUserName sql.NullString
-
-	err := r.db.QueryRowContext(ctx, query, taskID).Scan(
-		&task.ID, &task.DocumentID, &taskType, &task.Title, &task.Description, &status,
-		&task.AssignedUserID, &task.AssignedUserName, &task.CreatedByUserID,
-		&task.CreatedByUserName, &dueDate, &task.Priority, &metadataJSON,
-		&task.CreatedAt, &task.UpdatedAt, &updatedByUserID, &updatedByUserName,
-	)
-
+	row := r.db.QueryRowContext(ctx, query, taskID)
+	task, err := scanTask(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return model.Task{}, model.ErrTaskNotFound
 		}
-		return model.Task{}, fmt.Errorf("failed to get task: %w", err)
+		return model.Task{}, err
 	}
 
-	task.TaskType = model.TaskType(taskType)
-	task.Status = model.TaskStatus(status)
-
-	if dueDate.Valid {
-		task.DueDate = &dueDate.Time
+	attachments, err := r.GetTaskAttachments(ctx, taskID)
+	if err != nil {
+		return model.Task{}, err
 	}
-
-	if updatedByUserID.Valid {
-		task.UpdatedByUserID = &updatedByUserID.String
-	}
-	if updatedByUserName.Valid {
-		task.UpdatedByUserName = &updatedByUserName.String
-	}
-
-	if len(metadataJSON) > 0 {
-		if err := json.Unmarshal(metadataJSON, &task.Metadata); err != nil {
-			return model.Task{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
-		}
-	}
+	task.Attachments = attachments
 
 	return task, nil
 }
 
 func (r *TaskRepository) ListTasks(ctx context.Context, filter outbound.TaskFilter) ([]model.Task, error) {
 	query := `
-		SELECT id, document_id, task_type, title, description, status,
-			   assigned_user_id, assigned_user_name, created_by_user_id,
-			   created_by_user_name, due_date, priority, metadata_json,
-			   created_at, updated_at, updated_by_user_id, updated_by_user_name
+		SELECT id, board_id, title, description, status, task_type,
+		       creator_user_id, creator_user_name,
+		       assignee_user_id, assignee_user_name,
+		       approver_user_id, approver_user_name,
+		       decision, decision_comment, due_date,
+		       created_at, updated_at
 		FROM tasks
 		WHERE 1=1
 	`
 	args := []interface{}{}
 	argCount := 0
 
-	if filter.DocumentID != nil {
-		argCount++
-		query += fmt.Sprintf(" AND document_id = $%d", argCount)
-		args = append(args, *filter.DocumentID)
-	}
-
 	if filter.AssignedUserID != nil {
 		argCount++
-		query += fmt.Sprintf(" AND assigned_user_id = $%d", argCount)
+		query += fmt.Sprintf(" AND assignee_user_id = $%d", argCount)
 		args = append(args, *filter.AssignedUserID)
 	}
-
 	if filter.Status != nil {
 		argCount++
 		query += fmt.Sprintf(" AND status = $%d", argCount)
-		args = append(args, string(*filter.Status))
+		args = append(args, strings.ToUpper(string(*filter.Status)))
 	}
-
 	if filter.TaskType != nil {
 		argCount++
 		query += fmt.Sprintf(" AND task_type = $%d", argCount)
 		args = append(args, string(*filter.TaskType))
 	}
+	if filter.DocumentID != nil {
+		argCount++
+		query += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM task_attachments ta WHERE ta.task_id = tasks.id AND ta.document_id = $%d::uuid)", argCount)
+		args = append(args, *filter.DocumentID)
+	}
 
 	query += " ORDER BY created_at DESC"
-
 	if filter.Limit != nil {
 		argCount++
 		query += fmt.Sprintf(" LIMIT $%d", argCount)
@@ -354,47 +371,19 @@ func (r *TaskRepository) ListTasks(ctx context.Context, filter outbound.TaskFilt
 	}
 	defer rows.Close()
 
-	var tasks []model.Task
+	tasks := make([]model.Task, 0)
 	for rows.Next() {
-		var task model.Task
-		var taskType, status string
-		var metadataJSON []byte
-		var dueDate sql.NullTime
-		var updatedByUserID, updatedByUserName sql.NullString
-
-		err := rows.Scan(
-			&task.ID, &task.DocumentID, &taskType, &task.Title, &task.Description, &status,
-			&task.AssignedUserID, &task.AssignedUserName, &task.CreatedByUserID,
-			&task.CreatedByUserName, &dueDate, &task.Priority, &metadataJSON,
-			&task.CreatedAt, &task.UpdatedAt, &updatedByUserID, &updatedByUserName,
-		)
+		task, err := scanTask(rows)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan task: %w", err)
+			return nil, err
 		}
-
-		task.TaskType = model.TaskType(taskType)
-		task.Status = model.TaskStatus(status)
-
-		if dueDate.Valid {
-			task.DueDate = &dueDate.Time
+		attachments, err := r.GetTaskAttachments(ctx, task.ID)
+		if err != nil {
+			return nil, err
 		}
-
-		if updatedByUserID.Valid {
-			task.UpdatedByUserID = &updatedByUserID.String
-		}
-		if updatedByUserName.Valid {
-			task.UpdatedByUserName = &updatedByUserName.String
-		}
-
-		if len(metadataJSON) > 0 {
-			if err := json.Unmarshal(metadataJSON, &task.Metadata); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
-			}
-		}
-
+		task.Attachments = attachments
 		tasks = append(tasks, task)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating tasks: %w", err)
 	}
@@ -406,42 +395,41 @@ func (r *TaskRepository) AddTaskAttachments(ctx context.Context, taskID string, 
 	if len(attachments) == 0 {
 		return nil
 	}
-
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
-
 	const query = `
-		INSERT INTO task_attachments (task_id, file_name, file_path, file_size, mime_type, uploaded_by_user_id, uploaded_by_user_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO task_attachments (task_id, document_id, title, category, status)
+		VALUES ($1, $2::uuid, $3, $4, $5)
+		ON CONFLICT (task_id, document_id) DO NOTHING
 	`
-
 	for _, attachment := range attachments {
-		_, err = tx.ExecContext(ctx, query,
-			taskID, attachment.FileName, attachment.FilePath, attachment.FileSize,
-			attachment.MimeType, attachment.UploadedByUserID, attachment.UploadedByUserName,
-		)
-		if err != nil {
+		if _, err := r.db.ExecContext(ctx, query, taskID, attachment.DocumentID, attachment.Title, attachment.Category, attachment.Status); err != nil {
 			return fmt.Errorf("failed to insert attachment: %w", err)
 		}
 	}
+	return nil
+}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+func (r *TaskRepository) RemoveTaskAttachment(ctx context.Context, taskID string, documentID string) error {
+	const query = `DELETE FROM task_attachments WHERE task_id = $1 AND document_id = $2::uuid`
+	result, err := r.db.ExecContext(ctx, query, taskID, documentID)
+	if err != nil {
+		return fmt.Errorf("failed to remove attachment: %w", err)
 	}
-
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return model.ErrTaskNotFound
+	}
 	return nil
 }
 
 func (r *TaskRepository) GetTaskAttachments(ctx context.Context, taskID string) ([]model.TaskAttachment, error) {
 	const query = `
-		SELECT id, task_id, file_name, file_path, file_size, mime_type,
-			   uploaded_by_user_id, uploaded_by_user_name, uploaded_at
+		SELECT id, task_id, document_id::text, title, category, status, created_at
 		FROM task_attachments
 		WHERE task_id = $1
-		ORDER BY uploaded_at ASC
+		ORDER BY created_at ASC
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, taskID)
@@ -450,20 +438,22 @@ func (r *TaskRepository) GetTaskAttachments(ctx context.Context, taskID string) 
 	}
 	defer rows.Close()
 
-	var attachments []model.TaskAttachment
+	attachments := make([]model.TaskAttachment, 0)
 	for rows.Next() {
 		var attachment model.TaskAttachment
-		err := rows.Scan(
-			&attachment.ID, &attachment.TaskID, &attachment.FileName, &attachment.FilePath,
-			&attachment.FileSize, &attachment.MimeType, &attachment.UploadedByUserID,
-			&attachment.UploadedByUserName, &attachment.UploadedAt,
-		)
-		if err != nil {
+		if err := rows.Scan(
+			&attachment.ID,
+			&attachment.TaskID,
+			&attachment.DocumentID,
+			&attachment.Title,
+			&attachment.Category,
+			&attachment.Status,
+			&attachment.CreatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan attachment: %w", err)
 		}
 		attachments = append(attachments, attachment)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating attachments: %w", err)
 	}
@@ -516,7 +506,6 @@ func (r *TaskRepository) ListTaskBoards(ctx context.Context, filter outbound.Tas
 		query += fmt.Sprintf(" LIMIT $%d", argCount)
 		args = append(args, *filter.Limit)
 	}
-
 	if filter.Offset != nil {
 		argCount++
 		query += fmt.Sprintf(" OFFSET $%d", argCount)
@@ -544,7 +533,6 @@ func (r *TaskRepository) ListTaskBoards(ctx context.Context, filter outbound.Tas
 		}
 		boards = append(boards, board)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("error iterating task boards: %w", err)
 	}
@@ -646,4 +634,76 @@ func (r *TaskRepository) CreateOrganizationMember(ctx context.Context, organizat
 	}
 
 	return rowsAffected > 0, nil
+}
+
+type taskRowScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanTask(scanner taskRowScanner) (model.Task, error) {
+	var task model.Task
+	var status string
+	var taskType string
+	var dueDate sql.NullTime
+	var approverUserID sql.NullString
+	var approverUserName sql.NullString
+	var decision sql.NullString
+	var decisionComment sql.NullString
+
+	err := scanner.Scan(
+		&task.ID,
+		&task.BoardID,
+		&task.Title,
+		&task.Description,
+		&status,
+		&taskType,
+		&task.CreatedByUserID,
+		&task.CreatedByUserName,
+		&task.AssignedUserID,
+		&task.AssignedUserName,
+		&approverUserID,
+		&approverUserName,
+		&decision,
+		&decisionComment,
+		&dueDate,
+		&task.CreatedAt,
+		&task.UpdatedAt,
+	)
+	if err != nil {
+		return model.Task{}, err
+	}
+
+	task.Status = parseTaskStatus(status)
+	task.TaskType = model.TaskType(taskType)
+	if dueDate.Valid {
+		task.DueDate = &dueDate.Time
+	}
+	if approverUserID.Valid {
+		task.ApproverUserID = &approverUserID.String
+	}
+	if approverUserName.Valid {
+		task.ApproverUserName = &approverUserName.String
+	}
+	if decision.Valid {
+		decisionValue := model.TaskDecision(strings.ToLower(decision.String))
+		task.Decision = &decisionValue
+	}
+	if decisionComment.Valid {
+		task.DecisionComment = &decisionComment.String
+	}
+
+	return task, nil
+}
+
+func parseTaskStatus(raw string) model.TaskStatus {
+	switch strings.ToUpper(raw) {
+	case "IN_REVIEW":
+		return model.TaskStatusInReview
+	case "APPROVED":
+		return model.TaskStatusApproved
+	case "DECLINED":
+		return model.TaskStatusDeclined
+	default:
+		return model.TaskStatusPending
+	}
 }

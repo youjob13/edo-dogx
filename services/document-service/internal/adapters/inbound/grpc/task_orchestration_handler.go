@@ -60,7 +60,7 @@ func (h *TaskOrchestrationHandler) GetTaskBoard(ctx context.Context, req *pb.Get
 
 	board, err := h.taskRepository.GetTaskBoard(ctx, req.GetBoardId())
 	if err != nil {
-		if err == model.ErrTaskNotFound {
+		if err == model.ErrTaskBoardNotFound {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -78,55 +78,23 @@ func (h *TaskOrchestrationHandler) GetTaskBoard(ctx context.Context, req *pb.Get
 
 	tasks := make([]*pb.Task, 0, len(board.Tasks))
 	for _, task := range board.Tasks {
-		taskProto := &pb.Task{
-			Id:               task.ID,
-			Title:            task.Title,
-			Description:      task.Description,
-			Status:           string(task.Status),
-			TaskType:         string(task.TaskType),
-			CreatorUserId:    task.CreatedByUserID,
-			CreatorUserName:  task.CreatedByUserName,
-			AssigneeUserId:   task.AssignedUserID,
-			AssigneeUserName: task.AssignedUserName,
-			CreatedAt:        task.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:        task.UpdatedAt.Format(time.RFC3339),
-		}
-
-		if task.ApproverUserID != nil {
-			taskProto.ApproverUserId = *task.ApproverUserID
-		}
-		if task.ApproverUserName != nil {
-			taskProto.ApproverUserName = *task.ApproverUserName
-		}
-		if task.Decision != nil {
-			taskProto.Decision = string(*task.Decision)
-		}
-		if task.DecisionComment != nil {
-			taskProto.DecisionComment = *task.DecisionComment
-		}
-		if task.DueDate != nil {
-			taskProto.DueDate = task.DueDate.Format(time.RFC3339)
-		}
-		tasks = append(tasks, taskProto)
+		tasks = append(tasks, mapTaskToProto(task))
 	}
 
 	return &pb.GetTaskBoardResponse{
 		Board: &pb.TaskBoard{
-			Id:                 board.ID,
-			Name:               board.Name,
-			Members:            members,
-			Tasks:              tasks,
-			AvailableDocuments: []*pb.TaskAttachment{},
-			AvailableApprovers: []*pb.BoardMember{},
+			Id:              board.ID,
+			Name:            board.Name,
+			Members:         members,
+			Tasks:           tasks,
+			OrganizationId:  board.OrganizationID,
+			Description:     board.Description,
+			AllowedGrouping: board.AllowedGrouping,
 		},
 	}, nil
 }
 
 func (h *TaskOrchestrationHandler) ListTaskBoards(ctx context.Context, req *pb.ListTaskBoardsRequest) (*pb.ListTaskBoardsResponse, error) {
-	if h.taskRepository == nil {
-		return nil, status.Error(codes.Internal, "task repository is not configured")
-	}
-
 	limit := int(req.GetLimit())
 	if limit <= 0 {
 		limit = 50
@@ -134,7 +102,6 @@ func (h *TaskOrchestrationHandler) ListTaskBoards(ctx context.Context, req *pb.L
 	if limit > 100 {
 		limit = 100
 	}
-
 	offset := int(req.GetOffset())
 	if offset < 0 {
 		offset = 0
@@ -172,12 +139,7 @@ func (h *TaskOrchestrationHandler) ListTaskBoards(ctx context.Context, req *pb.L
 		page = int32(offset / limit)
 	}
 
-	return &pb.ListTaskBoardsResponse{
-		Boards:   items,
-		Total:    int32(total),
-		Page:     page,
-		PageSize: int32(limit),
-	}, nil
+	return &pb.ListTaskBoardsResponse{Boards: items, Total: int32(total), Page: page, PageSize: int32(limit)}, nil
 }
 
 func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.CreateTaskResponse, error) {
@@ -210,17 +172,18 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		}
 		dueDate = &parsed
 	}
+
 	var approverUserID *string
 	if strings.TrimSpace(req.GetApproverUserId()) != "" {
 		id := strings.TrimSpace(req.GetApproverUserId())
 		approverUserID = &id
 	}
 
-	createdTask, err := h.taskRepository.CreateTask(ctx, model.Task{
+	createdTask, err := h.taskRepository.CreateTaskWithAttachments(ctx, model.Task{
 		BoardID:           req.GetBoardId(),
 		Title:             strings.TrimSpace(req.GetTitle()),
 		Description:       strings.TrimSpace(req.GetDescription()),
-		Status:            model.TaskStatus("pending"),
+		Status:            model.TaskStatusPending,
 		TaskType:          taskType,
 		CreatedByUserID:   req.GetActorUserId(),
 		CreatedByUserName: req.GetActorUserId(),
@@ -229,36 +192,127 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		ApproverUserID:    approverUserID,
 		ApproverUserName:  approverUserID,
 		DueDate:           dueDate,
-	})
+	}, req.GetActorUserId(), req.GetAttachmentDocumentIds())
+	if err != nil {
+		if err == model.ErrAttachmentDocumentForbidden {
+			return nil, status.Error(codes.PermissionDenied, "one or more documents are inaccessible")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.CreateTaskResponse{Task: mapTaskToProto(createdTask)}, nil
+}
+
+func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb.UpdateTaskStatusRequest) (*pb.UpdateTaskStatusResponse, error) {
+	if strings.TrimSpace(req.GetTaskId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "task_id is required")
+	}
+	if strings.TrimSpace(req.GetStatus()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "status is required")
+	}
+
+	if err := h.taskRepository.UpdateTaskStatus(ctx, req.GetTaskId(), model.TaskStatus(strings.ToLower(req.GetStatus())), req.GetActorUserId(), req.GetActorUserId()); err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
+	if err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.UpdateTaskStatusResponse{Task: mapTaskToProto(task)}, nil
+}
+
+func (h *TaskOrchestrationHandler) AddTaskAttachments(ctx context.Context, req *pb.AddTaskAttachmentsRequest) (*pb.AddTaskAttachmentsResponse, error) {
+	if strings.TrimSpace(req.GetTaskId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "task_id is required")
+	}
+	if len(req.GetAttachments()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "attachments are required")
+	}
+
+	attachments := make([]model.TaskAttachment, 0, len(req.GetAttachments()))
+	for _, item := range req.GetAttachments() {
+		attachments = append(attachments, model.TaskAttachment{
+			TaskID:     req.GetTaskId(),
+			DocumentID: item.GetDocumentId(),
+			Title:      item.GetTitle(),
+			Category:   item.GetCategory(),
+			Status:     "DRAFT",
+		})
+	}
+
+	if err := h.taskRepository.AddTaskAttachments(ctx, req.GetTaskId(), attachments); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	persisted, err := h.taskRepository.GetTaskAttachments(ctx, req.GetTaskId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	task := &pb.Task{
-		Id:               createdTask.ID,
-		Title:            createdTask.Title,
-		Description:      createdTask.Description,
-		Status:           string(createdTask.Status),
-		TaskType:         string(createdTask.TaskType),
-		CreatorUserId:    createdTask.CreatedByUserID,
-		CreatorUserName:  createdTask.CreatedByUserName,
-		AssigneeUserId:   createdTask.AssignedUserID,
-		AssigneeUserName: createdTask.AssignedUserName,
-		CreatedAt:        createdTask.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:        createdTask.UpdatedAt.Format(time.RFC3339),
+	return &pb.AddTaskAttachmentsResponse{Attachments: mapAttachmentsToProto(persisted)}, nil
+}
+
+func (h *TaskOrchestrationHandler) RemoveTaskAttachment(ctx context.Context, req *pb.RemoveTaskAttachmentRequest) (*pb.Task, error) {
+	if strings.TrimSpace(req.GetTaskId()) == "" || strings.TrimSpace(req.GetDocumentId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "task_id and document_id are required")
 	}
 
-	if createdTask.ApproverUserID != nil {
-		task.ApproverUserId = *createdTask.ApproverUserID
-	}
-	if createdTask.ApproverUserName != nil {
-		task.ApproverUserName = *createdTask.ApproverUserName
-	}
-	if createdTask.DueDate != nil {
-		task.DueDate = createdTask.DueDate.Format(time.RFC3339)
+	if err := h.taskRepository.RemoveTaskAttachment(ctx, req.GetTaskId(), req.GetDocumentId()); err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &pb.CreateTaskResponse{Task: task}, nil
+	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
+	if err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return mapTaskToProto(task), nil
+}
+
+func (h *TaskOrchestrationHandler) GetTaskDetails(ctx context.Context, req *pb.GetTaskDetailsRequest) (*pb.GetTaskDetailsResponse, error) {
+	if strings.TrimSpace(req.GetTaskId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "task_id is required")
+	}
+
+	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
+	if err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.GetTaskDetailsResponse{
+		Task:            mapTaskToProto(task),
+		Members:         []*pb.BoardMember{},
+		CurrentUserId:   req.GetActorUserId(),
+		CanEdit:         true,
+		CanApprove:      task.TaskType == model.TaskTypeApproval,
+		CanMoveToReview: task.Status == model.TaskStatusPending,
+	}, nil
+}
+
+func (h *TaskOrchestrationHandler) GetAvailableApprovers(ctx context.Context, req *pb.AvailableApproversRequest) (*pb.AvailableApproversResponse, error) {
+	return &pb.AvailableApproversResponse{Items: []*pb.BoardMember{}, Total: 0}, nil
+}
+
+func (h *TaskOrchestrationHandler) GetAvailableDocuments(ctx context.Context, req *pb.AvailableDocumentsRequest) (*pb.AvailableDocumentsResponse, error) {
+	_ = req
+	return &pb.AvailableDocumentsResponse{Items: []*pb.DocumentItem{}, Total: 0}, nil
 }
 
 func (h *TaskOrchestrationHandler) ListOrganizationMembers(ctx context.Context, req *pb.ListOrganizationMembersRequest) (*pb.ListOrganizationMembersResponse, error) {
@@ -273,7 +327,6 @@ func (h *TaskOrchestrationHandler) ListOrganizationMembers(ctx context.Context, 
 	if limit > 200 {
 		limit = 200
 	}
-
 	offset := int(req.GetOffset())
 	if offset < 0 {
 		offset = 0
@@ -286,18 +339,10 @@ func (h *TaskOrchestrationHandler) ListOrganizationMembers(ctx context.Context, 
 
 	items := make([]*pb.BoardMember, 0, len(members))
 	for _, member := range members {
-		items = append(items, &pb.BoardMember{
-			Id:         member.UserID,
-			FullName:   member.FullName,
-			Department: member.Department,
-			Email:      member.Email,
-		})
+		items = append(items, &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email})
 	}
 
-	return &pb.ListOrganizationMembersResponse{
-		Items: items,
-		Total: int32(total),
-	}, nil
+	return &pb.ListOrganizationMembersResponse{Items: items, Total: int32(total)}, nil
 }
 
 func (h *TaskOrchestrationHandler) AddTaskBoardMember(ctx context.Context, req *pb.AddTaskBoardMemberRequest) (*pb.AddTaskBoardMemberResponse, error) {
@@ -316,14 +361,7 @@ func (h *TaskOrchestrationHandler) AddTaskBoardMember(ctx context.Context, req *
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &pb.AddTaskBoardMemberResponse{
-		Member: &pb.BoardMember{
-			Id:         member.UserID,
-			FullName:   member.FullName,
-			Department: member.Department,
-			Email:      member.Email,
-		},
-	}, nil
+	return &pb.AddTaskBoardMemberResponse{Member: &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email}}, nil
 }
 
 func (h *TaskOrchestrationHandler) CreateOrganizationMember(ctx context.Context, req *pb.CreateOrganizationMemberRequest) (*pb.CreateOrganizationMemberResponse, error) {
@@ -337,25 +375,54 @@ func (h *TaskOrchestrationHandler) CreateOrganizationMember(ctx context.Context,
 		return nil, status.Error(codes.InvalidArgument, "department is required")
 	}
 
-	member := model.TaskBoardMember{
-		UserID:     strings.TrimSpace(req.GetUserId()),
-		FullName:   strings.TrimSpace(req.GetFullName()),
-		Department: strings.TrimSpace(req.GetDepartment()),
-		Email:      strings.TrimSpace(req.GetEmail()),
-	}
-
+	member := model.TaskBoardMember{UserID: strings.TrimSpace(req.GetUserId()), FullName: strings.TrimSpace(req.GetFullName()), Department: strings.TrimSpace(req.GetDepartment()), Email: strings.TrimSpace(req.GetEmail())}
 	created, err := h.taskRepository.CreateOrganizationMember(ctx, strings.TrimSpace(req.GetOrganizationId()), member)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &pb.CreateOrganizationMemberResponse{
-		Member: &pb.BoardMember{
-			Id:         member.UserID,
-			FullName:   member.FullName,
-			Department: member.Department,
-			Email:      member.Email,
-		},
-		Created: created,
-	}, nil
+	return &pb.CreateOrganizationMemberResponse{Member: &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email}, Created: created}, nil
+}
+
+func mapTaskToProto(task model.Task) *pb.Task {
+	item := &pb.Task{
+		Id:               task.ID,
+		Title:            task.Title,
+		Description:      task.Description,
+		Status:           strings.ToLower(string(task.Status)),
+		TaskType:         string(task.TaskType),
+		CreatorUserId:    task.CreatedByUserID,
+		CreatorUserName:  task.CreatedByUserName,
+		AssigneeUserId:   task.AssignedUserID,
+		AssigneeUserName: task.AssignedUserName,
+		Attachments:      mapAttachmentsToProto(task.Attachments),
+		CreatedAt:        task.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        task.UpdatedAt.Format(time.RFC3339),
+	}
+
+	if task.ApproverUserID != nil {
+		item.ApproverUserId = *task.ApproverUserID
+	}
+	if task.ApproverUserName != nil {
+		item.ApproverUserName = *task.ApproverUserName
+	}
+	if task.Decision != nil {
+		item.Decision = string(*task.Decision)
+	}
+	if task.DecisionComment != nil {
+		item.DecisionComment = *task.DecisionComment
+	}
+	if task.DueDate != nil {
+		item.DueDate = task.DueDate.Format(time.RFC3339)
+	}
+
+	return item
+}
+
+func mapAttachmentsToProto(attachments []model.TaskAttachment) []*pb.TaskAttachment {
+	items := make([]*pb.TaskAttachment, 0, len(attachments))
+	for _, attachment := range attachments {
+		items = append(items, &pb.TaskAttachment{DocumentId: attachment.DocumentID, Title: attachment.Title, Category: attachment.Category})
+	}
+	return items
 }

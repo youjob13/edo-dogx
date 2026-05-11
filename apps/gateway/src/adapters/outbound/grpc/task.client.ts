@@ -46,6 +46,10 @@ export class TaskOrchestrationServiceClient {
     return this.call('GetTask', payload);
   }
 
+  getTaskDetails(payload: unknown): Promise<unknown> {
+    return this.call('GetTaskDetails', payload);
+  }
+
   listTasks(payload: unknown): Promise<unknown> {
     return this.call('ListTasks', payload);
   }
