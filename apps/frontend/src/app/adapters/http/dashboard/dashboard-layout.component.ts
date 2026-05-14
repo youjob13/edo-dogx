@@ -32,6 +32,7 @@ import { GlobalSearchHit } from '../../../domain/dashboard/dashboard.models';
   host: {
     '(document:keydown)': 'onDocumentKeydown($event)',
     '(document:click)': 'onDocumentClick($event)',
+    '(document:focusin)': 'onDocumentFocusIn($event)',
   },
   imports: [
     AppShellComponent,
@@ -197,6 +198,23 @@ export class DashboardLayoutComponent {
     if (target.closest('.dashboard-topbar__left') === null) {
       this.searchTooltipOpen.set(false);
     }
+  }
+
+  protected onDocumentFocusIn(event: FocusEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target) {
+      return;
+    }
+
+    if (target.closest('.dashboard-topbar__left') === null) {
+      return;
+    }
+
+    if (this.searchControl.value.trim().length === 0) {
+      return;
+    }
+
+    this.searchTooltipOpen.set(true);
   }
 
   protected onSearchHitPressed(route: string): void {
