@@ -238,8 +238,8 @@ export class DashboardTasksComponent {
     }
 
     this.showCreateTaskModal.set(true);
-    this.loadAvailableApprovers(/*board.id*/);
-    this.loadAvailableDocuments(/*board.id*/);
+    this.loadAvailableApprovers(board.id);
+    this.loadAvailableDocuments(board.id);
   }
 
   protected openCreateBoardModal(): void {
@@ -435,20 +435,42 @@ export class DashboardTasksComponent {
     return task.id;
   }
 
-  private loadAvailableApprovers(): void {
-    const boardMembers = this.selectedBoard()?.members ?? [];
-    this.availableApprovers.set(
-      boardMembers.map((member) => ({
-        userId: member.id,
-        userName: member.fullName,
-      })),
-    );
+  private loadAvailableApprovers(boardId: string): void {
+    if (!boardId) {
+      this.availableApprovers.set([]);
+      return;
+    }
+
+    this.loadingApprovers.set(true);
+    this.useCases
+      .getAvailableApprovers(boardId)
+      .pipe(
+        take(1),
+        finalize(() => this.loadingApprovers.set(false)),
+      )
+      .subscribe({
+        next: (items) => this.availableApprovers.set(items),
+        error: () => {
+          const boardMembers = this.selectedBoard()?.members ?? [];
+          this.availableApprovers.set(
+            boardMembers.map((member) => ({
+              userId: member.id,
+              userName: member.fullName,
+            })),
+          );
+        },
+      });
   }
 
-  private loadAvailableDocuments(): void {
+  private loadAvailableDocuments(boardId: string): void {
+    if (!boardId) {
+      this.availableDocuments.set([]);
+      return;
+    }
+
     this.loadingDocuments.set(true);
     this.useCases
-      .getAvailableDocuments(50, 0)
+      .getAvailableDocuments(boardId, 50, 0)
       .pipe(
         take(1),
         finalize(() => this.loadingDocuments.set(false)),
@@ -504,7 +526,7 @@ export class DashboardTasksComponent {
       )
       .subscribe((board) => {
         this.selectedBoard.set(board);
-        this.loadAvailableApprovers();
+        this.loadAvailableApprovers(board.id);
       });
   }
 

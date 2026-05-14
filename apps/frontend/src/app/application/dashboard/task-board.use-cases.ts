@@ -88,12 +88,12 @@ export class TaskBoardUseCases {
     return this.api.updateTaskStatus(taskId, payload);
   }
 
-  public getAvailableApprovers(): Observable<Array<AvailableApproverItem>> {
-    return this.api.getAvailableApprovers();
+  public getAvailableApprovers(boardId: string): Observable<Array<AvailableApproverItem>> {
+    return this.api.getAvailableApprovers(boardId);
   }
 
-  public getAvailableDocuments(limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }> {
-    return this.api.getAvailableDocuments(limit, offset);
+  public getAvailableDocuments(boardId: string, limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }> {
+    return this.api.getAvailableDocuments(boardId, limit, offset);
   }
 
   public getOrganizationMembers(organizationId: string): Observable<{ items: Array<OrganizationMember>; total: number }> {

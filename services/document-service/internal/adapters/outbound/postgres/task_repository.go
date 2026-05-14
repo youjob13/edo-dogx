@@ -636,6 +636,123 @@ func (r *TaskRepository) CreateOrganizationMember(ctx context.Context, organizat
 	return rowsAffected > 0, nil
 }
 
+func (r *TaskRepository) GetAvailableApprovers(ctx context.Context, boardID string, search string, limit int) ([]model.TaskBoardMember, int, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	where := `WHERE board_id = $1`
+	args := []interface{}{boardID}
+	if strings.TrimSpace(search) != "" {
+		where += ` AND (full_name ILIKE $2 OR email ILIKE $2 OR department ILIKE $2 OR user_id ILIKE $2)`
+		args = append(args, "%"+strings.TrimSpace(search)+"%")
+	}
+
+	countQuery := `SELECT COUNT(*) FROM task_board_members ` + where
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count available approvers: %w", err)
+	}
+
+	query := `
+		SELECT user_id, full_name, department, email
+		FROM task_board_members
+	` + where + `
+		ORDER BY full_name ASC
+		LIMIT $` + fmt.Sprintf("%d", len(args)+1)
+	args = append(args, limit)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list available approvers: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]model.TaskBoardMember, 0)
+	for rows.Next() {
+		var member model.TaskBoardMember
+		if err := rows.Scan(&member.UserID, &member.FullName, &member.Department, &member.Email); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan available approver: %w", err)
+		}
+		items = append(items, member)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating available approvers: %w", err)
+	}
+
+	return items, total, nil
+}
+
+func (r *TaskRepository) GetAvailableDocuments(ctx context.Context, boardID string, category string, search string, limit int) ([]model.AvailableTaskDocument, int, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	where := `
+		WHERE om.organization_id = (
+			SELECT organization_id
+			FROM task_boards
+			WHERE id = $1
+		)
+	`
+	args := []interface{}{boardID}
+
+	if strings.TrimSpace(category) != "" {
+		where += fmt.Sprintf(" AND d.category = $%d", len(args)+1)
+		args = append(args, strings.ToUpper(strings.TrimSpace(category)))
+	}
+
+	if strings.TrimSpace(search) != "" {
+		where += fmt.Sprintf(" AND (d.title ILIKE $%d OR d.owner_user_id ILIKE $%d)", len(args)+1, len(args)+1)
+		args = append(args, "%"+strings.TrimSpace(search)+"%")
+	}
+
+	countQuery := `
+		SELECT COUNT(DISTINCT d.id)
+		FROM documents d
+		INNER JOIN organization_members om ON om.user_id = d.owner_user_id
+	` + where
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count available documents: %w", err)
+	}
+
+	query := `
+		SELECT d.id::text, d.title, d.category, d.updated_at, d.version
+		FROM documents d
+		INNER JOIN organization_members om ON om.user_id = d.owner_user_id
+	` + where + `
+		ORDER BY d.updated_at DESC
+		LIMIT $` + fmt.Sprintf("%d", len(args)+1)
+	args = append(args, limit)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list available documents: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]model.AvailableTaskDocument, 0)
+	for rows.Next() {
+		var item model.AvailableTaskDocument
+		if err := rows.Scan(&item.DocumentID, &item.Title, &item.Category, &item.UpdatedAt, &item.Version); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan available document: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating available documents: %w", err)
+	}
+
+	return items, total, nil
+}
+
 type taskRowScanner interface {
 	Scan(dest ...interface{}) error
 }

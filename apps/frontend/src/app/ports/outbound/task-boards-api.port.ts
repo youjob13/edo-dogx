@@ -39,8 +39,8 @@ export interface TaskBoardsApiPort {
   ): Observable<KanbanTask>;
   createTask(payload: KanbanTaskCreatePayload): Observable<TaskResponse>;
   updateTaskStatus(taskId: string, payload: KanbanTaskUpdateStatusPayload): Observable<KanbanTask>;
-  getAvailableApprovers(): Observable<Array<AvailableApproverItem>>;
-  getAvailableDocuments(limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }>;
+  getAvailableApprovers(boardId: string): Observable<Array<AvailableApproverItem>>;
+  getAvailableDocuments(boardId: string, limit?: number, offset?: number): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }>;
   getOrganizationMembers(organizationId: string): Observable<{ items: Array<OrganizationMember>; total: number }>;
   addBoardMember(boardId: string, userId: string): Observable<{ member: OrganizationMember }>;
 }

@@ -44,10 +44,10 @@
 
         <label for="task-status">Колонка</label>
         <select id="task-status" [formControl]="statusControl" [disabled]="!canManage()">
-          <option value="todo">К выполнению</option>
-          <option value="inProgress">В работе</option>
-          <option value="review">Проверка</option>
-          <option value="done">Готово</option>
+          <option value="pending">Ожидает</option>
+          <option value="in_review">В работе</option>
+          <option value="approved">Одобрено</option>
+          <option value="declined">Отклонено</option>
         </select>
 
         <edo-dogx-button
@@ -98,3 +98,4 @@
     <p class="dashboard-task-details__message" aria-live="polite">{{ message() }}</p>
   }
 </edo-dogx-page-section>
+

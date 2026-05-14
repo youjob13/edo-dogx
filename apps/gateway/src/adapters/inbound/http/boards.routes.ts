@@ -10,6 +10,16 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+function pickString(source: Record<string, unknown>, keys: string[], fallback = ''): string {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+  }
+  return fallback;
+}
+
 function asNumber(value: unknown, fallback = 0): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -36,54 +46,64 @@ function mapBoardSummary(board: Record<string, unknown>) {
 
 function mapBoardMember(member: Record<string, unknown>) {
   return {
-    id: asString(member['id']),
-    fullName: asString(member['full_name']),
-    department: asString(member['department']),
-    email: asString(member['email']),
+    id: pickString(member, ['id']),
+    fullName: pickString(member, ['full_name', 'fullName']),
+    department: pickString(member, ['department']),
+    email: pickString(member, ['email']),
   };
 }
 
 function mapTaskAttachment(attachment: Record<string, unknown>) {
   return {
-    documentId: asString(attachment['document_id'] || attachment['id']),
-    title: asString(attachment['title']),
-    category: asString(attachment['category']),
-    status: asString(attachment['status']),
+    documentId: pickString(attachment, ['document_id', 'documentId', 'id']),
+    title: pickString(attachment, ['title']),
+    category: pickString(attachment, ['category']),
+    status: pickString(attachment, ['status'], 'DRAFT'),
   };
 }
 
 function mapTask(task: Record<string, unknown>, membersById: Map<string, { fullName: string; department: string }>) {
-  const assigneeId = asString(task['assignee_user_id']);
+  const assigneeId = pickString(task, ['assignee_user_id', 'assigneeUserId']);
   const assignee = membersById.get(assigneeId);
-  const taskType = asString(task['task_type'], 'general');
+  const rawTaskType = pickString(task, ['task_type', 'taskType'], 'general').toLowerCase();
+  const rawStatus = pickString(task, ['status'], 'PENDING').toUpperCase();
+  const statusMap: Record<string, 'pending' | 'in_review' | 'approved' | 'declined'> = {
+    PENDING: 'pending',
+    IN_REVIEW: 'in_review',
+    APPROVED: 'approved',
+    DECLINED: 'declined',
+  };
+  const status = statusMap[rawStatus] ?? 'pending';
+  const dueDate = pickString(task, ['due_date', 'dueDate']);
 
   return {
-    id: asString(task['id']),
-    title: asString(task['title']),
-    description: asString(task['description']),
-    status: asString(task['status'], 'pending'),
+    id: pickString(task, ['id']),
+    title: pickString(task, ['title']),
+    description: pickString(task, ['description']),
+    status,
     assigneeId: assigneeId || null,
-    assigneeName: asString(task['assignee_user_name'], assignee?.fullName || 'Не назначен'),
+    assigneeName: pickString(task, ['assignee_user_name', 'assigneeUserName'], assignee?.fullName || 'Не назначен'),
     department: assignee?.department || '',
     groupId: assigneeId || 'unassigned',
     groupName: assignee?.fullName || 'Не назначен',
-    dueDateLabel: asString(task['due_date'], 'Без срока'),
+    dueDateLabel: dueDate || 'Без срока',
+    dueDate: dueDate || undefined,
     comments: [],
-    creatorId: asString(task['creator_user_id']),
-    creatorName: asString(task['creator_user_name']),
+    creatorId: pickString(task, ['creator_user_id', 'creatorUserId']),
+    creatorName: pickString(task, ['creator_user_name', 'creatorUserName']),
     attachments: Array.isArray(task['attachments'])
       ? (task['attachments'] as Array<Record<string, unknown>>).map(mapTaskAttachment)
       : [],
-    approverId: asString(task['approver_user_id']) || undefined,
-    approverName: asString(task['approver_user_name']) || undefined,
-    taskType: taskType === 'approval' ? 'approval' : 'general',
+    approverId: pickString(task, ['approver_user_id', 'approverUserId']) || undefined,
+    approverName: pickString(task, ['approver_user_name', 'approverUserName']) || undefined,
+    taskType: rawTaskType === 'approval' ? 'approval' : 'general',
     decision:
-      asString(task['decision']) === 'approved' || asString(task['decision']) === 'declined'
-        ? asString(task['decision'])
+      pickString(task, ['decision']) === 'approved' || pickString(task, ['decision']) === 'declined'
+        ? pickString(task, ['decision'])
         : undefined,
-    decisionComment: asString(task['decision_comment']) || undefined,
-    createdAt: asString(task['created_at']),
-    updatedAt: asString(task['updated_at']),
+    decisionComment: pickString(task, ['decision_comment', 'decisionComment']) || undefined,
+    createdAt: pickString(task, ['created_at', 'createdAt']),
+    updatedAt: pickString(task, ['updated_at', 'updatedAt']),
   };
 }
 
@@ -375,3 +395,4 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 };
 
 export default routes;
+

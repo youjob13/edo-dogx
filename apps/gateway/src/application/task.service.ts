@@ -1,6 +1,5 @@
 import type { UserProfile } from '@edo/types';
 import type { TaskOrchestrationServiceClient } from '../adapters/outbound/grpc/task.client.js';
-import type { DocumentServiceClient } from '../adapters/outbound/grpc/document.client.js';
 import { CreateTaskRequest, TaskResponse } from '@edo/types';
 
 export interface UpdateTaskStatusRequest {
@@ -21,17 +20,21 @@ export interface AvailableDocumentId {
   readonly category: string;
 }
 
-export class TaskService {
-  constructor(
-    private readonly grpcClient: TaskOrchestrationServiceClient,
-    private readonly documentClient: DocumentServiceClient,
-  ) {}
+export interface TaskDetailsView {
+  readonly task: TaskResponse;
+  readonly members: Array<{
+    readonly id: string;
+    readonly fullName: string;
+    readonly department: string;
+  }>;
+  readonly currentUserId: string;
+  readonly canManage: boolean;
+}
 
-  async createTask(
-    request: CreateTaskRequest,
-    currentUser: UserProfile,
-  ): Promise<TaskResponse> {
-    // Validate mandatory fields
+export class TaskService {
+  constructor(private readonly grpcClient: TaskOrchestrationServiceClient) {}
+
+  async createTask(request: CreateTaskRequest, currentUser: UserProfile): Promise<TaskResponse> {
     if (!request.title || request.title.trim().length === 0) {
       throw new Error('Task title is required');
     }
@@ -53,7 +56,6 @@ export class TaskService {
       }
     }
 
-    // Call gRPC service to create task
     const response = await this.grpcClient.createTask({
       actor_user_id: currentUser.userId,
       board_id: request.boardId,
@@ -69,11 +71,7 @@ export class TaskService {
     return this.mapGrpcResponseToTask(response);
   }
 
-  async updateTaskStatus(
-    request: UpdateTaskStatusRequest,
-    currentUser: UserProfile,
-  ): Promise<TaskResponse> {
-    // Validate inputs
+  async updateTaskStatus(request: UpdateTaskStatusRequest, currentUser: UserProfile): Promise<TaskResponse> {
     if (!request.taskId || request.taskId.trim().length === 0) {
       throw new Error('Task ID is required');
     }
@@ -82,7 +80,6 @@ export class TaskService {
       throw new Error('Task status is required');
     }
 
-    // Call gRPC service to update status
     const response = await this.grpcClient.updateTaskStatus({
       task_id: request.taskId,
       status: request.status,
@@ -98,11 +95,40 @@ export class TaskService {
       throw new Error('Task ID is required');
     }
 
-    const response = await this.grpcClient.getTaskDetails({
-      task_id: taskId,
-    });
-
+    const response = await this.grpcClient.getTaskDetails({ task_id: taskId });
     return this.mapGrpcResponseToTask(response);
+  }
+
+  async getTaskDetails(taskId: string, currentUser: UserProfile): Promise<TaskDetailsView> {
+    if (!taskId || taskId.trim().length === 0) {
+      throw new Error('Task ID is required');
+    }
+
+    const response = (await this.grpcClient.getTaskDetails({
+      task_id: taskId,
+      actor_user_id: currentUser.userId,
+    })) as Record<string, unknown>;
+
+    const task = this.mapGrpcResponseToTask(response);
+    const membersPayload = Array.isArray(response.members) ? (response.members as Array<Record<string, unknown>>) : [];
+    const members = membersPayload.map((member) => ({
+      id: String(member.id || ''),
+      fullName: String(member.full_name || member.fullName || ''),
+      department: String(member.department || ''),
+    }));
+
+    const canEdit = Boolean(response.can_edit ?? response.canEdit);
+    const isCreator = task.creatorId === currentUser.userId;
+    const isAssignee = task.assigneeId === currentUser.userId;
+    const isApprover = task.approverId === currentUser.userId;
+    const isBoardMember = members.some((member) => member.id === currentUser.userId);
+
+    return {
+      task,
+      members,
+      currentUserId: currentUser.userId,
+      canManage: canEdit || isCreator || isAssignee || isApprover || isBoardMember,
+    };
   }
 
   async listTasks(filters?: {
@@ -116,7 +142,6 @@ export class TaskService {
       taskType: filters?.taskType || '',
     });
 
-    // Assuming response is an array or contains a tasks array
     if (Array.isArray(response)) {
       return response.map((task) => this.mapGrpcResponseToTask(task));
     }
@@ -124,65 +149,50 @@ export class TaskService {
     return [];
   }
 
-  async getAvailableApprovers(): Promise<AvailableApproverId[]> {
-    // Query document service for users with approver roles
-    // For now, this returns a curated list of users who can approve tasks
-    // In a real system, this would query from a directory service or user management
-    
-    // Return a hardcoded list of approvers (can be extended to query from directory service)
-    return [
-      { userId: 'approver-001', userName: 'Мария Курапова' },
-      { userId: 'approver-002', userName: 'Алексей Долматов' },
-      { userId: 'approver-003', userName: 'Александр Ваш' },
-    ];
+  async getAvailableApprovers(boardId: string, search = '', limit = 50): Promise<AvailableApproverId[]> {
+    if (!boardId.trim()) {
+      throw new Error('Board ID is required');
+    }
+
+    const response = (await this.grpcClient.getAvailableApprovers({
+      board_id: boardId,
+      search,
+      limit,
+    })) as { items?: Array<Record<string, unknown>> };
+
+    const items = Array.isArray(response.items) ? response.items : [];
+    return items.map((item) => ({
+      userId: String(item.id || ''),
+      userName: String(item.full_name || ''),
+    }));
   }
 
   async getAvailableDocuments(
+    boardId: string,
     currentUser?: UserProfile,
+    category = '',
+    search = '',
     limit = 50,
-    offset = 0,
   ): Promise<AvailableDocumentId[]> {
-    // Query document service to get available documents for attachment
-    try {
-      const response = await this.documentClient.searchDocuments({
-        actor_user_id: currentUser?.userId ?? 'gateway-user',
-        query: '',
-        category: '',
-        limit,
-        offset,
-      });
-
-      // Map response to AvailableDocumentId format
-      if (Array.isArray(response)) {
-        return response.map((doc: Record<string, unknown>) => ({
-          documentId: String(doc.id || ''),
-          title: String(doc.title || ''),
-          category: String(doc.category || ''),
-        }));
-      }
-
-      // Handle paginated response
-      if (response && typeof response === 'object') {
-        const payload = response as Record<string, unknown>;
-        const docs =
-          (Array.isArray(payload.items) ? payload.items : undefined) ??
-          (Array.isArray(payload.documents) ? payload.documents : undefined);
-        if (Array.isArray(docs)) {
-          return docs.map((doc: Record<string, unknown>) => ({
-            documentId: String(doc.id || ''),
-            title: String(doc.title || ''),
-            category: String(doc.category || ''),
-          }));
-        }
-      }
-
-      return [];
-    } catch (error) {
-      // If document service query fails, return empty list
-      // In production, this should log the error
-      console.error('Failed to fetch available documents:', error);
-      return [];
+    if (!boardId.trim()) {
+      throw new Error('Board ID is required');
     }
+
+    const response = (await this.grpcClient.getAvailableDocuments({
+      actor_user_id: currentUser?.userId || '',
+      board_id: boardId,
+      category,
+      status: 'published',
+      search,
+      limit,
+    })) as { items?: Array<Record<string, unknown>> };
+
+    const items = Array.isArray(response.items) ? response.items : [];
+    return items.map((item) => ({
+      documentId: String(item.id || ''),
+      title: String(item.title || ''),
+      category: String(item.category || ''),
+    }));
   }
 
   private mapGrpcResponseToTask(grpcResponse: unknown): TaskResponse {
@@ -225,14 +235,14 @@ export class TaskService {
         ? response.attachmentIds.map((id) => String(id))
         : Array.isArray(response.attachment_document_ids)
           ? response.attachment_document_ids.map((id) => String(id))
-        : Array.isArray(response.attachments)
-          ? response.attachments
-              .map((item) => {
-                const attachment = item as Record<string, unknown>;
-                return attachment.document_id ? String(attachment.document_id) : '';
-              })
-              .filter((id) => id.length > 0)
-          : [],
+          : Array.isArray(response.attachments)
+            ? response.attachments
+                .map((item) => {
+                  const attachment = item as Record<string, unknown>;
+                  return attachment.document_id ? String(attachment.document_id) : '';
+                })
+                .filter((id) => id.length > 0)
+            : [],
       createdAt: response.createdAt
         ? new Date(String(response.createdAt))
         : response.created_at

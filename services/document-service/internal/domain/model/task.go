@@ -21,6 +21,14 @@ type TaskAttachment struct {
 	CreatedAt  time.Time
 }
 
+type AvailableTaskDocument struct {
+	DocumentID string
+	Title      string
+	Category   string
+	UpdatedAt  time.Time
+	Version    int64
+}
+
 type Task struct {
 	ID                string
 	BoardID           string

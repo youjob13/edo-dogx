@@ -2,6 +2,7 @@ package grpcadapter
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -211,14 +212,35 @@ func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb
 		return nil, status.Error(codes.InvalidArgument, "status is required")
 	}
 
-	if err := h.taskRepository.UpdateTaskStatus(ctx, req.GetTaskId(), model.TaskStatus(strings.ToLower(req.GetStatus())), req.GetActorUserId(), req.GetActorUserId()); err != nil {
+	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
+	if err != nil {
 		if err == model.ErrTaskNotFound {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
+	nextStatus, err := parseStatus(req.GetStatus())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !isValidTransition(task.Status, nextStatus) {
+		return nil, status.Error(codes.FailedPrecondition, "invalid task status transition")
+	}
+
+	if err := validateStatusUpdateAuthorization(task, req.GetActorUserId(), nextStatus); err != nil {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
+	if err := h.taskRepository.UpdateTaskStatus(ctx, req.GetTaskId(), nextStatus, req.GetActorUserId(), req.GetActorUserId()); err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	task, err = h.taskRepository.GetTask(ctx, req.GetTaskId())
 	if err != nil {
 		if err == model.ErrTaskNotFound {
 			return nil, status.Error(codes.NotFound, err.Error())
@@ -307,12 +329,72 @@ func (h *TaskOrchestrationHandler) GetTaskDetails(ctx context.Context, req *pb.G
 }
 
 func (h *TaskOrchestrationHandler) GetAvailableApprovers(ctx context.Context, req *pb.AvailableApproversRequest) (*pb.AvailableApproversResponse, error) {
-	return &pb.AvailableApproversResponse{Items: []*pb.BoardMember{}, Total: 0}, nil
+	if strings.TrimSpace(req.GetBoardId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "board_id is required")
+	}
+
+	limit := int(req.GetLimit())
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	items, total, err := h.taskRepository.GetAvailableApprovers(ctx, req.GetBoardId(), req.GetSearch(), limit)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	result := make([]*pb.BoardMember, 0, len(items))
+	for _, item := range items {
+		result = append(result, &pb.BoardMember{
+			Id:         item.UserID,
+			FullName:   item.FullName,
+			Department: item.Department,
+			Email:      item.Email,
+		})
+	}
+
+	return &pb.AvailableApproversResponse{Items: result, Total: int32(total)}, nil
 }
 
 func (h *TaskOrchestrationHandler) GetAvailableDocuments(ctx context.Context, req *pb.AvailableDocumentsRequest) (*pb.AvailableDocumentsResponse, error) {
-	_ = req
-	return &pb.AvailableDocumentsResponse{Items: []*pb.DocumentItem{}, Total: 0}, nil
+	if strings.TrimSpace(req.GetBoardId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "board_id is required")
+	}
+
+	statusFilter := strings.TrimSpace(strings.ToLower(req.GetStatus()))
+	if statusFilter != "" && statusFilter != "published" {
+		return nil, status.Error(codes.InvalidArgument, "status must be empty or 'published'")
+	}
+
+	limit := int(req.GetLimit())
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	items, total, err := h.taskRepository.GetAvailableDocuments(ctx, req.GetBoardId(), req.GetCategory(), req.GetSearch(), limit)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	result := make([]*pb.DocumentItem, 0, len(items))
+	for _, item := range items {
+		result = append(result, &pb.DocumentItem{
+			Id:        item.DocumentID,
+			Title:     item.Title,
+			Category:  item.Category,
+			UpdatedAt: item.UpdatedAt.Format(time.RFC3339),
+			SizeKb:    0,
+			Version:   int32(item.Version),
+		})
+	}
+
+	return &pb.AvailableDocumentsResponse{Items: result, Total: int32(total)}, nil
 }
 
 func (h *TaskOrchestrationHandler) ListOrganizationMembers(ctx context.Context, req *pb.ListOrganizationMembersRequest) (*pb.ListOrganizationMembersResponse, error) {
@@ -425,4 +507,66 @@ func mapAttachmentsToProto(attachments []model.TaskAttachment) []*pb.TaskAttachm
 		items = append(items, &pb.TaskAttachment{DocumentId: attachment.DocumentID, Title: attachment.Title, Category: attachment.Category})
 	}
 	return items
+}
+
+func parseStatus(raw string) (model.TaskStatus, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "pending":
+		return model.TaskStatusPending, nil
+	case "in_review":
+		return model.TaskStatusInReview, nil
+	case "approved":
+		return model.TaskStatusApproved, nil
+	case "declined":
+		return model.TaskStatusDeclined, nil
+	default:
+		return "", fmt.Errorf("status must be one of: pending, in_review, approved, declined")
+	}
+}
+
+func isValidTransition(from model.TaskStatus, to model.TaskStatus) bool {
+	if from == to {
+		return true
+	}
+
+	switch from {
+	case model.TaskStatusPending:
+		return to == model.TaskStatusInReview || to == model.TaskStatusApproved || to == model.TaskStatusDeclined
+	case model.TaskStatusInReview:
+		return to == model.TaskStatusPending || to == model.TaskStatusApproved || to == model.TaskStatusDeclined
+	case model.TaskStatusApproved, model.TaskStatusDeclined:
+		return false
+	default:
+		return false
+	}
+}
+
+func validateStatusUpdateAuthorization(task model.Task, actorUserID string, nextStatus model.TaskStatus) error {
+	if strings.TrimSpace(actorUserID) == "" {
+		return fmt.Errorf("actor_user_id is required")
+	}
+
+	isCreator := task.CreatedByUserID == actorUserID
+	isAssignee := task.AssignedUserID == actorUserID
+	isApprover := task.ApproverUserID != nil && *task.ApproverUserID == actorUserID
+
+	switch nextStatus {
+	case model.TaskStatusApproved, model.TaskStatusDeclined:
+		if !isApprover {
+			return fmt.Errorf("only approver can approve or decline task")
+		}
+		return nil
+	case model.TaskStatusInReview:
+		if !isAssignee && !isCreator && !isApprover {
+			return fmt.Errorf("only assignee, creator, or approver can move task to review")
+		}
+		return nil
+	case model.TaskStatusPending:
+		if !isCreator && !isAssignee {
+			return fmt.Errorf("only assignee or creator can move task to pending")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported task status")
+	}
 }

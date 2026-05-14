@@ -9,6 +9,7 @@ import {
 } from '../../../../domain/dashboard/dashboard.models';
 import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
 import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
+import { AuthSessionStore } from '../../../../application/auth-session.store';
 
 @Component({
   selector: 'edo-dogx-dashboard-task-details',
@@ -19,6 +20,7 @@ import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.
 })
 export class DashboardTaskDetailsComponent {
   private readonly useCases = inject(TaskBoardUseCases);
+  private readonly authSessionStore = inject(AuthSessionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -33,7 +35,28 @@ export class DashboardTaskDetailsComponent {
   protected readonly message = signal('');
 
   protected readonly task = computed(() => this.details()?.task ?? null);
-  protected readonly canManage = computed(() => this.details()?.canManage ?? false);
+  protected readonly canManage = computed(() => {
+    const details = this.details();
+    if (!details) {
+      return false;
+    }
+
+    if (details.canManage) {
+      return true;
+    }
+
+    const currentUserId = this.authSessionStore.currentUser()?.userId;
+    if (!currentUserId) {
+      return false;
+    }
+
+    const isBoardMember = details.members.some((member) => member.id === currentUserId);
+    const isCreator = details.task.creatorId === currentUserId;
+    const isAssignee = details.task.assigneeId === currentUserId;
+    const isApprover = details.task.approverId === currentUserId;
+
+    return isBoardMember || isCreator || isAssignee || isApprover;
+  });
 
   constructor() {
     this.route.paramMap.pipe(take(1)).subscribe((params) => {
@@ -51,7 +74,7 @@ export class DashboardTaskDetailsComponent {
 
   protected assignTask(): void {
     const details = this.details();
-    if (!details || !details.canManage) {
+    if (!details || !this.canManage()) {
       return;
     }
 
@@ -68,7 +91,7 @@ export class DashboardTaskDetailsComponent {
 
   protected moveTask(): void {
     const details = this.details();
-    if (!details || !details.canManage) {
+    if (!details || !this.canManage()) {
       return;
     }
 
@@ -85,7 +108,7 @@ export class DashboardTaskDetailsComponent {
 
   protected addComment(): void {
     const details = this.details();
-    if (!details || !details.canManage) {
+    if (!details || !this.canManage()) {
       return;
     }
 

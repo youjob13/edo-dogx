@@ -21,6 +21,8 @@ type TaskRepository interface {
 	AddTaskAttachments(ctx context.Context, taskID string, attachments []model.TaskAttachment) error
 	RemoveTaskAttachment(ctx context.Context, taskID string, documentID string) error
 	GetTaskAttachments(ctx context.Context, taskID string) ([]model.TaskAttachment, error)
+	GetAvailableApprovers(ctx context.Context, boardID string, search string, limit int) ([]model.TaskBoardMember, int, error)
+	GetAvailableDocuments(ctx context.Context, boardID string, category string, search string, limit int) ([]model.AvailableTaskDocument, int, error)
 }
 
 type TaskFilter struct {

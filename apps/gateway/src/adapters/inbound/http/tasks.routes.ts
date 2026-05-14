@@ -1,14 +1,12 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import { TaskOrchestrationServiceClient, GrpcClientError } from '../../outbound/grpc/task.client.js';
-import { DocumentServiceClient } from '../../outbound/grpc/document.client.js';
 import { TaskService, type UpdateTaskStatusRequest } from '../../../application/task.service.js';
 import { TaskValidationService } from '../../../application/validation/task.validation.js';
 import type { AuthSession } from '../../../domain/auth.js';
 import { CreateTaskRequest } from '@edo/types';
 
 const grpcClient = new TaskOrchestrationServiceClient();
-const documentClient = new DocumentServiceClient();
-const taskService = new TaskService(grpcClient, documentClient);
+const taskService = new TaskService(grpcClient);
 const validationService = new TaskValidationService();
 
 function mapGrpcError(reply: FastifyReply, error: unknown) {
@@ -143,17 +141,39 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   );
 
   // GET /api/tasks/:taskId - Get task details
-  fastify.get<{ Params: { taskId: string } }>(
+  fastify.get<{ Params: { taskId: string }; Querystring: { boardId?: string } }>(
     '/tasks/:taskId',
-    async (request: FastifyRequest<{ Params: { taskId: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Params: { taskId: string }; Querystring: { boardId?: string } }>,
+      reply: FastifyReply,
+    ) => {
       try {
         const authData = request.session?.auth as AuthSession | undefined;
         if (!authData) {
           return reply.code(401).send({ error: 'Unauthorized' });
         }
 
-        const task = await taskService.getTask(request.params.taskId);
-        return reply.send({ task });
+        const details = await taskService.getTaskDetails(request.params.taskId, {
+          userId: authData.userId,
+          userName: authData.email,
+          email: authData.email,
+          roles: authData.roles,
+        });
+
+        return reply.send({
+          board: {
+            id: request.query.boardId ?? '',
+            organizationId: '',
+            name: '',
+            description: '',
+            membersCount: details.members.length,
+            tasksCount: 0,
+          },
+          task: details.task,
+          members: details.members,
+          currentUserId: details.currentUserId,
+          canManage: details.canManage,
+        });
       } catch (error) {
         if (error instanceof GrpcClientError) {
           return mapGrpcError(reply, error);
@@ -197,14 +217,26 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   );
 
   // GET /api/tasks/available-approvers - Get list of available approvers
-  fastify.get('/tasks/available-approvers', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get<{ Querystring: { boardId?: string; search?: string; limit?: number } }>(
+    '/tasks/available-approvers',
+    async (
+      request: FastifyRequest<{ Querystring: { boardId?: string; search?: string; limit?: number } }>,
+      reply: FastifyReply,
+    ) => {
     try {
       const authData = request.session?.auth as AuthSession | undefined;
       if (!authData) {
         return reply.code(401).send({ error: 'Unauthorized' });
       }
 
-      const approvers = await taskService.getAvailableApprovers();
+      const boardId = request.query.boardId ?? '';
+      if (!boardId) {
+        return reply.code(400).send({ error: 'boardId is required' });
+      }
+
+      const search = request.query.search ?? '';
+      const limit = Math.min(request.query.limit ?? 50, 200);
+      const approvers = await taskService.getAvailableApprovers(boardId, search, limit);
       return reply.send({ approvers });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -213,36 +245,46 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   });
 
   // GET /api/tasks/available-documents - Get list of available documents for attachment
-  fastify.get<{ Querystring: { limit?: number; offset?: number } }>(
+  fastify.get<{ Querystring: { boardId?: string; category?: string; search?: string; limit?: number } }>(
     '/tasks/available-documents',
-    async (request: FastifyRequest<{ Querystring: { limit?: number; offset?: number } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Querystring: { boardId?: string; category?: string; search?: string; limit?: number } }>,
+      reply: FastifyReply,
+    ) => {
       try {
         const authData = request.session?.auth as AuthSession | undefined;
         if (!authData) {
           return reply.code(401).send({ error: 'Unauthorized' });
         }
 
-        const limit = Math.min(request.query.limit ?? 50, 100);
-        const offset = request.query.offset ?? 0;
+        const boardId = request.query.boardId ?? '';
+        if (!boardId) {
+          return reply.code(400).send({ error: 'boardId is required' });
+        }
+
+        const category = request.query.category ?? '';
+        const search = request.query.search ?? '';
+        const limit = Math.min(request.query.limit ?? 50, 200);
 
         const documents = await taskService.getAvailableDocuments(
+          boardId,
           {
             userId: authData.userId,
             userName: authData.email,
             email: authData.email,
             roles: authData.roles,
           },
+          category,
+          search,
           limit,
-          offset,
         );
 
-        return reply.send({ documents, limit, offset });
+        return reply.send({ documents, limit, offset: 0 });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         return reply.code(500).send({ error: message });
       }
-    },
-  );
+    });
 };
 
 export default routes;

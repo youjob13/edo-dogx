@@ -85,4 +85,12 @@ export class TaskOrchestrationServiceClient {
   createOrganizationMember(payload: unknown): Promise<unknown> {
     return this.call('CreateOrganizationMember', payload);
   }
+
+  getAvailableApprovers(payload: unknown): Promise<unknown> {
+    return this.call('GetAvailableApprovers', payload);
+  }
+
+  getAvailableDocuments(payload: unknown): Promise<unknown> {
+    return this.call('GetAvailableDocuments', payload);
+  }
 }

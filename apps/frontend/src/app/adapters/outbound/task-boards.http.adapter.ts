@@ -39,6 +39,14 @@ interface GatewayOrganizationMembersResponse {
   total: number;
 }
 
+interface GatewayTaskDetailsResponse {
+  board: KanbanBoardSummary;
+  task: KanbanTask;
+  members: Array<{ id: string; fullName: string; department: string }>;
+  currentUserId: string;
+  canManage: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
   private readonly http = inject(HttpClient);
@@ -63,7 +71,22 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
   }
 
   public getTaskDetails(boardId: string, taskId: string): Observable<KanbanTaskDetails> {
-    return this.http.get<KanbanTaskDetails>(`${this.apiBaseUrl}/tasks/${taskId}`);
+    return this.http
+      .get<GatewayTaskDetailsResponse>(`${this.apiBaseUrl}/tasks/${taskId}`, {
+        params: { boardId },
+      })
+      .pipe(
+        map((response) => ({
+          board: {
+            ...response.board,
+            id: response.board?.id || boardId,
+          },
+          task: response.task,
+          members: response.members,
+          currentUserId: response.currentUserId,
+          canManage: response.canManage,
+        })),
+      );
   }
 
   public assignTask(
@@ -112,20 +135,23 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
     return this.http.patch<KanbanTask>(`${this.apiBaseUrl}/tasks/${taskId}/status`, payload);
   }
 
-  public getAvailableApprovers(): Observable<Array<AvailableApproverItem>> {
+  public getAvailableApprovers(boardId: string): Observable<Array<AvailableApproverItem>> {
     return this.http
-      .get<GatewayAvailableApproversResponse>(`${this.apiBaseUrl}/tasks/available-approvers`)
+      .get<GatewayAvailableApproversResponse>(`${this.apiBaseUrl}/tasks/available-approvers`, {
+        params: { boardId },
+      })
       .pipe(map((response) => response.approvers));
   }
 
   public getAvailableDocuments(
+    boardId: string,
     limit = 50,
     offset = 0,
   ): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }> {
     return this.http.get<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }>(
       `${this.apiBaseUrl}/tasks/available-documents`,
       {
-        params: { limit, offset },
+        params: { boardId, limit, offset },
       },
     );
   }
