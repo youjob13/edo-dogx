@@ -82,11 +82,17 @@
       ariaLabel="Панель истории"
       (closed)="closeHistory()"
     >
-      <ul class="dashboard-layout__history">
-        <li>Проверен пакет документов procurement-q2.</li>
-        <li>Изменен статус Tax_Return_2023.pdf.</li>
-        <li>Добавлен новый пользователь из Legal Partners.</li>
-      </ul>
+      @if (historyLoading()) {
+        <p class="dashboard-layout__history-empty">Загрузка истории...</p>
+      } @else if (historyItems().length === 0) {
+        <p class="dashboard-layout__history-empty">История пока пуста.</p>
+      } @else {
+        <ul class="dashboard-layout__history">
+          @for (item of historyItems(); track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      }
     </edo-dogx-drawer>
 
     @if (lastAction()) {

@@ -73,6 +73,8 @@ export class DashboardLayoutComponent {
   protected readonly searchHits = signal<Array<GlobalSearchHit>>([]);
   protected readonly unreadNotificationCount = signal(0);
   protected readonly seenNotificationIds = signal<Set<string>>(new Set<string>());
+  protected readonly historyItems = signal<Array<string>>([]);
+  protected readonly historyLoading = signal(false);
 
   protected readonly accountItems = computed<Array<UiKitDropdownItem>>(() => [
     { id: 'profile', label: 'Профиль', icon: 'account' },
@@ -118,6 +120,7 @@ export class DashboardLayoutComponent {
 
   protected onHistoryPressed(): void {
     this.historyOpen.set(true);
+    this.loadHistory();
   }
 
   protected onAccountPressed(): void {
@@ -399,6 +402,41 @@ export class DashboardLayoutComponent {
         next: () => {
           this.unreadNotificationCount.update((value) => Math.max(0, value - 1));
           this.lastAction.set(`Открыто уведомление: ${notificationId}`);
+        },
+      });
+  }
+
+  private loadHistory(): void {
+    this.historyLoading.set(true);
+    this.http
+      .get<{
+        items: Array<{
+          actorUserName?: string;
+          actor_user_name?: string;
+          summary?: string;
+          occurredAt?: string;
+          occurred_at?: string;
+        }>;
+      }>('/api/activity', {
+        params: { limit: 20, offset: 0 },
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          const items = Array.isArray(response.items) ? response.items : [];
+          this.historyItems.set(
+            items.map((item) => {
+              const actor = item.actorUserName ?? item.actor_user_name ?? 'Система';
+              const summary = item.summary ?? 'Событие';
+              const occurredAt = item.occurredAt ?? item.occurred_at ?? '';
+              return occurredAt ? `${actor}: ${summary} (${occurredAt})` : `${actor}: ${summary}`;
+            }),
+          );
+          this.historyLoading.set(false);
+        },
+        error: () => {
+          this.historyItems.set([]);
+          this.historyLoading.set(false);
         },
       });
   }
