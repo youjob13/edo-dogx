@@ -295,3 +295,19 @@ export interface OrganizationMember {
   readonly department: string;
   readonly email: string;
 }
+
+export type GlobalSearchEntityType = 'DOCUMENT' | 'TASK';
+
+export interface GlobalSearchHit {
+  readonly entityType: GlobalSearchEntityType;
+  readonly id: string;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly status: string;
+  readonly updatedAt: string;
+  readonly route: string;
+  readonly documentId?: string;
+  readonly taskId?: string;
+  readonly boardId?: string;
+  readonly category?: string;
+}

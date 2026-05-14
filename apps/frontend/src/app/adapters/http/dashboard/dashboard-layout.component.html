@@ -1,13 +1,8 @@
-<edo-dogx-app-shell [themeMode]="themeMode()">
+﻿<edo-dogx-app-shell [themeMode]="themeMode()">
   <edo-dogx-sidebar sidebar>
     <h1 class="dashboard-logo">ЭДО Dogx</h1>
 
-    <edo-dogx-nav-item
-      route="/dashboard/home"
-      label="Панель"
-      icon="dashboard"
-      [exact]="true"
-    />
+    <edo-dogx-nav-item route="/dashboard/home" label="Панель" icon="dashboard" [exact]="true" />
     <edo-dogx-nav-item route="/dashboard/documents" label="Документы" icon="documents" />
     <edo-dogx-nav-item route="/dashboard/tasks" label="Задачи" icon="tasks" />
     <edo-dogx-nav-item route="/dashboard/archive" label="Архив" icon="archive" />
@@ -17,33 +12,42 @@
     <div class="dashboard-topbar__left">
       <edo-dogx-toolbar-search
         [control]="searchControl"
-        placeholder="Поиск документов"
+        placeholder="Поиск по задачам и документам"
         (submitted)="onSearchSubmit()"
       />
+      @if (searchTooltipOpen()) {
+        <div class="dashboard-search-tooltip">
+          @if (searchLoading()) {
+            <p class="dashboard-search-tooltip__state">Поиск...</p>
+          } @else if (searchHits().length === 0) {
+            <p class="dashboard-search-tooltip__state">Ничего не найдено</p>
+          } @else {
+            <ul class="dashboard-search-tooltip__list">
+              @for (item of searchHits(); track item.entityType + ':' + item.id) {
+                <li class="dashboard-search-tooltip__item">
+                  <a [routerLink]="item.route" (click)="onSearchHitPressed(item.route)">
+                    <span class="dashboard-search-tooltip__badge">{{ getEntityLabel(item.entityType) }}</span>
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.subtitle }} · {{ item.status }} · {{ item.updatedAt }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
     </div>
 
     <div class="dashboard-topbar__actions">
-      <edo-dogx-topbar-action
-        icon="upload"
-        ariaLabel="Загрузить документ"
-        (pressed)="onUploadPressed()"
-      />
+      <edo-dogx-topbar-action icon="upload" ariaLabel="Загрузить документ" (pressed)="onUploadPressed()" />
       <edo-dogx-topbar-action
         icon="notifications"
         ariaLabel="Открыть уведомления"
         [badgeCount]="2"
         (pressed)="onNotificationsPressed()"
       />
-      <edo-dogx-topbar-action
-        icon="history"
-        ariaLabel="Открыть историю"
-        (pressed)="onHistoryPressed()"
-      />
-      <edo-dogx-topbar-action
-        icon="account"
-        ariaLabel="Открыть профиль"
-        (pressed)="onAccountPressed()"
-      />
+      <edo-dogx-topbar-action icon="history" ariaLabel="Открыть историю" (pressed)="onHistoryPressed()" />
+      <edo-dogx-topbar-action icon="account" ariaLabel="Открыть профиль" (pressed)="onAccountPressed()" />
     </div>
 
     @if (notificationsOpen()) {

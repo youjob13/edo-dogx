@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"strings"
+	"time"
 
 	pb "edo/services/document-service/internal/adapters/inbound/grpc/pb"
 	appservice "edo/services/document-service/internal/application/service"
@@ -19,14 +20,15 @@ import (
 type DocumentHandler struct {
 	pb.UnimplementedDocumentWorkflowServiceServer
 	lifecycle *appservice.DocumentLifecycleService
+	syncer    ProjectionSyncer
 }
 
-func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService) *DocumentHandler {
+func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService, syncer ProjectionSyncer) *DocumentHandler {
 	if lifecycle == nil {
 		lifecycle = appservice.NewInMemoryDocumentLifecycleService()
 	}
 
-	return &DocumentHandler{lifecycle: lifecycle}
+	return &DocumentHandler{lifecycle: lifecycle, syncer: syncer}
 }
 
 func (h *DocumentHandler) Register(server *grpc.Server) {
@@ -58,6 +60,7 @@ func (h *DocumentHandler) CreateDraft(ctx context.Context, req *pb.CreateDraftRe
 		)
 		return nil, toStatusError(err)
 	}
+	h.syncProjectionAsync(document.ID, "DOCUMENT")
 
 	return mapDocument(document)
 }
@@ -90,6 +93,7 @@ func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRe
 		)
 		return nil, toStatusError(err)
 	}
+	h.syncProjectionAsync(document.ID, "DOCUMENT")
 
 	return mapDocument(document)
 }
@@ -451,4 +455,23 @@ func parseContentDocumentJSON(raw string) (map[string]any, error) {
 	}
 
 	return contentDocument, nil
+}
+
+func (h *DocumentHandler) syncProjectionAsync(entityID string, entityType string) {
+	if h.syncer == nil || strings.TrimSpace(entityID) == "" {
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		if err := h.syncer.Sync(ctx, entityType, entityID, false); err != nil {
+			slog.Warn("search projection sync failed",
+				"entityType", entityType,
+				"entityId", entityID,
+				"err", err,
+			)
+		}
+	}()
 }

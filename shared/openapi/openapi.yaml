@@ -716,6 +716,74 @@ paths:
                     items:
                       $ref: "#/components/schemas/DocumentResponse"
 
+  /api/search:
+    get:
+      tags: [documents]
+      summary: Global search for tasks and documents
+      operationId: searchGlobal
+      description: Routed via gateway to search-notification-service global search.
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+        - in: query
+          name: entities
+          schema:
+            type: string
+          description: Comma-separated entity types, e.g. document,task
+      responses:
+        "200":
+          description: Global search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [entityType, id, title, status, updatedAt, route]
+                      properties:
+                        entityType:
+                          type: string
+                          enum: [DOCUMENT, TASK]
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        subtitle:
+                          type: string
+                        status:
+                          type: string
+                        updatedAt:
+                          type: string
+                        route:
+                          type: string
+                        documentId:
+                          type: string
+                        taskId:
+                          type: string
+                        boardId:
+                          type: string
+                        category:
+                          type: string
+                  total:
+                    type: integer
+
   /api/search/notifications/center:
     get:
       tags: [documents]

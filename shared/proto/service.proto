@@ -30,6 +30,7 @@ service DocumentWorkflowService {
 service SearchNotificationService {
   rpc SyncSearchProjection(SyncSearchProjectionRequest) returns (SyncSearchProjectionResponse);
   rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
+  rpc SearchGlobal(SearchGlobalRequest) returns (SearchGlobalResponse);
   rpc EmitNotification(EmitNotificationRequest) returns (EmitNotificationResponse);
   rpc RetryFailedNotifications(RetryFailedNotificationsRequest) returns (RetryFailedNotificationsResponse);
 }
@@ -570,11 +571,50 @@ message RetryFailedNotificationsResponse {
 
 message SyncSearchProjectionRequest {
   string actor_user_id = 1;
-  string document_id = 2;
-  string version = 3;
+  string entity_type = 2;
+  string entity_id = 3;
+  string version = 4;
+  bool deleted = 5;
 }
 
 message SyncSearchProjectionResponse {
   bool synced = 1;
   string indexed_at = 2;
+}
+
+enum SearchEntityType {
+  SEARCH_ENTITY_TYPE_UNSPECIFIED = 0;
+  SEARCH_ENTITY_TYPE_DOCUMENT = 1;
+  SEARCH_ENTITY_TYPE_TASK = 2;
+}
+
+message SearchGlobalRequest {
+  string actor_user_id = 1;
+  string query = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  repeated SearchEntityType entities = 5;
+}
+
+message SearchHit {
+  SearchEntityType entity_type = 1;
+  string id = 2;
+  string title = 3;
+  string subtitle = 4;
+  string status = 5;
+  string updated_at = 6;
+  string route = 7;
+  string document_id = 8;
+  string task_id = 9;
+  string board_id = 10;
+  string category = 11;
+  string owner_user_id = 12;
+  string creator_user_id = 13;
+  string assignee_user_id = 14;
+  string approver_user_id = 15;
+}
+
+message SearchGlobalResponse {
+  repeated SearchHit items = 1;
+  int32 total = 2;
 }

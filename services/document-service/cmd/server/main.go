@@ -71,6 +71,11 @@ func main() {
 	versionRepository := postgresadapter.NewDocumentVersionRepository(db, minioClient, bucketName)
 	taskRepository := postgresadapter.NewTaskRepository(db)
 	lifecycleService := appservice.NewDocumentLifecycleService(documentRepository, versionRepository)
+	searchSyncClient, err := grpcadapter.NewSearchProjectionSyncClient(getEnv("SEARCH_NOTIFICATION_SERVICE_GRPC_ADDR", "search-notification-service:50055"))
+	if err != nil {
+		slog.Error("failed to initialize search projection sync client", "err", err)
+		os.Exit(1)
+	}
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -79,8 +84,8 @@ func main() {
 	}
 
 	server := grpcadapter.NewServer()
-	server.AddRegistrar(grpcadapter.NewDocumentHandler(lifecycleService))
-	server.AddRegistrar(grpcadapter.NewTaskOrchestrationHandler(taskRepository))
+	server.AddRegistrar(grpcadapter.NewDocumentHandler(lifecycleService, searchSyncClient))
+	server.AddRegistrar(grpcadapter.NewTaskOrchestrationHandler(taskRepository, searchSyncClient))
 	server.RegisterServices()
 
 	slog.Info("document-service gRPC listening", "addr", addr)

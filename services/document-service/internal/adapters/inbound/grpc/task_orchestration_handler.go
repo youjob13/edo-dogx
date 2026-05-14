@@ -18,10 +18,11 @@ import (
 type TaskOrchestrationHandler struct {
 	pb.UnimplementedTaskOrchestrationServiceServer
 	taskRepository outbound.TaskRepository
+	syncer         ProjectionSyncer
 }
 
-func NewTaskOrchestrationHandler(taskRepository outbound.TaskRepository) *TaskOrchestrationHandler {
-	return &TaskOrchestrationHandler{taskRepository: taskRepository}
+func NewTaskOrchestrationHandler(taskRepository outbound.TaskRepository, syncer ProjectionSyncer) *TaskOrchestrationHandler {
+	return &TaskOrchestrationHandler{taskRepository: taskRepository, syncer: syncer}
 }
 
 func (h *TaskOrchestrationHandler) Register(server *grpc.Server) {
@@ -200,6 +201,7 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	h.syncProjectionAsync(createdTask.ID, "TASK")
 
 	return &pb.CreateTaskResponse{Task: mapTaskToProto(createdTask)}, nil
 }
@@ -247,6 +249,7 @@ func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	h.syncProjectionAsync(task.ID, "TASK")
 
 	return &pb.UpdateTaskStatusResponse{Task: mapTaskToProto(task)}, nil
 }
@@ -569,4 +572,16 @@ func validateStatusUpdateAuthorization(task model.Task, actorUserID string, next
 	default:
 		return fmt.Errorf("unsupported task status")
 	}
+}
+
+func (h *TaskOrchestrationHandler) syncProjectionAsync(entityID string, entityType string) {
+	if h.syncer == nil || strings.TrimSpace(entityID) == "" {
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = h.syncer.Sync(ctx, entityType, entityID, false)
+	}()
 }

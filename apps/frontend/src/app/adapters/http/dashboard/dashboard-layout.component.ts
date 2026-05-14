@@ -1,14 +1,18 @@
-import {
+﻿import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   PLATFORM_ID,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { debounceTime, distinctUntilChanged, switchMap, tap, of } from 'rxjs';
 import {
   AppShellComponent,
   DrawerComponent,
@@ -21,11 +25,13 @@ import {
   TopbarComponent,
   UiKitDropdownItem,
 } from '../../../design-system/ui-kit';
+import { GlobalSearchHit } from '../../../domain/dashboard/dashboard.models';
 
 @Component({
   selector: 'edo-dogx-dashboard-layout',
   host: {
     '(document:keydown)': 'onDocumentKeydown($event)',
+    '(document:click)': 'onDocumentClick($event)',
   },
   imports: [
     AppShellComponent,
@@ -37,6 +43,7 @@ import {
     DropdownMenuComponent,
     DrawerComponent,
     ModalComponent,
+    RouterLink,
     RouterOutlet,
     ReactiveFormsModule,
   ],
@@ -49,6 +56,8 @@ export class DashboardLayoutComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly http = inject(HttpClient);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   protected readonly searchControl = new FormControl('', { nonNullable: true });
@@ -58,12 +67,18 @@ export class DashboardLayoutComponent {
   protected readonly notificationsOpen = signal(false);
   protected readonly accountOpen = signal(false);
   protected readonly themeMode = signal<'light' | 'dark'>('light');
+  protected readonly searchTooltipOpen = signal(false);
+  protected readonly searchLoading = signal(false);
+  protected readonly searchHits = signal<Array<GlobalSearchHit>>([]);
 
   protected readonly accountItems = computed<Array<UiKitDropdownItem>>(() => [
     { id: 'profile', label: 'Профиль', icon: 'account' },
     {
       id: 'toggle-theme',
-      label: this.themeMode() === 'dark' ? 'Тема: темная (переключить)' : 'Тема: светлая (переключить)',
+      label:
+        this.themeMode() === 'dark'
+          ? 'Тема: темная (переключить)'
+          : 'Тема: светлая (переключить)',
       icon: 'settings',
     },
     { id: 'settings', label: 'Настройки', icon: 'settings' },
@@ -77,6 +92,7 @@ export class DashboardLayoutComponent {
 
   constructor() {
     this.initializeThemeMode();
+    this.setupSearchTooltip();
   }
 
   protected onSearchSubmit(): void {
@@ -167,13 +183,33 @@ export class DashboardLayoutComponent {
       return;
     }
 
-    const hasOpenedMenus = this.notificationsOpen() || this.accountOpen();
-    if (!hasOpenedMenus) {
+    this.notificationsOpen.set(false);
+    this.accountOpen.set(false);
+    this.searchTooltipOpen.set(false);
+  }
+
+  protected onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (!target) {
       return;
     }
 
-    this.notificationsOpen.set(false);
-    this.accountOpen.set(false);
+    if (target.closest('.dashboard-topbar__left') === null) {
+      this.searchTooltipOpen.set(false);
+    }
+  }
+
+  protected onSearchHitPressed(route: string): void {
+    if (!route) {
+      return;
+    }
+
+    this.searchTooltipOpen.set(false);
+    this.router.navigateByUrl(route);
+  }
+
+  protected getEntityLabel(entityType: GlobalSearchHit['entityType']): string {
+    return entityType === 'TASK' ? 'Задача' : 'Документ';
   }
 
   private initializeThemeMode(): void {
@@ -199,5 +235,44 @@ export class DashboardLayoutComponent {
     if (this.isBrowser) {
       localStorage.setItem(this.themeStorageKey, next);
     }
+  }
+
+  private setupSearchTooltip(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        tap((value) => {
+          if (!value.trim()) {
+            this.searchHits.set([]);
+            this.searchTooltipOpen.set(false);
+            this.searchLoading.set(false);
+          } else {
+            this.searchLoading.set(true);
+          }
+        }),
+        switchMap((value) => {
+          const query = value.trim();
+          if (!query) {
+            return of({ items: [] as Array<GlobalSearchHit> });
+          }
+          return this.http.get<{ items: Array<GlobalSearchHit> }>('/api/search', {
+            params: { q: query, limit: 8 },
+          });
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.searchHits.set(Array.isArray(response.items) ? response.items : []);
+          this.searchTooltipOpen.set(this.searchControl.value.trim().length > 0);
+          this.searchLoading.set(false);
+        },
+        error: () => {
+          this.searchHits.set([]);
+          this.searchTooltipOpen.set(this.searchControl.value.trim().length > 0);
+          this.searchLoading.set(false);
+        },
+      });
   }
 }

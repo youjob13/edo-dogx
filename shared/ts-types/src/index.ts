@@ -194,6 +194,27 @@ export interface AuditEventResponse {
   occurredAt: string;
 }
 
+export type GlobalSearchEntityType = 'DOCUMENT' | 'TASK';
+
+export interface GlobalSearchHit {
+  entityType: GlobalSearchEntityType;
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  updatedAt: string;
+  route: string;
+  documentId?: string;
+  taskId?: string;
+  boardId?: string;
+  category?: string;
+}
+
+export interface GlobalSearchResponse {
+  items: GlobalSearchHit[];
+  total: number;
+}
+
 
 /**
  * <--- Tasks

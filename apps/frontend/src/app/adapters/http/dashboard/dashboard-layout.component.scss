@@ -11,6 +11,7 @@
 }
 
 .dashboard-topbar__left {
+  position: relative;
   min-width: 16rem;
   max-width: 24rem;
   width: 100%;
@@ -74,4 +75,59 @@
   margin: 0;
   color: var(--edo-ui-ink-muted);
   font-size: 0.75rem;
+}
+
+.dashboard-search-tooltip {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 8;
+  border: 1px solid var(--edo-ui-outline);
+  border-radius: var(--edo-ui-radius-m);
+  background: var(--edo-ui-surface);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.16);
+  padding: 0.5rem;
+}
+
+.dashboard-search-tooltip__state {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.875rem;
+}
+
+.dashboard-search-tooltip__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.375rem;
+}
+
+.dashboard-search-tooltip__item a {
+  display: grid;
+  gap: 0.125rem;
+  text-decoration: none;
+  color: var(--edo-ui-ink);
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--edo-ui-radius-s);
+}
+
+.dashboard-search-tooltip__item a:hover,
+.dashboard-search-tooltip__item a:focus-visible {
+  background: var(--edo-ui-surface-alt);
+}
+
+.dashboard-search-tooltip__item span {
+  font-size: 0.75rem;
+  color: var(--edo-ui-ink-muted);
+}
+
+.dashboard-search-tooltip__badge {
+  display: inline-block;
+  max-width: fit-content;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--edo-ui-outline);
+  color: var(--edo-ui-ink);
 }

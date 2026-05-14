@@ -21,6 +21,14 @@ export class SearchNotificationServiceClient {
     return this.call('SearchDocuments', payload);
   }
 
+  searchGlobal(payload: unknown): Promise<unknown> {
+    return this.call('SearchGlobal', payload);
+  }
+
+  syncSearchProjection(payload: unknown): Promise<unknown> {
+    return this.call('SyncSearchProjection', payload);
+  }
+
   emitNotification(payload: unknown): Promise<unknown> {
     return this.call('EmitNotification', payload);
   }
