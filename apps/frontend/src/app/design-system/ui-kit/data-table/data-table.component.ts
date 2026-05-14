@@ -3,12 +3,13 @@ import { TuiButton } from '@taiga-ui/core/components/button';
 import { TuiDropdown } from '@taiga-ui/core/portals/dropdown';
 import { DropdownMenuComponent } from '../dropdown-menu/dropdown-menu.component';
 import { UiKitDropdownItem, UiKitSortDirection, UiKitSortState, UiKitTableColumn } from '../ui-kit.models';
+import { DatePipe } from '@angular/common';
 
 type TableRow = Record<string, string | number | null | undefined>;
 
 @Component({
   selector: 'edo-dogx-data-table',
-  imports: [TuiButton, TuiDropdown, DropdownMenuComponent],
+  imports: [TuiButton, TuiDropdown, DropdownMenuComponent, DatePipe],
   template: `
     <div class="edo-ui-kit-table-shell">
       @if (caption()) {
@@ -58,7 +59,11 @@ type TableRow = Record<string, string | number | null | undefined>;
                     [class.edo-ui-kit-table__cell--right]="column.align === 'right'"
                     [class.edo-ui-kit-table__cell--center]="column.align === 'center'"
                   >
-                    {{ row[column.key] ?? '—' }}
+                  @if (column.key === "updated_at") {
+                    {{ (row[column.key]  | date: 'M/d/yy, h:mm a') ?? '—' }}
+                  } @else {
+                    {{ row[column.key] ?? '-' }}
+                  }
                   </td>
                 }
 

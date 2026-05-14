@@ -9,7 +9,7 @@
       [fullHeight]="true"
       [hint]="'Изменение: +' + pendingApprovalDelta().toString()"
       icon="pending"
-      (pressed)="onMetricPressed('DRAFT')"
+      (pressed)="onMetricPressed('pending')"
     />
 
     <edo-dogx-metric-card
@@ -18,7 +18,7 @@
       [fullHeight]="true"
       [hint]="'Просрочено: ' + overdueNoticesCount().toString()"
       icon="warning"
-      (pressed)="onMetricPressed('IN_REVIEW')"
+      (pressed)="onMetricPressed('in_review')"
     />
 
     <edo-dogx-card title="Недельный объем" subtitle="Клик по столбцу выбирает день">

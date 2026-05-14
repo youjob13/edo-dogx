@@ -14,7 +14,6 @@ import {
   ModalComponent,
   PageSectionComponent,
   ProgressMeterComponent,
-  StatusChipComponent,
   UiKitDropdownItem,
   UiKitSortState,
   UiKitTableColumn,
@@ -26,12 +25,14 @@ import {
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
   DashboardExportFormat,
+  KanbanTask,
   DashboardPreviewDocument,
   DocumentItem,
   WeeklyVolumePoint,
 } from '../../../../domain/dashboard/dashboard.models';
-import { filter, switchMap, take, throwError, timer } from 'rxjs';
+import { filter, forkJoin, map, of, switchMap, take, throwError, timer } from 'rxjs';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
+import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
 
 @Component({
   selector: 'edo-dogx-dashboard-home',
@@ -54,10 +55,12 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
 })
 export class DashboardHomeComponent {
   private readonly documentUseCases = inject(DocumentUseCases);
+  private readonly taskBoardUseCases = inject(TaskBoardUseCases);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly homeOrganizationId = 'org-main';
 
   protected readonly recentDocumentColumns: Array<UiKitTableColumn> = [
     { key: 'title', label: 'Документ', sortable: true },
@@ -144,11 +147,12 @@ export class DashboardHomeComponent {
     this.loadWeeklyVolume();
     this.loadStorage();
     this.loadActivity();
+    this.loadTaskMetrics();
   }
 
-  protected onMetricPressed(metric: 'DRAFT' | 'IN_REVIEW'): void {
+  protected onMetricPressed(metric: 'pending' | 'in_review'): void {
     this.message.set(
-      metric === 'DRAFT'
+      metric === 'pending'
         ? 'Быстрый фильтр: ожидают подтверждения.'
         : 'Быстрый фильтр: требуют внимания.',
     );
@@ -292,12 +296,46 @@ export class DashboardHomeComponent {
     return labels[category];
   }
 
-  private updateSummaryFromDocuments(items: Array<DocumentItem>): void {
-    // ToDo: this should be not document status but tasks status
-    // this.pendingApprovalCount.set(items.filter((documentItem) => documentItem.status === 'DRAFT').length);
-    // this.pendingApprovalDelta.set(2);
-    // this.actionItemsCount.set(items.filter((documentItem) => documentItem.status === 'IN_REVIEW').length);
-    // this.overdueNoticesCount.set(3);
+  private updateSummaryFromTasks(tasks: Array<KanbanTask>): void {
+    const now = new Date();
+    const dayAgo = now.getTime() - 24 * 60 * 60 * 1000;
+
+    this.pendingApprovalCount.set(tasks.filter((task) => task.status === 'pending').length);
+    this.actionItemsCount.set(tasks.filter((task) => task.status === 'in_review').length);
+    this.pendingApprovalDelta.set(
+      tasks.filter((task) => {
+        const createdAt = new Date(task.createdAt).getTime();
+        return Number.isFinite(createdAt) && createdAt >= dayAgo;
+      }).length,
+    );
+    this.overdueNoticesCount.set(
+      tasks.filter((task) => {
+        if (task.status === 'approved' || task.status === 'declined' || !task.dueDate) {
+          return false;
+        }
+
+        const dueTime = new Date(task.dueDate).getTime();
+        return Number.isFinite(dueTime) && dueTime < now.getTime();
+      }).length,
+    );
+  }
+
+  private loadTaskMetrics(): void {
+    this.taskBoardUseCases
+      .getTaskBoards(this.homeOrganizationId)
+      .pipe(
+        take(1),
+        switchMap((boards) => {
+          if (boards.length === 0) {
+            return of<Array<KanbanTask>>([]);
+          }
+
+          return forkJoin(boards.map((board) => this.taskBoardUseCases.getTaskBoard(board.id))).pipe(
+            map((details) => details.flatMap((item) => item.tasks)),
+          );
+        }),
+      )
+      .subscribe((tasks) => this.updateSummaryFromTasks(tasks));
   }
 
   private loadWeeklyVolume(): void {
@@ -327,7 +365,6 @@ export class DashboardHomeComponent {
       .pipe(take(1))
       .subscribe((result) => {
         this.recentDocuments.set(result.items);
-        this.updateSummaryFromDocuments(result.items);
       });
   }
 

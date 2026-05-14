@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { isPlatformBrowser } from '@angular/common';
+import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -35,6 +35,7 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
     DrawerComponent,
     ModalComponent,
     ButtonComponent,
+    DatePipe
   ],
   templateUrl: './dashboard-documents.component.html',
   styleUrl: './dashboard-documents.component.scss',

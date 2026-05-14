@@ -7,6 +7,51 @@ import {
 
 const documentClient = new DocumentServiceClient();
 
+function enrichOwnerNameWithSession<T extends Record<string, unknown>>(
+  payload: T,
+  auth: { userId?: string; fullName?: string } | undefined,
+): T {
+  const userId = auth?.userId;
+  const fullName = auth?.fullName?.trim();
+  if (!userId || !fullName) {
+    return payload;
+  }
+
+  const ownerUserId = payload['owner_user_id'];
+  const ownerUserName = payload['owner_user_name'];
+  if (typeof ownerUserId !== 'string' || ownerUserId !== userId) {
+    return payload;
+  }
+
+  if (typeof ownerUserName !== 'string' || ownerUserName.trim() === '' || ownerUserName === ownerUserId) {
+    return {
+      ...payload,
+      owner_user_name: fullName,
+    };
+  }
+
+  return payload;
+}
+
+function enrichSearchOwnerNames(
+  payload: Record<string, unknown>,
+  auth: { userId?: string; fullName?: string } | undefined,
+): Record<string, unknown> {
+  const items = payload['items'];
+  if (!Array.isArray(items)) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    items: items.map((item) =>
+      item && typeof item === 'object'
+        ? enrichOwnerNameWithSession(item as Record<string, unknown>, auth)
+        : item,
+    ),
+  };
+}
+
 function toContentDocumentJSON(contentDocument: Record<string, unknown> | undefined): string | undefined {
   if (contentDocument === undefined) {
     return undefined;
@@ -84,7 +129,11 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           category: category.trim(),
           content_document_json: contentDocumentJSON,
         });
-        return reply.code(201).send(response);
+        return reply.code(201).send(
+          response && typeof response === 'object'
+            ? enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
       } catch (error) {
         request.log.error({ error }, 'document-service create draft failed');
         return mapGrpcError(reply, error);
@@ -174,7 +223,11 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           document_id: documentId,
         });
-        return reply.send(response);
+        return reply.send(
+          response && typeof response === 'object'
+            ? enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
       } catch (error) {
         request.log.error({ error }, 'document-service get document failed');
         return mapGrpcError(reply, error);
@@ -226,7 +279,11 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           limit,
           offset,
         });
-        return reply.send(response);
+        return reply.send(
+          response && typeof response === 'object'
+            ? enrichSearchOwnerNames(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
       } catch (error) {
         request.log.error({ error }, 'document-service search failed');
         return mapGrpcError(reply, error);

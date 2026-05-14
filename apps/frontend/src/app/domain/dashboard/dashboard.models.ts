@@ -192,6 +192,7 @@ export interface KanbanTask {
   readonly groupId: string;
   readonly groupName: string;
   readonly dueDateLabel: string;
+  readonly dueDate?: string | Date;
   readonly comments: Array<KanbanTaskComment>;
 
   // New fields for orchestration

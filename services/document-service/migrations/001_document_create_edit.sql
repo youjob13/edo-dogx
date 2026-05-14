@@ -128,17 +128,6 @@ CREATE TABLE IF NOT EXISTS organization_members (
     PRIMARY KEY (organization_id, user_id)
 );
 
--- INSERT INTO organization_members (organization_id, user_id, full_name, department, email)
--- VALUES
---     ('org-main', 'approver-001', 'Мария Курапова', 'Менеджер', 'maria.kurapova@example.com'),
---     ('org-main', 'approver-002', 'Алексей Долматов', 'Бухгалтер', 'alexey.dolmatov@example.com'),
---     ('org-main', 'approver-003', 'Александр Ваш', 'Рекрутер', 'sashka.vash@example.com')
--- ON CONFLICT (organization_id, user_id)
--- DO UPDATE SET
---     full_name = EXCLUDED.full_name,
---     department = EXCLUDED.department,
---     email = EXCLUDED.email;
-
 CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_documents_owner_name ON documents(owner_user_name);
 CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
