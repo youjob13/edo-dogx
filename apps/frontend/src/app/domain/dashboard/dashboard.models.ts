@@ -22,6 +22,8 @@ export interface ActivityItem {
   readonly description: string;
   readonly timestampLabel: string;
   readonly linkedDocumentId?: string;
+  readonly linkedTaskId?: string;
+  readonly linkedBoardId?: string;
 }
 
 export interface StorageUsage {

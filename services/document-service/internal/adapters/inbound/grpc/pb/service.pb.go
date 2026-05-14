@@ -70,6 +70,134 @@ func (SearchEntityType) EnumDescriptor() ([]byte, []int) {
 	return file_service_proto_rawDescGZIP(), []int{0}
 }
 
+type ActivityEventEntityType int32
+
+const (
+	ActivityEventEntityType_ACTIVITY_EVENT_ENTITY_TYPE_UNSPECIFIED ActivityEventEntityType = 0
+	ActivityEventEntityType_ACTIVITY_EVENT_ENTITY_TYPE_DOCUMENT    ActivityEventEntityType = 1
+	ActivityEventEntityType_ACTIVITY_EVENT_ENTITY_TYPE_TASK        ActivityEventEntityType = 2
+)
+
+// Enum value maps for ActivityEventEntityType.
+var (
+	ActivityEventEntityType_name = map[int32]string{
+		0: "ACTIVITY_EVENT_ENTITY_TYPE_UNSPECIFIED",
+		1: "ACTIVITY_EVENT_ENTITY_TYPE_DOCUMENT",
+		2: "ACTIVITY_EVENT_ENTITY_TYPE_TASK",
+	}
+	ActivityEventEntityType_value = map[string]int32{
+		"ACTIVITY_EVENT_ENTITY_TYPE_UNSPECIFIED": 0,
+		"ACTIVITY_EVENT_ENTITY_TYPE_DOCUMENT":    1,
+		"ACTIVITY_EVENT_ENTITY_TYPE_TASK":        2,
+	}
+)
+
+func (x ActivityEventEntityType) Enum() *ActivityEventEntityType {
+	p := new(ActivityEventEntityType)
+	*p = x
+	return p
+}
+
+func (x ActivityEventEntityType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActivityEventEntityType) Descriptor() protoreflect.EnumDescriptor {
+	return file_service_proto_enumTypes[1].Descriptor()
+}
+
+func (ActivityEventEntityType) Type() protoreflect.EnumType {
+	return &file_service_proto_enumTypes[1]
+}
+
+func (x ActivityEventEntityType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActivityEventEntityType.Descriptor instead.
+func (ActivityEventEntityType) EnumDescriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{1}
+}
+
+type ActivityActionType int32
+
+const (
+	ActivityActionType_ACTIVITY_ACTION_TYPE_UNSPECIFIED             ActivityActionType = 0
+	ActivityActionType_ACTIVITY_ACTION_TYPE_DOCUMENT_CREATED        ActivityActionType = 1
+	ActivityActionType_ACTIVITY_ACTION_TYPE_DOCUMENT_UPDATED        ActivityActionType = 2
+	ActivityActionType_ACTIVITY_ACTION_TYPE_DOCUMENT_SUBMITTED      ActivityActionType = 3
+	ActivityActionType_ACTIVITY_ACTION_TYPE_DOCUMENT_APPROVED       ActivityActionType = 4
+	ActivityActionType_ACTIVITY_ACTION_TYPE_EXPORT_REQUESTED        ActivityActionType = 5
+	ActivityActionType_ACTIVITY_ACTION_TYPE_EXPORT_SUCCEEDED        ActivityActionType = 6
+	ActivityActionType_ACTIVITY_ACTION_TYPE_EXPORT_FAILED           ActivityActionType = 7
+	ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_CREATED            ActivityActionType = 8
+	ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_STATUS_UPDATED     ActivityActionType = 9
+	ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_ADDED   ActivityActionType = 10
+	ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_REMOVED ActivityActionType = 11
+	ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_MEMBER_ADDED       ActivityActionType = 12
+)
+
+// Enum value maps for ActivityActionType.
+var (
+	ActivityActionType_name = map[int32]string{
+		0:  "ACTIVITY_ACTION_TYPE_UNSPECIFIED",
+		1:  "ACTIVITY_ACTION_TYPE_DOCUMENT_CREATED",
+		2:  "ACTIVITY_ACTION_TYPE_DOCUMENT_UPDATED",
+		3:  "ACTIVITY_ACTION_TYPE_DOCUMENT_SUBMITTED",
+		4:  "ACTIVITY_ACTION_TYPE_DOCUMENT_APPROVED",
+		5:  "ACTIVITY_ACTION_TYPE_EXPORT_REQUESTED",
+		6:  "ACTIVITY_ACTION_TYPE_EXPORT_SUCCEEDED",
+		7:  "ACTIVITY_ACTION_TYPE_EXPORT_FAILED",
+		8:  "ACTIVITY_ACTION_TYPE_TASK_CREATED",
+		9:  "ACTIVITY_ACTION_TYPE_TASK_STATUS_UPDATED",
+		10: "ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_ADDED",
+		11: "ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_REMOVED",
+		12: "ACTIVITY_ACTION_TYPE_TASK_MEMBER_ADDED",
+	}
+	ActivityActionType_value = map[string]int32{
+		"ACTIVITY_ACTION_TYPE_UNSPECIFIED":             0,
+		"ACTIVITY_ACTION_TYPE_DOCUMENT_CREATED":        1,
+		"ACTIVITY_ACTION_TYPE_DOCUMENT_UPDATED":        2,
+		"ACTIVITY_ACTION_TYPE_DOCUMENT_SUBMITTED":      3,
+		"ACTIVITY_ACTION_TYPE_DOCUMENT_APPROVED":       4,
+		"ACTIVITY_ACTION_TYPE_EXPORT_REQUESTED":        5,
+		"ACTIVITY_ACTION_TYPE_EXPORT_SUCCEEDED":        6,
+		"ACTIVITY_ACTION_TYPE_EXPORT_FAILED":           7,
+		"ACTIVITY_ACTION_TYPE_TASK_CREATED":            8,
+		"ACTIVITY_ACTION_TYPE_TASK_STATUS_UPDATED":     9,
+		"ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_ADDED":   10,
+		"ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_REMOVED": 11,
+		"ACTIVITY_ACTION_TYPE_TASK_MEMBER_ADDED":       12,
+	}
+)
+
+func (x ActivityActionType) Enum() *ActivityActionType {
+	p := new(ActivityActionType)
+	*p = x
+	return p
+}
+
+func (x ActivityActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActivityActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_service_proto_enumTypes[2].Descriptor()
+}
+
+func (ActivityActionType) Type() protoreflect.EnumType {
+	return &file_service_proto_enumTypes[2]
+}
+
+func (x ActivityActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActivityActionType.Descriptor instead.
+func (ActivityActionType) EnumDescriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{2}
+}
+
 type PingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -5214,6 +5342,266 @@ func (x *SearchGlobalResponse) GetTotal() int32 {
 	return 0
 }
 
+type ActivityEvent struct {
+	state          protoimpl.MessageState  `protogen:"open.v1"`
+	Id             string                  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrganizationId string                  `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	ActorUserId    string                  `protobuf:"bytes,3,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	ActorUserName  string                  `protobuf:"bytes,4,opt,name=actor_user_name,json=actorUserName,proto3" json:"actor_user_name,omitempty"`
+	EntityType     ActivityEventEntityType `protobuf:"varint,5,opt,name=entity_type,json=entityType,proto3,enum=service.v1.ActivityEventEntityType" json:"entity_type,omitempty"`
+	EntityId       string                  `protobuf:"bytes,6,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	ActionType     ActivityActionType      `protobuf:"varint,7,opt,name=action_type,json=actionType,proto3,enum=service.v1.ActivityActionType" json:"action_type,omitempty"`
+	Summary        string                  `protobuf:"bytes,8,opt,name=summary,proto3" json:"summary,omitempty"`
+	OccurredAt     string                  `protobuf:"bytes,9,opt,name=occurred_at,json=occurredAt,proto3" json:"occurred_at,omitempty"`
+	DocumentId     string                  `protobuf:"bytes,10,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
+	TaskId         string                  `protobuf:"bytes,11,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	BoardId        string                  `protobuf:"bytes,12,opt,name=board_id,json=boardId,proto3" json:"board_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ActivityEvent) Reset() {
+	*x = ActivityEvent{}
+	mi := &file_service_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivityEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivityEvent) ProtoMessage() {}
+
+func (x *ActivityEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivityEvent.ProtoReflect.Descriptor instead.
+func (*ActivityEvent) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{76}
+}
+
+func (x *ActivityEvent) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetActorUserName() string {
+	if x != nil {
+		return x.ActorUserName
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetEntityType() ActivityEventEntityType {
+	if x != nil {
+		return x.EntityType
+	}
+	return ActivityEventEntityType_ACTIVITY_EVENT_ENTITY_TYPE_UNSPECIFIED
+}
+
+func (x *ActivityEvent) GetEntityId() string {
+	if x != nil {
+		return x.EntityId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetActionType() ActivityActionType {
+	if x != nil {
+		return x.ActionType
+	}
+	return ActivityActionType_ACTIVITY_ACTION_TYPE_UNSPECIFIED
+}
+
+func (x *ActivityEvent) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetOccurredAt() string {
+	if x != nil {
+		return x.OccurredAt
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetDocumentId() string {
+	if x != nil {
+		return x.DocumentId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *ActivityEvent) GetBoardId() string {
+	if x != nil {
+		return x.BoardId
+	}
+	return ""
+}
+
+type ListActivityEventsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId    string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	Limit          int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset         int32                  `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
+	Query          string                 `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListActivityEventsRequest) Reset() {
+	*x = ListActivityEventsRequest{}
+	mi := &file_service_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListActivityEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListActivityEventsRequest) ProtoMessage() {}
+
+func (x *ListActivityEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListActivityEventsRequest.ProtoReflect.Descriptor instead.
+func (*ListActivityEventsRequest) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *ListActivityEventsRequest) GetActorUserId() string {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ListActivityEventsRequest) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *ListActivityEventsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListActivityEventsRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *ListActivityEventsRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+type ListActivityEventsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*ActivityEvent       `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListActivityEventsResponse) Reset() {
+	*x = ListActivityEventsResponse{}
+	mi := &file_service_proto_msgTypes[78]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListActivityEventsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListActivityEventsResponse) ProtoMessage() {}
+
+func (x *ListActivityEventsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_service_proto_msgTypes[78]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListActivityEventsResponse.ProtoReflect.Descriptor instead.
+func (*ListActivityEventsResponse) Descriptor() ([]byte, []int) {
+	return file_service_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *ListActivityEventsResponse) GetItems() []*ActivityEvent {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListActivityEventsResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
 var File_service_proto protoreflect.FileDescriptor
 
 const file_service_proto_rawDesc = "" +
@@ -5656,14 +6044,59 @@ const file_service_proto_rawDesc = "" +
 	"\x10approver_user_id\x18\x0f \x01(\tR\x0eapproverUserId\"Y\n" +
 	"\x14SearchGlobalResponse\x12+\n" +
 	"\x05items\x18\x01 \x03(\v2\x15.service.v1.SearchHitR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xc8\x03\n" +
+	"\rActivityEvent\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\"\n" +
+	"\ractor_user_id\x18\x03 \x01(\tR\vactorUserId\x12&\n" +
+	"\x0factor_user_name\x18\x04 \x01(\tR\ractorUserName\x12D\n" +
+	"\ventity_type\x18\x05 \x01(\x0e2#.service.v1.ActivityEventEntityTypeR\n" +
+	"entityType\x12\x1b\n" +
+	"\tentity_id\x18\x06 \x01(\tR\bentityId\x12?\n" +
+	"\vaction_type\x18\a \x01(\x0e2\x1e.service.v1.ActivityActionTypeR\n" +
+	"actionType\x12\x18\n" +
+	"\asummary\x18\b \x01(\tR\asummary\x12\x1f\n" +
+	"\voccurred_at\x18\t \x01(\tR\n" +
+	"occurredAt\x12\x1f\n" +
+	"\vdocument_id\x18\n" +
+	" \x01(\tR\n" +
+	"documentId\x12\x17\n" +
+	"\atask_id\x18\v \x01(\tR\x06taskId\x12\x19\n" +
+	"\bboard_id\x18\f \x01(\tR\aboardId\"\xac\x01\n" +
+	"\x19ListActivityEventsRequest\x12\"\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x05R\x06offset\x12\x14\n" +
+	"\x05query\x18\x05 \x01(\tR\x05query\"c\n" +
+	"\x1aListActivityEventsResponse\x12/\n" +
+	"\x05items\x18\x01 \x03(\v2\x19.service.v1.ActivityEventR\x05items\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total*t\n" +
 	"\x10SearchEntityType\x12\"\n" +
 	"\x1eSEARCH_ENTITY_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bSEARCH_ENTITY_TYPE_DOCUMENT\x10\x01\x12\x1b\n" +
-	"\x17SEARCH_ENTITY_TYPE_TASK\x10\x022K\n" +
+	"\x17SEARCH_ENTITY_TYPE_TASK\x10\x02*\x93\x01\n" +
+	"\x17ActivityEventEntityType\x12*\n" +
+	"&ACTIVITY_EVENT_ENTITY_TYPE_UNSPECIFIED\x10\x00\x12'\n" +
+	"#ACTIVITY_EVENT_ENTITY_TYPE_DOCUMENT\x10\x01\x12#\n" +
+	"\x1fACTIVITY_EVENT_ENTITY_TYPE_TASK\x10\x02*\xca\x04\n" +
+	"\x12ActivityActionType\x12$\n" +
+	" ACTIVITY_ACTION_TYPE_UNSPECIFIED\x10\x00\x12)\n" +
+	"%ACTIVITY_ACTION_TYPE_DOCUMENT_CREATED\x10\x01\x12)\n" +
+	"%ACTIVITY_ACTION_TYPE_DOCUMENT_UPDATED\x10\x02\x12+\n" +
+	"'ACTIVITY_ACTION_TYPE_DOCUMENT_SUBMITTED\x10\x03\x12*\n" +
+	"&ACTIVITY_ACTION_TYPE_DOCUMENT_APPROVED\x10\x04\x12)\n" +
+	"%ACTIVITY_ACTION_TYPE_EXPORT_REQUESTED\x10\x05\x12)\n" +
+	"%ACTIVITY_ACTION_TYPE_EXPORT_SUCCEEDED\x10\x06\x12&\n" +
+	"\"ACTIVITY_ACTION_TYPE_EXPORT_FAILED\x10\a\x12%\n" +
+	"!ACTIVITY_ACTION_TYPE_TASK_CREATED\x10\b\x12,\n" +
+	"(ACTIVITY_ACTION_TYPE_TASK_STATUS_UPDATED\x10\t\x12.\n" +
+	"*ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_ADDED\x10\n" +
+	"\x120\n" +
+	",ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_REMOVED\x10\v\x12*\n" +
+	"&ACTIVITY_ACTION_TYPE_TASK_MEMBER_ADDED\x10\f2K\n" +
 	"\x0eExampleService\x129\n" +
-	"\x04Ping\x12\x17.service.v1.PingRequest\x1a\x18.service.v1.PingResponse2\xe0\n" +
-	"\n" +
+	"\x04Ping\x12\x17.service.v1.PingRequest\x1a\x18.service.v1.PingResponse2\xc5\v\n" +
 	"\x17DocumentWorkflowService\x12C\n" +
 	"\vCreateDraft\x12\x1e.service.v1.CreateDraftRequest\x1a\x14.service.v1.Document\x12C\n" +
 	"\vUpdateDraft\x12\x1e.service.v1.UpdateDraftRequest\x1a\x14.service.v1.Document\x12C\n" +
@@ -5679,7 +6112,8 @@ const file_service_proto_rawDesc = "" +
 	"\x0eSubmitWorkflow\x12!.service.v1.SubmitWorkflowRequest\x1a\x1c.service.v1.WorkflowInstance\x12S\n" +
 	"\x0fApproveWorkflow\x12\".service.v1.ApproveWorkflowRequest\x1a\x1c.service.v1.WorkflowInstance\x12a\n" +
 	"\x16RequestWorkflowChanges\x12).service.v1.RequestWorkflowChangesRequest\x1a\x1c.service.v1.WorkflowInstance\x12Z\n" +
-	"\x0fArchiveDocument\x12\".service.v1.ArchiveDocumentRequest\x1a#.service.v1.ArchiveDocumentResponse2\x8b\x04\n" +
+	"\x0fArchiveDocument\x12\".service.v1.ArchiveDocumentRequest\x1a#.service.v1.ArchiveDocumentResponse\x12c\n" +
+	"\x12ListActivityEvents\x12%.service.v1.ListActivityEventsRequest\x1a&.service.v1.ListActivityEventsResponse2\x8b\x04\n" +
 	"\x19SearchNotificationService\x12i\n" +
 	"\x14SyncSearchProjection\x12'.service.v1.SyncSearchProjectionRequest\x1a(.service.v1.SyncSearchProjectionResponse\x12Z\n" +
 	"\x0fSearchDocuments\x12\".service.v1.SearchDocumentsRequest\x1a#.service.v1.SearchDocumentsResponse\x12Q\n" +
@@ -5740,229 +6174,239 @@ func file_service_proto_rawDescGZIP() []byte {
 	return file_service_proto_rawDescData
 }
 
-var file_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 76)
+var file_service_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 79)
 var file_service_proto_goTypes = []any{
 	(SearchEntityType)(0),                     // 0: service.v1.SearchEntityType
-	(*PingRequest)(nil),                       // 1: service.v1.PingRequest
-	(*PingResponse)(nil),                      // 2: service.v1.PingResponse
-	(*Document)(nil),                          // 3: service.v1.Document
-	(*DocumentVersion)(nil),                   // 4: service.v1.DocumentVersion
-	(*EditorControlProfile)(nil),              // 5: service.v1.EditorControlProfile
-	(*ExportArtifact)(nil),                    // 6: service.v1.ExportArtifact
-	(*ExportRequest)(nil),                     // 7: service.v1.ExportRequest
-	(*WorkflowInstance)(nil),                  // 8: service.v1.WorkflowInstance
-	(*BoardMember)(nil),                       // 9: service.v1.BoardMember
-	(*TaskAttachment)(nil),                    // 10: service.v1.TaskAttachment
-	(*Task)(nil),                              // 11: service.v1.Task
-	(*CreateTaskRequest)(nil),                 // 12: service.v1.CreateTaskRequest
-	(*CreateTaskResponse)(nil),                // 13: service.v1.CreateTaskResponse
-	(*UpdateTaskStatusRequest)(nil),           // 14: service.v1.UpdateTaskStatusRequest
-	(*UpdateTaskStatusResponse)(nil),          // 15: service.v1.UpdateTaskStatusResponse
-	(*AddTaskAttachmentsRequest)(nil),         // 16: service.v1.AddTaskAttachmentsRequest
-	(*AddTaskAttachmentsResponse)(nil),        // 17: service.v1.AddTaskAttachmentsResponse
-	(*RemoveTaskAttachmentRequest)(nil),       // 18: service.v1.RemoveTaskAttachmentRequest
-	(*GetTaskBoardRequest)(nil),               // 19: service.v1.GetTaskBoardRequest
-	(*CreateTaskBoardRequest)(nil),            // 20: service.v1.CreateTaskBoardRequest
-	(*ListTaskBoardsRequest)(nil),             // 21: service.v1.ListTaskBoardsRequest
-	(*TaskBoard)(nil),                         // 22: service.v1.TaskBoard
-	(*TaskBoardSummary)(nil),                  // 23: service.v1.TaskBoardSummary
-	(*ListTaskBoardsResponse)(nil),            // 24: service.v1.ListTaskBoardsResponse
-	(*GetTaskBoardResponse)(nil),              // 25: service.v1.GetTaskBoardResponse
-	(*CreateTaskBoardResponse)(nil),           // 26: service.v1.CreateTaskBoardResponse
-	(*GetTaskDetailsRequest)(nil),             // 27: service.v1.GetTaskDetailsRequest
-	(*GetTaskDetailsResponse)(nil),            // 28: service.v1.GetTaskDetailsResponse
-	(*AvailableApproversRequest)(nil),         // 29: service.v1.AvailableApproversRequest
-	(*AvailableApproversResponse)(nil),        // 30: service.v1.AvailableApproversResponse
-	(*ListOrganizationMembersRequest)(nil),    // 31: service.v1.ListOrganizationMembersRequest
-	(*ListOrganizationMembersResponse)(nil),   // 32: service.v1.ListOrganizationMembersResponse
-	(*AddTaskBoardMemberRequest)(nil),         // 33: service.v1.AddTaskBoardMemberRequest
-	(*AddTaskBoardMemberResponse)(nil),        // 34: service.v1.AddTaskBoardMemberResponse
-	(*CreateOrganizationMemberRequest)(nil),   // 35: service.v1.CreateOrganizationMemberRequest
-	(*CreateOrganizationMemberResponse)(nil),  // 36: service.v1.CreateOrganizationMemberResponse
-	(*DocumentItem)(nil),                      // 37: service.v1.DocumentItem
-	(*AvailableDocumentsRequest)(nil),         // 38: service.v1.AvailableDocumentsRequest
-	(*AvailableDocumentsResponse)(nil),        // 39: service.v1.AvailableDocumentsResponse
-	(*SignatureRequest)(nil),                  // 40: service.v1.SignatureRequest
-	(*CreateDraftRequest)(nil),                // 41: service.v1.CreateDraftRequest
-	(*UpdateDraftRequest)(nil),                // 42: service.v1.UpdateDraftRequest
-	(*GetDocumentRequest)(nil),                // 43: service.v1.GetDocumentRequest
-	(*GetEditorControlProfileRequest)(nil),    // 44: service.v1.GetEditorControlProfileRequest
-	(*UpdateEditorControlProfileRequest)(nil), // 45: service.v1.UpdateEditorControlProfileRequest
-	(*CreateExportPayload)(nil),               // 46: service.v1.CreateExportPayload
-	(*GetExportRequestRequest)(nil),           // 47: service.v1.GetExportRequestRequest
-	(*DownloadExportArtifactRequest)(nil),     // 48: service.v1.DownloadExportArtifactRequest
-	(*DownloadExportArtifactResponse)(nil),    // 49: service.v1.DownloadExportArtifactResponse
-	(*SearchDocumentsRequest)(nil),            // 50: service.v1.SearchDocumentsRequest
-	(*SearchDocumentsResponse)(nil),           // 51: service.v1.SearchDocumentsResponse
-	(*ListDocumentVersionsRequest)(nil),       // 52: service.v1.ListDocumentVersionsRequest
-	(*ListDocumentVersionsResponse)(nil),      // 53: service.v1.ListDocumentVersionsResponse
-	(*GetDocumentVersionRequest)(nil),         // 54: service.v1.GetDocumentVersionRequest
-	(*ArchiveDocumentRequest)(nil),            // 55: service.v1.ArchiveDocumentRequest
-	(*ArchiveDocumentResponse)(nil),           // 56: service.v1.ArchiveDocumentResponse
-	(*StartWorkflowRequest)(nil),              // 57: service.v1.StartWorkflowRequest
-	(*ApproveStepRequest)(nil),                // 58: service.v1.ApproveStepRequest
-	(*RejectStepRequest)(nil),                 // 59: service.v1.RejectStepRequest
-	(*RequestChangesRequest)(nil),             // 60: service.v1.RequestChangesRequest
-	(*SubmitWorkflowRequest)(nil),             // 61: service.v1.SubmitWorkflowRequest
-	(*ApproveWorkflowRequest)(nil),            // 62: service.v1.ApproveWorkflowRequest
-	(*RequestWorkflowChangesRequest)(nil),     // 63: service.v1.RequestWorkflowChangesRequest
-	(*StartSignatureRequest)(nil),             // 64: service.v1.StartSignatureRequest
-	(*SignatureSigner)(nil),                   // 65: service.v1.SignatureSigner
-	(*RecordSignatureCallbackRequest)(nil),    // 66: service.v1.RecordSignatureCallbackRequest
-	(*GetSignatureStatusRequest)(nil),         // 67: service.v1.GetSignatureStatusRequest
-	(*EmitNotificationRequest)(nil),           // 68: service.v1.EmitNotificationRequest
-	(*EmitNotificationResponse)(nil),          // 69: service.v1.EmitNotificationResponse
-	(*RetryFailedNotificationsRequest)(nil),   // 70: service.v1.RetryFailedNotificationsRequest
-	(*RetryFailedNotificationsResponse)(nil),  // 71: service.v1.RetryFailedNotificationsResponse
-	(*SyncSearchProjectionRequest)(nil),       // 72: service.v1.SyncSearchProjectionRequest
-	(*SyncSearchProjectionResponse)(nil),      // 73: service.v1.SyncSearchProjectionResponse
-	(*SearchGlobalRequest)(nil),               // 74: service.v1.SearchGlobalRequest
-	(*SearchHit)(nil),                         // 75: service.v1.SearchHit
-	(*SearchGlobalResponse)(nil),              // 76: service.v1.SearchGlobalResponse
+	(ActivityEventEntityType)(0),              // 1: service.v1.ActivityEventEntityType
+	(ActivityActionType)(0),                   // 2: service.v1.ActivityActionType
+	(*PingRequest)(nil),                       // 3: service.v1.PingRequest
+	(*PingResponse)(nil),                      // 4: service.v1.PingResponse
+	(*Document)(nil),                          // 5: service.v1.Document
+	(*DocumentVersion)(nil),                   // 6: service.v1.DocumentVersion
+	(*EditorControlProfile)(nil),              // 7: service.v1.EditorControlProfile
+	(*ExportArtifact)(nil),                    // 8: service.v1.ExportArtifact
+	(*ExportRequest)(nil),                     // 9: service.v1.ExportRequest
+	(*WorkflowInstance)(nil),                  // 10: service.v1.WorkflowInstance
+	(*BoardMember)(nil),                       // 11: service.v1.BoardMember
+	(*TaskAttachment)(nil),                    // 12: service.v1.TaskAttachment
+	(*Task)(nil),                              // 13: service.v1.Task
+	(*CreateTaskRequest)(nil),                 // 14: service.v1.CreateTaskRequest
+	(*CreateTaskResponse)(nil),                // 15: service.v1.CreateTaskResponse
+	(*UpdateTaskStatusRequest)(nil),           // 16: service.v1.UpdateTaskStatusRequest
+	(*UpdateTaskStatusResponse)(nil),          // 17: service.v1.UpdateTaskStatusResponse
+	(*AddTaskAttachmentsRequest)(nil),         // 18: service.v1.AddTaskAttachmentsRequest
+	(*AddTaskAttachmentsResponse)(nil),        // 19: service.v1.AddTaskAttachmentsResponse
+	(*RemoveTaskAttachmentRequest)(nil),       // 20: service.v1.RemoveTaskAttachmentRequest
+	(*GetTaskBoardRequest)(nil),               // 21: service.v1.GetTaskBoardRequest
+	(*CreateTaskBoardRequest)(nil),            // 22: service.v1.CreateTaskBoardRequest
+	(*ListTaskBoardsRequest)(nil),             // 23: service.v1.ListTaskBoardsRequest
+	(*TaskBoard)(nil),                         // 24: service.v1.TaskBoard
+	(*TaskBoardSummary)(nil),                  // 25: service.v1.TaskBoardSummary
+	(*ListTaskBoardsResponse)(nil),            // 26: service.v1.ListTaskBoardsResponse
+	(*GetTaskBoardResponse)(nil),              // 27: service.v1.GetTaskBoardResponse
+	(*CreateTaskBoardResponse)(nil),           // 28: service.v1.CreateTaskBoardResponse
+	(*GetTaskDetailsRequest)(nil),             // 29: service.v1.GetTaskDetailsRequest
+	(*GetTaskDetailsResponse)(nil),            // 30: service.v1.GetTaskDetailsResponse
+	(*AvailableApproversRequest)(nil),         // 31: service.v1.AvailableApproversRequest
+	(*AvailableApproversResponse)(nil),        // 32: service.v1.AvailableApproversResponse
+	(*ListOrganizationMembersRequest)(nil),    // 33: service.v1.ListOrganizationMembersRequest
+	(*ListOrganizationMembersResponse)(nil),   // 34: service.v1.ListOrganizationMembersResponse
+	(*AddTaskBoardMemberRequest)(nil),         // 35: service.v1.AddTaskBoardMemberRequest
+	(*AddTaskBoardMemberResponse)(nil),        // 36: service.v1.AddTaskBoardMemberResponse
+	(*CreateOrganizationMemberRequest)(nil),   // 37: service.v1.CreateOrganizationMemberRequest
+	(*CreateOrganizationMemberResponse)(nil),  // 38: service.v1.CreateOrganizationMemberResponse
+	(*DocumentItem)(nil),                      // 39: service.v1.DocumentItem
+	(*AvailableDocumentsRequest)(nil),         // 40: service.v1.AvailableDocumentsRequest
+	(*AvailableDocumentsResponse)(nil),        // 41: service.v1.AvailableDocumentsResponse
+	(*SignatureRequest)(nil),                  // 42: service.v1.SignatureRequest
+	(*CreateDraftRequest)(nil),                // 43: service.v1.CreateDraftRequest
+	(*UpdateDraftRequest)(nil),                // 44: service.v1.UpdateDraftRequest
+	(*GetDocumentRequest)(nil),                // 45: service.v1.GetDocumentRequest
+	(*GetEditorControlProfileRequest)(nil),    // 46: service.v1.GetEditorControlProfileRequest
+	(*UpdateEditorControlProfileRequest)(nil), // 47: service.v1.UpdateEditorControlProfileRequest
+	(*CreateExportPayload)(nil),               // 48: service.v1.CreateExportPayload
+	(*GetExportRequestRequest)(nil),           // 49: service.v1.GetExportRequestRequest
+	(*DownloadExportArtifactRequest)(nil),     // 50: service.v1.DownloadExportArtifactRequest
+	(*DownloadExportArtifactResponse)(nil),    // 51: service.v1.DownloadExportArtifactResponse
+	(*SearchDocumentsRequest)(nil),            // 52: service.v1.SearchDocumentsRequest
+	(*SearchDocumentsResponse)(nil),           // 53: service.v1.SearchDocumentsResponse
+	(*ListDocumentVersionsRequest)(nil),       // 54: service.v1.ListDocumentVersionsRequest
+	(*ListDocumentVersionsResponse)(nil),      // 55: service.v1.ListDocumentVersionsResponse
+	(*GetDocumentVersionRequest)(nil),         // 56: service.v1.GetDocumentVersionRequest
+	(*ArchiveDocumentRequest)(nil),            // 57: service.v1.ArchiveDocumentRequest
+	(*ArchiveDocumentResponse)(nil),           // 58: service.v1.ArchiveDocumentResponse
+	(*StartWorkflowRequest)(nil),              // 59: service.v1.StartWorkflowRequest
+	(*ApproveStepRequest)(nil),                // 60: service.v1.ApproveStepRequest
+	(*RejectStepRequest)(nil),                 // 61: service.v1.RejectStepRequest
+	(*RequestChangesRequest)(nil),             // 62: service.v1.RequestChangesRequest
+	(*SubmitWorkflowRequest)(nil),             // 63: service.v1.SubmitWorkflowRequest
+	(*ApproveWorkflowRequest)(nil),            // 64: service.v1.ApproveWorkflowRequest
+	(*RequestWorkflowChangesRequest)(nil),     // 65: service.v1.RequestWorkflowChangesRequest
+	(*StartSignatureRequest)(nil),             // 66: service.v1.StartSignatureRequest
+	(*SignatureSigner)(nil),                   // 67: service.v1.SignatureSigner
+	(*RecordSignatureCallbackRequest)(nil),    // 68: service.v1.RecordSignatureCallbackRequest
+	(*GetSignatureStatusRequest)(nil),         // 69: service.v1.GetSignatureStatusRequest
+	(*EmitNotificationRequest)(nil),           // 70: service.v1.EmitNotificationRequest
+	(*EmitNotificationResponse)(nil),          // 71: service.v1.EmitNotificationResponse
+	(*RetryFailedNotificationsRequest)(nil),   // 72: service.v1.RetryFailedNotificationsRequest
+	(*RetryFailedNotificationsResponse)(nil),  // 73: service.v1.RetryFailedNotificationsResponse
+	(*SyncSearchProjectionRequest)(nil),       // 74: service.v1.SyncSearchProjectionRequest
+	(*SyncSearchProjectionResponse)(nil),      // 75: service.v1.SyncSearchProjectionResponse
+	(*SearchGlobalRequest)(nil),               // 76: service.v1.SearchGlobalRequest
+	(*SearchHit)(nil),                         // 77: service.v1.SearchHit
+	(*SearchGlobalResponse)(nil),              // 78: service.v1.SearchGlobalResponse
+	(*ActivityEvent)(nil),                     // 79: service.v1.ActivityEvent
+	(*ListActivityEventsRequest)(nil),         // 80: service.v1.ListActivityEventsRequest
+	(*ListActivityEventsResponse)(nil),        // 81: service.v1.ListActivityEventsResponse
 }
 var file_service_proto_depIdxs = []int32{
-	6,  // 0: service.v1.ExportRequest.artifact:type_name -> service.v1.ExportArtifact
-	10, // 1: service.v1.Task.attachments:type_name -> service.v1.TaskAttachment
-	11, // 2: service.v1.CreateTaskResponse.task:type_name -> service.v1.Task
-	11, // 3: service.v1.UpdateTaskStatusResponse.task:type_name -> service.v1.Task
-	10, // 4: service.v1.AddTaskAttachmentsRequest.attachments:type_name -> service.v1.TaskAttachment
-	10, // 5: service.v1.AddTaskAttachmentsResponse.attachments:type_name -> service.v1.TaskAttachment
-	9,  // 6: service.v1.TaskBoard.members:type_name -> service.v1.BoardMember
-	11, // 7: service.v1.TaskBoard.tasks:type_name -> service.v1.Task
-	10, // 8: service.v1.TaskBoard.available_documents:type_name -> service.v1.TaskAttachment
-	9,  // 9: service.v1.TaskBoard.available_approvers:type_name -> service.v1.BoardMember
-	23, // 10: service.v1.ListTaskBoardsResponse.boards:type_name -> service.v1.TaskBoardSummary
-	22, // 11: service.v1.GetTaskBoardResponse.board:type_name -> service.v1.TaskBoard
-	23, // 12: service.v1.CreateTaskBoardResponse.board:type_name -> service.v1.TaskBoardSummary
-	11, // 13: service.v1.GetTaskDetailsResponse.task:type_name -> service.v1.Task
-	9,  // 14: service.v1.GetTaskDetailsResponse.members:type_name -> service.v1.BoardMember
-	9,  // 15: service.v1.AvailableApproversResponse.items:type_name -> service.v1.BoardMember
-	9,  // 16: service.v1.ListOrganizationMembersResponse.items:type_name -> service.v1.BoardMember
-	9,  // 17: service.v1.AddTaskBoardMemberResponse.member:type_name -> service.v1.BoardMember
-	9,  // 18: service.v1.CreateOrganizationMemberResponse.member:type_name -> service.v1.BoardMember
-	37, // 19: service.v1.AvailableDocumentsResponse.items:type_name -> service.v1.DocumentItem
-	3,  // 20: service.v1.SearchDocumentsResponse.items:type_name -> service.v1.Document
-	4,  // 21: service.v1.ListDocumentVersionsResponse.items:type_name -> service.v1.DocumentVersion
-	65, // 22: service.v1.StartSignatureRequest.signers:type_name -> service.v1.SignatureSigner
+	8,  // 0: service.v1.ExportRequest.artifact:type_name -> service.v1.ExportArtifact
+	12, // 1: service.v1.Task.attachments:type_name -> service.v1.TaskAttachment
+	13, // 2: service.v1.CreateTaskResponse.task:type_name -> service.v1.Task
+	13, // 3: service.v1.UpdateTaskStatusResponse.task:type_name -> service.v1.Task
+	12, // 4: service.v1.AddTaskAttachmentsRequest.attachments:type_name -> service.v1.TaskAttachment
+	12, // 5: service.v1.AddTaskAttachmentsResponse.attachments:type_name -> service.v1.TaskAttachment
+	11, // 6: service.v1.TaskBoard.members:type_name -> service.v1.BoardMember
+	13, // 7: service.v1.TaskBoard.tasks:type_name -> service.v1.Task
+	12, // 8: service.v1.TaskBoard.available_documents:type_name -> service.v1.TaskAttachment
+	11, // 9: service.v1.TaskBoard.available_approvers:type_name -> service.v1.BoardMember
+	25, // 10: service.v1.ListTaskBoardsResponse.boards:type_name -> service.v1.TaskBoardSummary
+	24, // 11: service.v1.GetTaskBoardResponse.board:type_name -> service.v1.TaskBoard
+	25, // 12: service.v1.CreateTaskBoardResponse.board:type_name -> service.v1.TaskBoardSummary
+	13, // 13: service.v1.GetTaskDetailsResponse.task:type_name -> service.v1.Task
+	11, // 14: service.v1.GetTaskDetailsResponse.members:type_name -> service.v1.BoardMember
+	11, // 15: service.v1.AvailableApproversResponse.items:type_name -> service.v1.BoardMember
+	11, // 16: service.v1.ListOrganizationMembersResponse.items:type_name -> service.v1.BoardMember
+	11, // 17: service.v1.AddTaskBoardMemberResponse.member:type_name -> service.v1.BoardMember
+	11, // 18: service.v1.CreateOrganizationMemberResponse.member:type_name -> service.v1.BoardMember
+	39, // 19: service.v1.AvailableDocumentsResponse.items:type_name -> service.v1.DocumentItem
+	5,  // 20: service.v1.SearchDocumentsResponse.items:type_name -> service.v1.Document
+	6,  // 21: service.v1.ListDocumentVersionsResponse.items:type_name -> service.v1.DocumentVersion
+	67, // 22: service.v1.StartSignatureRequest.signers:type_name -> service.v1.SignatureSigner
 	0,  // 23: service.v1.SearchGlobalRequest.entities:type_name -> service.v1.SearchEntityType
 	0,  // 24: service.v1.SearchHit.entity_type:type_name -> service.v1.SearchEntityType
-	75, // 25: service.v1.SearchGlobalResponse.items:type_name -> service.v1.SearchHit
-	1,  // 26: service.v1.ExampleService.Ping:input_type -> service.v1.PingRequest
-	41, // 27: service.v1.DocumentWorkflowService.CreateDraft:input_type -> service.v1.CreateDraftRequest
-	42, // 28: service.v1.DocumentWorkflowService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
-	43, // 29: service.v1.DocumentWorkflowService.GetDocument:input_type -> service.v1.GetDocumentRequest
-	44, // 30: service.v1.DocumentWorkflowService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
-	45, // 31: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
-	46, // 32: service.v1.DocumentWorkflowService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
-	47, // 33: service.v1.DocumentWorkflowService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
-	48, // 34: service.v1.DocumentWorkflowService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
-	50, // 35: service.v1.DocumentWorkflowService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
-	52, // 36: service.v1.DocumentWorkflowService.ListDocumentVersions:input_type -> service.v1.ListDocumentVersionsRequest
-	54, // 37: service.v1.DocumentWorkflowService.GetDocumentVersion:input_type -> service.v1.GetDocumentVersionRequest
-	61, // 38: service.v1.DocumentWorkflowService.SubmitWorkflow:input_type -> service.v1.SubmitWorkflowRequest
-	62, // 39: service.v1.DocumentWorkflowService.ApproveWorkflow:input_type -> service.v1.ApproveWorkflowRequest
-	63, // 40: service.v1.DocumentWorkflowService.RequestWorkflowChanges:input_type -> service.v1.RequestWorkflowChangesRequest
-	55, // 41: service.v1.DocumentWorkflowService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
-	72, // 42: service.v1.SearchNotificationService.SyncSearchProjection:input_type -> service.v1.SyncSearchProjectionRequest
-	50, // 43: service.v1.SearchNotificationService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
-	74, // 44: service.v1.SearchNotificationService.SearchGlobal:input_type -> service.v1.SearchGlobalRequest
-	68, // 45: service.v1.SearchNotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
-	70, // 46: service.v1.SearchNotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
-	41, // 47: service.v1.DocumentService.CreateDraft:input_type -> service.v1.CreateDraftRequest
-	42, // 48: service.v1.DocumentService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
-	43, // 49: service.v1.DocumentService.GetDocument:input_type -> service.v1.GetDocumentRequest
-	44, // 50: service.v1.DocumentService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
-	45, // 51: service.v1.DocumentService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
-	46, // 52: service.v1.DocumentService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
-	47, // 53: service.v1.DocumentService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
-	48, // 54: service.v1.DocumentService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
-	50, // 55: service.v1.DocumentService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
-	52, // 56: service.v1.DocumentService.ListDocumentVersions:input_type -> service.v1.ListDocumentVersionsRequest
-	54, // 57: service.v1.DocumentService.GetDocumentVersion:input_type -> service.v1.GetDocumentVersionRequest
-	55, // 58: service.v1.DocumentService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
-	57, // 59: service.v1.WorkflowService.StartWorkflow:input_type -> service.v1.StartWorkflowRequest
-	58, // 60: service.v1.WorkflowService.ApproveStep:input_type -> service.v1.ApproveStepRequest
-	59, // 61: service.v1.WorkflowService.RejectStep:input_type -> service.v1.RejectStepRequest
-	60, // 62: service.v1.WorkflowService.RequestChanges:input_type -> service.v1.RequestChangesRequest
-	64, // 63: service.v1.SignatureService.StartSignature:input_type -> service.v1.StartSignatureRequest
-	66, // 64: service.v1.SignatureService.RecordSignatureCallback:input_type -> service.v1.RecordSignatureCallbackRequest
-	67, // 65: service.v1.SignatureService.GetSignatureStatus:input_type -> service.v1.GetSignatureStatusRequest
-	68, // 66: service.v1.NotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
-	70, // 67: service.v1.NotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
-	20, // 68: service.v1.TaskOrchestrationService.CreateTaskBoard:input_type -> service.v1.CreateTaskBoardRequest
-	12, // 69: service.v1.TaskOrchestrationService.CreateTask:input_type -> service.v1.CreateTaskRequest
-	14, // 70: service.v1.TaskOrchestrationService.UpdateTaskStatus:input_type -> service.v1.UpdateTaskStatusRequest
-	16, // 71: service.v1.TaskOrchestrationService.AddTaskAttachments:input_type -> service.v1.AddTaskAttachmentsRequest
-	18, // 72: service.v1.TaskOrchestrationService.RemoveTaskAttachment:input_type -> service.v1.RemoveTaskAttachmentRequest
-	21, // 73: service.v1.TaskOrchestrationService.ListTaskBoards:input_type -> service.v1.ListTaskBoardsRequest
-	19, // 74: service.v1.TaskOrchestrationService.GetTaskBoard:input_type -> service.v1.GetTaskBoardRequest
-	27, // 75: service.v1.TaskOrchestrationService.GetTaskDetails:input_type -> service.v1.GetTaskDetailsRequest
-	29, // 76: service.v1.TaskOrchestrationService.GetAvailableApprovers:input_type -> service.v1.AvailableApproversRequest
-	38, // 77: service.v1.TaskOrchestrationService.GetAvailableDocuments:input_type -> service.v1.AvailableDocumentsRequest
-	31, // 78: service.v1.TaskOrchestrationService.ListOrganizationMembers:input_type -> service.v1.ListOrganizationMembersRequest
-	33, // 79: service.v1.TaskOrchestrationService.AddTaskBoardMember:input_type -> service.v1.AddTaskBoardMemberRequest
-	35, // 80: service.v1.TaskOrchestrationService.CreateOrganizationMember:input_type -> service.v1.CreateOrganizationMemberRequest
-	2,  // 81: service.v1.ExampleService.Ping:output_type -> service.v1.PingResponse
-	3,  // 82: service.v1.DocumentWorkflowService.CreateDraft:output_type -> service.v1.Document
-	3,  // 83: service.v1.DocumentWorkflowService.UpdateDraft:output_type -> service.v1.Document
-	3,  // 84: service.v1.DocumentWorkflowService.GetDocument:output_type -> service.v1.Document
-	5,  // 85: service.v1.DocumentWorkflowService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	5,  // 86: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	7,  // 87: service.v1.DocumentWorkflowService.CreateExportRequest:output_type -> service.v1.ExportRequest
-	7,  // 88: service.v1.DocumentWorkflowService.GetExportRequest:output_type -> service.v1.ExportRequest
-	49, // 89: service.v1.DocumentWorkflowService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
-	51, // 90: service.v1.DocumentWorkflowService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
-	53, // 91: service.v1.DocumentWorkflowService.ListDocumentVersions:output_type -> service.v1.ListDocumentVersionsResponse
-	4,  // 92: service.v1.DocumentWorkflowService.GetDocumentVersion:output_type -> service.v1.DocumentVersion
-	8,  // 93: service.v1.DocumentWorkflowService.SubmitWorkflow:output_type -> service.v1.WorkflowInstance
-	8,  // 94: service.v1.DocumentWorkflowService.ApproveWorkflow:output_type -> service.v1.WorkflowInstance
-	8,  // 95: service.v1.DocumentWorkflowService.RequestWorkflowChanges:output_type -> service.v1.WorkflowInstance
-	56, // 96: service.v1.DocumentWorkflowService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
-	73, // 97: service.v1.SearchNotificationService.SyncSearchProjection:output_type -> service.v1.SyncSearchProjectionResponse
-	51, // 98: service.v1.SearchNotificationService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
-	76, // 99: service.v1.SearchNotificationService.SearchGlobal:output_type -> service.v1.SearchGlobalResponse
-	69, // 100: service.v1.SearchNotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
-	71, // 101: service.v1.SearchNotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
-	3,  // 102: service.v1.DocumentService.CreateDraft:output_type -> service.v1.Document
-	3,  // 103: service.v1.DocumentService.UpdateDraft:output_type -> service.v1.Document
-	3,  // 104: service.v1.DocumentService.GetDocument:output_type -> service.v1.Document
-	5,  // 105: service.v1.DocumentService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	5,  // 106: service.v1.DocumentService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
-	7,  // 107: service.v1.DocumentService.CreateExportRequest:output_type -> service.v1.ExportRequest
-	7,  // 108: service.v1.DocumentService.GetExportRequest:output_type -> service.v1.ExportRequest
-	49, // 109: service.v1.DocumentService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
-	51, // 110: service.v1.DocumentService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
-	53, // 111: service.v1.DocumentService.ListDocumentVersions:output_type -> service.v1.ListDocumentVersionsResponse
-	4,  // 112: service.v1.DocumentService.GetDocumentVersion:output_type -> service.v1.DocumentVersion
-	56, // 113: service.v1.DocumentService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
-	8,  // 114: service.v1.WorkflowService.StartWorkflow:output_type -> service.v1.WorkflowInstance
-	8,  // 115: service.v1.WorkflowService.ApproveStep:output_type -> service.v1.WorkflowInstance
-	8,  // 116: service.v1.WorkflowService.RejectStep:output_type -> service.v1.WorkflowInstance
-	8,  // 117: service.v1.WorkflowService.RequestChanges:output_type -> service.v1.WorkflowInstance
-	40, // 118: service.v1.SignatureService.StartSignature:output_type -> service.v1.SignatureRequest
-	40, // 119: service.v1.SignatureService.RecordSignatureCallback:output_type -> service.v1.SignatureRequest
-	40, // 120: service.v1.SignatureService.GetSignatureStatus:output_type -> service.v1.SignatureRequest
-	69, // 121: service.v1.NotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
-	71, // 122: service.v1.NotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
-	26, // 123: service.v1.TaskOrchestrationService.CreateTaskBoard:output_type -> service.v1.CreateTaskBoardResponse
-	13, // 124: service.v1.TaskOrchestrationService.CreateTask:output_type -> service.v1.CreateTaskResponse
-	15, // 125: service.v1.TaskOrchestrationService.UpdateTaskStatus:output_type -> service.v1.UpdateTaskStatusResponse
-	17, // 126: service.v1.TaskOrchestrationService.AddTaskAttachments:output_type -> service.v1.AddTaskAttachmentsResponse
-	11, // 127: service.v1.TaskOrchestrationService.RemoveTaskAttachment:output_type -> service.v1.Task
-	24, // 128: service.v1.TaskOrchestrationService.ListTaskBoards:output_type -> service.v1.ListTaskBoardsResponse
-	25, // 129: service.v1.TaskOrchestrationService.GetTaskBoard:output_type -> service.v1.GetTaskBoardResponse
-	28, // 130: service.v1.TaskOrchestrationService.GetTaskDetails:output_type -> service.v1.GetTaskDetailsResponse
-	30, // 131: service.v1.TaskOrchestrationService.GetAvailableApprovers:output_type -> service.v1.AvailableApproversResponse
-	39, // 132: service.v1.TaskOrchestrationService.GetAvailableDocuments:output_type -> service.v1.AvailableDocumentsResponse
-	32, // 133: service.v1.TaskOrchestrationService.ListOrganizationMembers:output_type -> service.v1.ListOrganizationMembersResponse
-	34, // 134: service.v1.TaskOrchestrationService.AddTaskBoardMember:output_type -> service.v1.AddTaskBoardMemberResponse
-	36, // 135: service.v1.TaskOrchestrationService.CreateOrganizationMember:output_type -> service.v1.CreateOrganizationMemberResponse
-	81, // [81:136] is the sub-list for method output_type
-	26, // [26:81] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	77, // 25: service.v1.SearchGlobalResponse.items:type_name -> service.v1.SearchHit
+	1,  // 26: service.v1.ActivityEvent.entity_type:type_name -> service.v1.ActivityEventEntityType
+	2,  // 27: service.v1.ActivityEvent.action_type:type_name -> service.v1.ActivityActionType
+	79, // 28: service.v1.ListActivityEventsResponse.items:type_name -> service.v1.ActivityEvent
+	3,  // 29: service.v1.ExampleService.Ping:input_type -> service.v1.PingRequest
+	43, // 30: service.v1.DocumentWorkflowService.CreateDraft:input_type -> service.v1.CreateDraftRequest
+	44, // 31: service.v1.DocumentWorkflowService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
+	45, // 32: service.v1.DocumentWorkflowService.GetDocument:input_type -> service.v1.GetDocumentRequest
+	46, // 33: service.v1.DocumentWorkflowService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
+	47, // 34: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
+	48, // 35: service.v1.DocumentWorkflowService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
+	49, // 36: service.v1.DocumentWorkflowService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
+	50, // 37: service.v1.DocumentWorkflowService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
+	52, // 38: service.v1.DocumentWorkflowService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
+	54, // 39: service.v1.DocumentWorkflowService.ListDocumentVersions:input_type -> service.v1.ListDocumentVersionsRequest
+	56, // 40: service.v1.DocumentWorkflowService.GetDocumentVersion:input_type -> service.v1.GetDocumentVersionRequest
+	63, // 41: service.v1.DocumentWorkflowService.SubmitWorkflow:input_type -> service.v1.SubmitWorkflowRequest
+	64, // 42: service.v1.DocumentWorkflowService.ApproveWorkflow:input_type -> service.v1.ApproveWorkflowRequest
+	65, // 43: service.v1.DocumentWorkflowService.RequestWorkflowChanges:input_type -> service.v1.RequestWorkflowChangesRequest
+	57, // 44: service.v1.DocumentWorkflowService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
+	80, // 45: service.v1.DocumentWorkflowService.ListActivityEvents:input_type -> service.v1.ListActivityEventsRequest
+	74, // 46: service.v1.SearchNotificationService.SyncSearchProjection:input_type -> service.v1.SyncSearchProjectionRequest
+	52, // 47: service.v1.SearchNotificationService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
+	76, // 48: service.v1.SearchNotificationService.SearchGlobal:input_type -> service.v1.SearchGlobalRequest
+	70, // 49: service.v1.SearchNotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
+	72, // 50: service.v1.SearchNotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
+	43, // 51: service.v1.DocumentService.CreateDraft:input_type -> service.v1.CreateDraftRequest
+	44, // 52: service.v1.DocumentService.UpdateDraft:input_type -> service.v1.UpdateDraftRequest
+	45, // 53: service.v1.DocumentService.GetDocument:input_type -> service.v1.GetDocumentRequest
+	46, // 54: service.v1.DocumentService.GetEditorControlProfile:input_type -> service.v1.GetEditorControlProfileRequest
+	47, // 55: service.v1.DocumentService.UpdateEditorControlProfile:input_type -> service.v1.UpdateEditorControlProfileRequest
+	48, // 56: service.v1.DocumentService.CreateExportRequest:input_type -> service.v1.CreateExportPayload
+	49, // 57: service.v1.DocumentService.GetExportRequest:input_type -> service.v1.GetExportRequestRequest
+	50, // 58: service.v1.DocumentService.DownloadExportArtifact:input_type -> service.v1.DownloadExportArtifactRequest
+	52, // 59: service.v1.DocumentService.SearchDocuments:input_type -> service.v1.SearchDocumentsRequest
+	54, // 60: service.v1.DocumentService.ListDocumentVersions:input_type -> service.v1.ListDocumentVersionsRequest
+	56, // 61: service.v1.DocumentService.GetDocumentVersion:input_type -> service.v1.GetDocumentVersionRequest
+	57, // 62: service.v1.DocumentService.ArchiveDocument:input_type -> service.v1.ArchiveDocumentRequest
+	59, // 63: service.v1.WorkflowService.StartWorkflow:input_type -> service.v1.StartWorkflowRequest
+	60, // 64: service.v1.WorkflowService.ApproveStep:input_type -> service.v1.ApproveStepRequest
+	61, // 65: service.v1.WorkflowService.RejectStep:input_type -> service.v1.RejectStepRequest
+	62, // 66: service.v1.WorkflowService.RequestChanges:input_type -> service.v1.RequestChangesRequest
+	66, // 67: service.v1.SignatureService.StartSignature:input_type -> service.v1.StartSignatureRequest
+	68, // 68: service.v1.SignatureService.RecordSignatureCallback:input_type -> service.v1.RecordSignatureCallbackRequest
+	69, // 69: service.v1.SignatureService.GetSignatureStatus:input_type -> service.v1.GetSignatureStatusRequest
+	70, // 70: service.v1.NotificationService.EmitNotification:input_type -> service.v1.EmitNotificationRequest
+	72, // 71: service.v1.NotificationService.RetryFailedNotifications:input_type -> service.v1.RetryFailedNotificationsRequest
+	22, // 72: service.v1.TaskOrchestrationService.CreateTaskBoard:input_type -> service.v1.CreateTaskBoardRequest
+	14, // 73: service.v1.TaskOrchestrationService.CreateTask:input_type -> service.v1.CreateTaskRequest
+	16, // 74: service.v1.TaskOrchestrationService.UpdateTaskStatus:input_type -> service.v1.UpdateTaskStatusRequest
+	18, // 75: service.v1.TaskOrchestrationService.AddTaskAttachments:input_type -> service.v1.AddTaskAttachmentsRequest
+	20, // 76: service.v1.TaskOrchestrationService.RemoveTaskAttachment:input_type -> service.v1.RemoveTaskAttachmentRequest
+	23, // 77: service.v1.TaskOrchestrationService.ListTaskBoards:input_type -> service.v1.ListTaskBoardsRequest
+	21, // 78: service.v1.TaskOrchestrationService.GetTaskBoard:input_type -> service.v1.GetTaskBoardRequest
+	29, // 79: service.v1.TaskOrchestrationService.GetTaskDetails:input_type -> service.v1.GetTaskDetailsRequest
+	31, // 80: service.v1.TaskOrchestrationService.GetAvailableApprovers:input_type -> service.v1.AvailableApproversRequest
+	40, // 81: service.v1.TaskOrchestrationService.GetAvailableDocuments:input_type -> service.v1.AvailableDocumentsRequest
+	33, // 82: service.v1.TaskOrchestrationService.ListOrganizationMembers:input_type -> service.v1.ListOrganizationMembersRequest
+	35, // 83: service.v1.TaskOrchestrationService.AddTaskBoardMember:input_type -> service.v1.AddTaskBoardMemberRequest
+	37, // 84: service.v1.TaskOrchestrationService.CreateOrganizationMember:input_type -> service.v1.CreateOrganizationMemberRequest
+	4,  // 85: service.v1.ExampleService.Ping:output_type -> service.v1.PingResponse
+	5,  // 86: service.v1.DocumentWorkflowService.CreateDraft:output_type -> service.v1.Document
+	5,  // 87: service.v1.DocumentWorkflowService.UpdateDraft:output_type -> service.v1.Document
+	5,  // 88: service.v1.DocumentWorkflowService.GetDocument:output_type -> service.v1.Document
+	7,  // 89: service.v1.DocumentWorkflowService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	7,  // 90: service.v1.DocumentWorkflowService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	9,  // 91: service.v1.DocumentWorkflowService.CreateExportRequest:output_type -> service.v1.ExportRequest
+	9,  // 92: service.v1.DocumentWorkflowService.GetExportRequest:output_type -> service.v1.ExportRequest
+	51, // 93: service.v1.DocumentWorkflowService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
+	53, // 94: service.v1.DocumentWorkflowService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
+	55, // 95: service.v1.DocumentWorkflowService.ListDocumentVersions:output_type -> service.v1.ListDocumentVersionsResponse
+	6,  // 96: service.v1.DocumentWorkflowService.GetDocumentVersion:output_type -> service.v1.DocumentVersion
+	10, // 97: service.v1.DocumentWorkflowService.SubmitWorkflow:output_type -> service.v1.WorkflowInstance
+	10, // 98: service.v1.DocumentWorkflowService.ApproveWorkflow:output_type -> service.v1.WorkflowInstance
+	10, // 99: service.v1.DocumentWorkflowService.RequestWorkflowChanges:output_type -> service.v1.WorkflowInstance
+	58, // 100: service.v1.DocumentWorkflowService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
+	81, // 101: service.v1.DocumentWorkflowService.ListActivityEvents:output_type -> service.v1.ListActivityEventsResponse
+	75, // 102: service.v1.SearchNotificationService.SyncSearchProjection:output_type -> service.v1.SyncSearchProjectionResponse
+	53, // 103: service.v1.SearchNotificationService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
+	78, // 104: service.v1.SearchNotificationService.SearchGlobal:output_type -> service.v1.SearchGlobalResponse
+	71, // 105: service.v1.SearchNotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
+	73, // 106: service.v1.SearchNotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
+	5,  // 107: service.v1.DocumentService.CreateDraft:output_type -> service.v1.Document
+	5,  // 108: service.v1.DocumentService.UpdateDraft:output_type -> service.v1.Document
+	5,  // 109: service.v1.DocumentService.GetDocument:output_type -> service.v1.Document
+	7,  // 110: service.v1.DocumentService.GetEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	7,  // 111: service.v1.DocumentService.UpdateEditorControlProfile:output_type -> service.v1.EditorControlProfile
+	9,  // 112: service.v1.DocumentService.CreateExportRequest:output_type -> service.v1.ExportRequest
+	9,  // 113: service.v1.DocumentService.GetExportRequest:output_type -> service.v1.ExportRequest
+	51, // 114: service.v1.DocumentService.DownloadExportArtifact:output_type -> service.v1.DownloadExportArtifactResponse
+	53, // 115: service.v1.DocumentService.SearchDocuments:output_type -> service.v1.SearchDocumentsResponse
+	55, // 116: service.v1.DocumentService.ListDocumentVersions:output_type -> service.v1.ListDocumentVersionsResponse
+	6,  // 117: service.v1.DocumentService.GetDocumentVersion:output_type -> service.v1.DocumentVersion
+	58, // 118: service.v1.DocumentService.ArchiveDocument:output_type -> service.v1.ArchiveDocumentResponse
+	10, // 119: service.v1.WorkflowService.StartWorkflow:output_type -> service.v1.WorkflowInstance
+	10, // 120: service.v1.WorkflowService.ApproveStep:output_type -> service.v1.WorkflowInstance
+	10, // 121: service.v1.WorkflowService.RejectStep:output_type -> service.v1.WorkflowInstance
+	10, // 122: service.v1.WorkflowService.RequestChanges:output_type -> service.v1.WorkflowInstance
+	42, // 123: service.v1.SignatureService.StartSignature:output_type -> service.v1.SignatureRequest
+	42, // 124: service.v1.SignatureService.RecordSignatureCallback:output_type -> service.v1.SignatureRequest
+	42, // 125: service.v1.SignatureService.GetSignatureStatus:output_type -> service.v1.SignatureRequest
+	71, // 126: service.v1.NotificationService.EmitNotification:output_type -> service.v1.EmitNotificationResponse
+	73, // 127: service.v1.NotificationService.RetryFailedNotifications:output_type -> service.v1.RetryFailedNotificationsResponse
+	28, // 128: service.v1.TaskOrchestrationService.CreateTaskBoard:output_type -> service.v1.CreateTaskBoardResponse
+	15, // 129: service.v1.TaskOrchestrationService.CreateTask:output_type -> service.v1.CreateTaskResponse
+	17, // 130: service.v1.TaskOrchestrationService.UpdateTaskStatus:output_type -> service.v1.UpdateTaskStatusResponse
+	19, // 131: service.v1.TaskOrchestrationService.AddTaskAttachments:output_type -> service.v1.AddTaskAttachmentsResponse
+	13, // 132: service.v1.TaskOrchestrationService.RemoveTaskAttachment:output_type -> service.v1.Task
+	26, // 133: service.v1.TaskOrchestrationService.ListTaskBoards:output_type -> service.v1.ListTaskBoardsResponse
+	27, // 134: service.v1.TaskOrchestrationService.GetTaskBoard:output_type -> service.v1.GetTaskBoardResponse
+	30, // 135: service.v1.TaskOrchestrationService.GetTaskDetails:output_type -> service.v1.GetTaskDetailsResponse
+	32, // 136: service.v1.TaskOrchestrationService.GetAvailableApprovers:output_type -> service.v1.AvailableApproversResponse
+	41, // 137: service.v1.TaskOrchestrationService.GetAvailableDocuments:output_type -> service.v1.AvailableDocumentsResponse
+	34, // 138: service.v1.TaskOrchestrationService.ListOrganizationMembers:output_type -> service.v1.ListOrganizationMembersResponse
+	36, // 139: service.v1.TaskOrchestrationService.AddTaskBoardMember:output_type -> service.v1.AddTaskBoardMemberResponse
+	38, // 140: service.v1.TaskOrchestrationService.CreateOrganizationMember:output_type -> service.v1.CreateOrganizationMemberResponse
+	85, // [85:141] is the sub-list for method output_type
+	29, // [29:85] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_service_proto_init() }
@@ -5975,8 +6419,8 @@ func file_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   76,
+			NumEnums:      3,
+			NumMessages:   79,
 			NumExtensions: 0,
 			NumServices:   8,
 		},

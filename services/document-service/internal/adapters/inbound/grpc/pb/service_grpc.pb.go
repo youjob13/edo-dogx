@@ -140,6 +140,7 @@ const (
 	DocumentWorkflowService_ApproveWorkflow_FullMethodName            = "/service.v1.DocumentWorkflowService/ApproveWorkflow"
 	DocumentWorkflowService_RequestWorkflowChanges_FullMethodName     = "/service.v1.DocumentWorkflowService/RequestWorkflowChanges"
 	DocumentWorkflowService_ArchiveDocument_FullMethodName            = "/service.v1.DocumentWorkflowService/ArchiveDocument"
+	DocumentWorkflowService_ListActivityEvents_FullMethodName         = "/service.v1.DocumentWorkflowService/ListActivityEvents"
 )
 
 // DocumentWorkflowServiceClient is the client API for DocumentWorkflowService service.
@@ -161,6 +162,7 @@ type DocumentWorkflowServiceClient interface {
 	ApproveWorkflow(ctx context.Context, in *ApproveWorkflowRequest, opts ...grpc.CallOption) (*WorkflowInstance, error)
 	RequestWorkflowChanges(ctx context.Context, in *RequestWorkflowChangesRequest, opts ...grpc.CallOption) (*WorkflowInstance, error)
 	ArchiveDocument(ctx context.Context, in *ArchiveDocumentRequest, opts ...grpc.CallOption) (*ArchiveDocumentResponse, error)
+	ListActivityEvents(ctx context.Context, in *ListActivityEventsRequest, opts ...grpc.CallOption) (*ListActivityEventsResponse, error)
 }
 
 type documentWorkflowServiceClient struct {
@@ -321,6 +323,16 @@ func (c *documentWorkflowServiceClient) ArchiveDocument(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *documentWorkflowServiceClient) ListActivityEvents(ctx context.Context, in *ListActivityEventsRequest, opts ...grpc.CallOption) (*ListActivityEventsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListActivityEventsResponse)
+	err := c.cc.Invoke(ctx, DocumentWorkflowService_ListActivityEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DocumentWorkflowServiceServer is the server API for DocumentWorkflowService service.
 // All implementations must embed UnimplementedDocumentWorkflowServiceServer
 // for forward compatibility.
@@ -340,6 +352,7 @@ type DocumentWorkflowServiceServer interface {
 	ApproveWorkflow(context.Context, *ApproveWorkflowRequest) (*WorkflowInstance, error)
 	RequestWorkflowChanges(context.Context, *RequestWorkflowChangesRequest) (*WorkflowInstance, error)
 	ArchiveDocument(context.Context, *ArchiveDocumentRequest) (*ArchiveDocumentResponse, error)
+	ListActivityEvents(context.Context, *ListActivityEventsRequest) (*ListActivityEventsResponse, error)
 	mustEmbedUnimplementedDocumentWorkflowServiceServer()
 }
 
@@ -394,6 +407,9 @@ func (UnimplementedDocumentWorkflowServiceServer) RequestWorkflowChanges(context
 }
 func (UnimplementedDocumentWorkflowServiceServer) ArchiveDocument(context.Context, *ArchiveDocumentRequest) (*ArchiveDocumentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ArchiveDocument not implemented")
+}
+func (UnimplementedDocumentWorkflowServiceServer) ListActivityEvents(context.Context, *ListActivityEventsRequest) (*ListActivityEventsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListActivityEvents not implemented")
 }
 func (UnimplementedDocumentWorkflowServiceServer) mustEmbedUnimplementedDocumentWorkflowServiceServer() {
 }
@@ -687,6 +703,24 @@ func _DocumentWorkflowService_ArchiveDocument_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DocumentWorkflowService_ListActivityEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListActivityEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DocumentWorkflowServiceServer).ListActivityEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DocumentWorkflowService_ListActivityEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DocumentWorkflowServiceServer).ListActivityEvents(ctx, req.(*ListActivityEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DocumentWorkflowService_ServiceDesc is the grpc.ServiceDesc for DocumentWorkflowService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -753,6 +787,10 @@ var DocumentWorkflowService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ArchiveDocument",
 			Handler:    _DocumentWorkflowService_ArchiveDocument_Handler,
+		},
+		{
+			MethodName: "ListActivityEvents",
+			Handler:    _DocumentWorkflowService_ListActivityEvents_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

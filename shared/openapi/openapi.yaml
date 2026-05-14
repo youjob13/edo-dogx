@@ -805,6 +805,68 @@ paths:
                     items:
                       $ref: "#/components/schemas/NotificationCenterItem"
 
+  /api/activity:
+    get:
+      tags: [documents]
+      summary: Get system activity history
+      operationId: listActivityEvents
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Activity history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, actorUserId, actorUserName, entityType, entityId, actionType, summary, occurredAt]
+                      properties:
+                        id:
+                          type: string
+                        actorUserId:
+                          type: string
+                        actorUserName:
+                          type: string
+                        entityType:
+                          type: string
+                          enum: [DOCUMENT, TASK]
+                        entityId:
+                          type: string
+                        actionType:
+                          type: string
+                        summary:
+                          type: string
+                        occurredAt:
+                          type: string
+                        documentId:
+                          type: string
+                        taskId:
+                          type: string
+                        boardId:
+                          type: string
+                  total:
+                    type: integer
+
   /api/auth/login:
     get:
       tags: [auth]

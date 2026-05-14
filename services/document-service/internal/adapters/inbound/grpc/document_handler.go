@@ -11,6 +11,7 @@ import (
 	pb "edo/services/document-service/internal/adapters/inbound/grpc/pb"
 	appservice "edo/services/document-service/internal/application/service"
 	"edo/services/document-service/internal/domain/model"
+	"edo/services/document-service/internal/ports/outbound"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -20,15 +21,16 @@ import (
 type DocumentHandler struct {
 	pb.UnimplementedDocumentWorkflowServiceServer
 	lifecycle *appservice.DocumentLifecycleService
+	activity  *appservice.ActivityService
 	syncer    ProjectionSyncer
 }
 
-func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService, syncer ProjectionSyncer) *DocumentHandler {
+func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService, activity *appservice.ActivityService, syncer ProjectionSyncer) *DocumentHandler {
 	if lifecycle == nil {
 		lifecycle = appservice.NewInMemoryDocumentLifecycleService()
 	}
 
-	return &DocumentHandler{lifecycle: lifecycle, syncer: syncer}
+	return &DocumentHandler{lifecycle: lifecycle, activity: activity, syncer: syncer}
 }
 
 func (h *DocumentHandler) Register(server *grpc.Server) {
@@ -61,6 +63,19 @@ func (h *DocumentHandler) CreateDraft(ctx context.Context, req *pb.CreateDraftRe
 		return nil, toStatusError(err)
 	}
 	h.syncProjectionAsync(document.ID, "DOCUMENT")
+	h.recordActivityAsync(model.ActivityEvent{
+		OrganizationID: "org-main",
+		ActorUserID:    req.GetActorUserId(),
+		ActorUserName:  req.GetActorUserId(),
+		EntityType:     model.ActivityEntityTypeDocument,
+		EntityID:       document.ID,
+		ActionType:     model.ActivityActionDocumentCreated,
+		Summary:        "Создан документ: " + document.Title,
+		DocumentID:     &document.ID,
+	}, []outbound.ActivitySubject{
+		{SubjectType: "USER", SubjectID: document.OwnerUser},
+		{SubjectType: "DOCUMENT", SubjectID: document.ID},
+	})
 
 	return mapDocument(document)
 }
@@ -94,6 +109,19 @@ func (h *DocumentHandler) UpdateDraft(ctx context.Context, req *pb.UpdateDraftRe
 		return nil, toStatusError(err)
 	}
 	h.syncProjectionAsync(document.ID, "DOCUMENT")
+	h.recordActivityAsync(model.ActivityEvent{
+		OrganizationID: "org-main",
+		ActorUserID:    req.GetActorUserId(),
+		ActorUserName:  req.GetActorUserId(),
+		EntityType:     model.ActivityEntityTypeDocument,
+		EntityID:       document.ID,
+		ActionType:     model.ActivityActionDocumentUpdated,
+		Summary:        "Обновлен документ: " + document.Title,
+		DocumentID:     &document.ID,
+	}, []outbound.ActivitySubject{
+		{SubjectType: "USER", SubjectID: document.OwnerUser},
+		{SubjectType: "DOCUMENT", SubjectID: document.ID},
+	})
 
 	return mapDocument(document)
 }
@@ -314,8 +342,94 @@ func (h *DocumentHandler) CreateExportRequest(ctx context.Context, req *pb.Creat
 		"format", exportRequest.Format,
 		"status", exportRequest.Status,
 	)
+	documentID := exportRequest.DocumentID
+	h.recordActivityAsync(model.ActivityEvent{
+		OrganizationID: "org-main",
+		ActorUserID:    req.GetActorUserId(),
+		ActorUserName:  req.GetActorUserId(),
+		EntityType:     model.ActivityEntityTypeDocument,
+		EntityID:       documentID,
+		ActionType:     model.ActivityActionExportRequested,
+		Summary:        "Запрошен экспорт документа",
+		DocumentID:     &documentID,
+	}, []outbound.ActivitySubject{
+		{SubjectType: "USER", SubjectID: req.GetActorUserId()},
+		{SubjectType: "DOCUMENT", SubjectID: documentID},
+	})
 
 	return mapExportRequest(exportRequest), nil
+}
+
+func (h *DocumentHandler) ListActivityEvents(ctx context.Context, req *pb.ListActivityEventsRequest) (*pb.ListActivityEventsResponse, error) {
+	if h.activity == nil {
+		return &pb.ListActivityEventsResponse{Items: []*pb.ActivityEvent{}, Total: 0}, nil
+	}
+
+	items, total, err := h.activity.ListForUser(ctx, outbound.ListActivityEventsInput{
+		ActorUserID:    req.GetActorUserId(),
+		OrganizationID: req.GetOrganizationId(),
+		Limit:          int(req.GetLimit()),
+		Offset:         int(req.GetOffset()),
+		Query:          req.GetQuery(),
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	responseItems := make([]*pb.ActivityEvent, 0, len(items))
+	for _, item := range items {
+		event := &pb.ActivityEvent{
+			Id:             item.ID,
+			OrganizationId: item.OrganizationID,
+			ActorUserId:    item.ActorUserID,
+			ActorUserName:  item.ActorUserName,
+			EntityId:       item.EntityID,
+			Summary:        item.Summary,
+			OccurredAt:     item.OccurredAt.Format(time.RFC3339),
+		}
+
+		switch item.EntityType {
+		case model.ActivityEntityTypeTask:
+			event.EntityType = pb.ActivityEventEntityType_ACTIVITY_EVENT_ENTITY_TYPE_TASK
+		default:
+			event.EntityType = pb.ActivityEventEntityType_ACTIVITY_EVENT_ENTITY_TYPE_DOCUMENT
+		}
+
+		switch item.ActionType {
+		case model.ActivityActionDocumentCreated:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_DOCUMENT_CREATED
+		case model.ActivityActionDocumentUpdated:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_DOCUMENT_UPDATED
+		case model.ActivityActionExportRequested:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_EXPORT_REQUESTED
+		case model.ActivityActionTaskCreated:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_CREATED
+		case model.ActivityActionTaskStatusUpdated:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_STATUS_UPDATED
+		case model.ActivityActionTaskAttachmentAdded:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_ADDED
+		case model.ActivityActionTaskAttachmentRemoved:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_REMOVED
+		case model.ActivityActionTaskMemberAdded:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_TASK_MEMBER_ADDED
+		default:
+			event.ActionType = pb.ActivityActionType_ACTIVITY_ACTION_TYPE_UNSPECIFIED
+		}
+
+		if item.DocumentID != nil {
+			event.DocumentId = *item.DocumentID
+		}
+		if item.TaskID != nil {
+			event.TaskId = *item.TaskID
+		}
+		if item.BoardID != nil {
+			event.BoardId = *item.BoardID
+		}
+
+		responseItems = append(responseItems, event)
+	}
+
+	return &pb.ListActivityEventsResponse{Items: responseItems, Total: int32(total)}, nil
 }
 
 func (h *DocumentHandler) GetExportRequest(ctx context.Context, req *pb.GetExportRequestRequest) (*pb.ExportRequest, error) {
@@ -472,6 +586,19 @@ func (h *DocumentHandler) syncProjectionAsync(entityID string, entityType string
 				"entityId", entityID,
 				"err", err,
 			)
+		}
+	}()
+}
+
+func (h *DocumentHandler) recordActivityAsync(event model.ActivityEvent, subjects []outbound.ActivitySubject) {
+	if h.activity == nil {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		if err := h.activity.RecordEvent(ctx, event, subjects); err != nil {
+			slog.Warn("failed to record activity event", "err", err, "entityId", event.EntityID)
 		}
 	}()
 }

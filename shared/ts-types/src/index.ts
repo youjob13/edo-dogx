@@ -215,6 +215,37 @@ export interface GlobalSearchResponse {
   total: number;
 }
 
+export type ActivityEventEntityType = 'DOCUMENT' | 'TASK';
+
+export type ActivityActionType =
+  | 'DOCUMENT_CREATED'
+  | 'DOCUMENT_UPDATED'
+  | 'DOCUMENT_SUBMITTED'
+  | 'DOCUMENT_APPROVED'
+  | 'EXPORT_REQUESTED'
+  | 'EXPORT_SUCCEEDED'
+  | 'EXPORT_FAILED'
+  | 'TASK_CREATED'
+  | 'TASK_STATUS_UPDATED'
+  | 'TASK_ATTACHMENT_ADDED'
+  | 'TASK_ATTACHMENT_REMOVED'
+  | 'TASK_MEMBER_ADDED';
+
+export interface ActivityItemResponse {
+  id: string;
+  organizationId: string;
+  actorUserId: string;
+  actorUserName: string;
+  entityType: ActivityEventEntityType;
+  entityId: string;
+  actionType: ActivityActionType;
+  summary: string;
+  occurredAt: string;
+  documentId?: string;
+  taskId?: string;
+  boardId?: string;
+}
+
 
 /**
  * <--- Tasks

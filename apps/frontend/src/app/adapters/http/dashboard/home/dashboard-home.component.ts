@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   ActivityFeedComponent,
   BarMiniChartComponent,
@@ -57,6 +57,7 @@ export class DashboardHomeComponent {
   private readonly documentUseCases = inject(DocumentUseCases);
   private readonly taskBoardUseCases = inject(TaskBoardUseCases);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -89,6 +90,7 @@ export class DashboardHomeComponent {
   protected readonly storageLabel = signal('0 / 0 ТБ');
   protected readonly activity = signal<Array<UiKitActivityItem>>([]);
   protected readonly activityDocumentMap = signal<Record<string, string | undefined>>({});
+  protected readonly activityTaskMap = signal<Record<string, { taskId?: string; boardId?: string }>>({});
   protected readonly message = signal('');
 
   protected readonly documentMenuItems: Array<UiKitDropdownItem> = [
@@ -153,7 +155,7 @@ export class DashboardHomeComponent {
   protected onMetricPressed(metric: 'pending' | 'in_review'): void {
     this.message.set(
       metric === 'pending'
-        ? 'Быстрый фильтр: ожидают подтверждения.'
+         ? 'Быстрый фильтр: ожидают подтверждения.'
         : 'Быстрый фильтр: требуют внимания.',
     );
   }
@@ -263,9 +265,16 @@ export class DashboardHomeComponent {
     this.storageDetailsOpen.set(false);
   }
 
-  protected onActivityPressed(id: string): void {
+    protected onActivityPressed(id: string): void {
     const documentId = this.activityDocumentMap()[id];
     if (!documentId) {
+      const taskRef = this.activityTaskMap()[id];
+      if (taskRef?.taskId && taskRef?.boardId) {
+        this.router.navigate(['/dashboard/tasks', taskRef.boardId, 'task', taskRef.taskId]);
+        this.message.set(`Открыта активность ${id}.`);
+        return;
+      }
+
       this.message.set(`Открыта активность ${id}.`);
       return;
     }
@@ -386,6 +395,12 @@ export class DashboardHomeComponent {
         this.activityDocumentMap.set(
           items.reduce<Record<string, string | undefined>>((acc, item) => {
             acc[item.id] = item.linkedDocumentId;
+            return acc;
+          }, {}),
+        );
+        this.activityTaskMap.set(
+          items.reduce<Record<string, { taskId?: string; boardId?: string }>>((acc, item) => {
+            acc[item.id] = { taskId: item.linkedTaskId, boardId: item.linkedBoardId };
             return acc;
           }, {}),
         );

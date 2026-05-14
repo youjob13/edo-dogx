@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+﻿import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, of } from 'rxjs';
 import {
@@ -34,28 +34,6 @@ const MOCK_WEEKLY_VOLUME: Array<WeeklyVolumePoint> = [
   { day: 'sun', value: 40 },
 ];
 
-const MOCK_ACTIVITY: Array<ActivityItem> = [
-  {
-    id: 'a1',
-    actor: 'Антов Власов',
-    description: 'подтвердил Паспорт_изделия_№PS-178/26.pdf',
-    timestampLabel: '12 минут назад',
-    linkedDocumentId: 'd1',
-  },
-  {
-    id: 'a2',
-    actor: 'Система',
-    description: 'загрузила 124 записи',
-    timestampLabel: '45 минут назад',
-  },
-  {
-    id: 'a3',
-    actor: 'Денис Кукояка',
-    description: 'отклонил Ответ_на_поставки_№785.pdf',
-    timestampLabel: '1 час назад',
-    linkedDocumentId: 'd6',
-  }
-];
 
 
 const emptyRichDocument = (): DashboardRichContentDocument => ({
@@ -81,6 +59,23 @@ interface GatewayDocumentResponse {
 interface GatewaySearchDocumentsResponse {
   items: Array<GatewayDocumentResponse>;
   total: number;
+}
+
+interface GatewayActivityResponse {
+  items: Array<{
+    id: string;
+    actorUserName?: string;
+    actor_user_name?: string;
+    summary: string;
+    occurredAt?: string;
+    occurred_at?: string;
+    documentId?: string;
+    document_id?: string;
+    taskId?: string;
+    task_id?: string;
+    boardId?: string;
+    board_id?: string;
+  }>;
 }
 
 const parseGatewayContentDocument = (
@@ -171,6 +166,37 @@ const normalizePreviewDocument = (response: GatewayDocumentResponse): DashboardP
   };
 };
 
+const toRelativeRu = (iso: string | undefined): string => {
+  if (!iso) {
+    return 'только что';
+  }
+
+  const timestamp = new Date(iso).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return 'только что';
+  }
+
+  const diffMinutes = Math.max(
+    0,
+    Math.floor((Date.now() - timestamp) / 60000),
+  );
+  if (diffMinutes < 1) {
+    return 'только что';
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} мин назад`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} ч назад`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} дн назад`;
+};
+
 type DashboardEditorControlProfileApi = Partial<{
   id: string;
   contextType: DashboardEditorContextType;
@@ -253,18 +279,29 @@ export class DashboardHttpAdapter implements DocumentApiPort {
   } 
 
    getActivity(query: DashboardQuery): Observable<Array<ActivityItem>> {
-    const text = query.text?.trim().toLowerCase();
-    let activity = [...MOCK_ACTIVITY];
-
-    if (text && text.length > 0) {
-      activity = activity.filter((activityItem) =>
-        `${activityItem.actor} ${activityItem.description}`
-          .toLowerCase()
-          .includes(text),
-      );
+    const page = query.page && query.page > 0 ? Math.floor(query.page) : 1;
+    const pageSize = query.pageSize && query.pageSize > 0 ? Math.floor(query.pageSize) : 20;
+    const params: Params = {
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    };
+    if (query.text) {
+      params['q'] = query.text;
     }
 
-    return of(activity)
+    return this.http.get<GatewayActivityResponse>('/api/activity', { params }).pipe(
+      map((response) =>
+        (response.items ?? []).map((item) => ({
+          id: item.id,
+          actor: item.actorUserName ?? item.actor_user_name ?? 'Система',
+          description: item.summary,
+          timestampLabel: toRelativeRu(item.occurredAt ?? item.occurred_at),
+          linkedDocumentId: item.documentId ?? item.document_id,
+          linkedTaskId: item.taskId ?? item.task_id,
+          linkedBoardId: item.boardId ?? item.board_id,
+        })),
+      ),
+    );
   }
 
   public getStorageUsage(): Observable<StorageUsage> {

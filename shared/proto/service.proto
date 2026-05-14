@@ -25,6 +25,7 @@ service DocumentWorkflowService {
   rpc ApproveWorkflow(ApproveWorkflowRequest) returns (WorkflowInstance);
   rpc RequestWorkflowChanges(RequestWorkflowChangesRequest) returns (WorkflowInstance);
   rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
+  rpc ListActivityEvents(ListActivityEventsRequest) returns (ListActivityEventsResponse);
 }
 
 service SearchNotificationService {
@@ -616,5 +617,55 @@ message SearchHit {
 
 message SearchGlobalResponse {
   repeated SearchHit items = 1;
+  int32 total = 2;
+}
+
+enum ActivityEventEntityType {
+  ACTIVITY_EVENT_ENTITY_TYPE_UNSPECIFIED = 0;
+  ACTIVITY_EVENT_ENTITY_TYPE_DOCUMENT = 1;
+  ACTIVITY_EVENT_ENTITY_TYPE_TASK = 2;
+}
+
+enum ActivityActionType {
+  ACTIVITY_ACTION_TYPE_UNSPECIFIED = 0;
+  ACTIVITY_ACTION_TYPE_DOCUMENT_CREATED = 1;
+  ACTIVITY_ACTION_TYPE_DOCUMENT_UPDATED = 2;
+  ACTIVITY_ACTION_TYPE_DOCUMENT_SUBMITTED = 3;
+  ACTIVITY_ACTION_TYPE_DOCUMENT_APPROVED = 4;
+  ACTIVITY_ACTION_TYPE_EXPORT_REQUESTED = 5;
+  ACTIVITY_ACTION_TYPE_EXPORT_SUCCEEDED = 6;
+  ACTIVITY_ACTION_TYPE_EXPORT_FAILED = 7;
+  ACTIVITY_ACTION_TYPE_TASK_CREATED = 8;
+  ACTIVITY_ACTION_TYPE_TASK_STATUS_UPDATED = 9;
+  ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_ADDED = 10;
+  ACTIVITY_ACTION_TYPE_TASK_ATTACHMENT_REMOVED = 11;
+  ACTIVITY_ACTION_TYPE_TASK_MEMBER_ADDED = 12;
+}
+
+message ActivityEvent {
+  string id = 1;
+  string organization_id = 2;
+  string actor_user_id = 3;
+  string actor_user_name = 4;
+  ActivityEventEntityType entity_type = 5;
+  string entity_id = 6;
+  ActivityActionType action_type = 7;
+  string summary = 8;
+  string occurred_at = 9;
+  string document_id = 10;
+  string task_id = 11;
+  string board_id = 12;
+}
+
+message ListActivityEventsRequest {
+  string actor_user_id = 1;
+  string organization_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  string query = 5;
+}
+
+message ListActivityEventsResponse {
+  repeated ActivityEvent items = 1;
   int32 total = 2;
 }

@@ -70,7 +70,9 @@ func main() {
 	)
 	versionRepository := postgresadapter.NewDocumentVersionRepository(db, minioClient, bucketName)
 	taskRepository := postgresadapter.NewTaskRepository(db)
+	activityRepository := postgresadapter.NewActivityRepository(db)
 	lifecycleService := appservice.NewDocumentLifecycleService(documentRepository, versionRepository)
+	activityService := appservice.NewActivityService(activityRepository)
 	searchSyncClient, err := grpcadapter.NewSearchProjectionSyncClient(getEnv("SEARCH_NOTIFICATION_SERVICE_GRPC_ADDR", "search-notification-service:50055"))
 	if err != nil {
 		slog.Error("failed to initialize search projection sync client", "err", err)
@@ -84,15 +86,33 @@ func main() {
 	}
 
 	server := grpcadapter.NewServer()
-	server.AddRegistrar(grpcadapter.NewDocumentHandler(lifecycleService, searchSyncClient))
-	server.AddRegistrar(grpcadapter.NewTaskOrchestrationHandler(taskRepository, searchSyncClient))
+	server.AddRegistrar(grpcadapter.NewDocumentHandler(lifecycleService, activityService, searchSyncClient))
+	server.AddRegistrar(grpcadapter.NewTaskOrchestrationHandler(taskRepository, activityService, searchSyncClient))
 	server.RegisterServices()
+	go runActivityRetentionCleanup(activityService)
 
 	slog.Info("document-service gRPC listening", "addr", addr)
 
 	if err := server.GRPCServer().Serve(lis); err != nil {
 		slog.Error("failed to serve", "err", err)
 		os.Exit(1)
+	}
+}
+
+func runActivityRetentionCleanup(activityService *appservice.ActivityService) {
+	if activityService == nil {
+		return
+	}
+
+	ticker := time.NewTicker(12 * time.Hour)
+	defer ticker.Stop()
+	for range ticker.C {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		_, err := activityService.CleanupExpired(ctx, 90)
+		cancel()
+		if err != nil {
+			slog.Warn("activity retention cleanup failed", "err", err)
+		}
 	}
 }
 
@@ -176,6 +196,31 @@ func ensureDocumentSchema(db *sql.DB) error {
 				ADD CONSTRAINT uq_task_attachments_task_document UNIQUE (task_id, document_id);
 			END IF;
 		END $$`,
+		`CREATE TABLE IF NOT EXISTS activity_events (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			organization_id TEXT NOT NULL,
+			actor_user_id TEXT NOT NULL,
+			actor_user_name TEXT NOT NULL,
+			entity_type VARCHAR(32) NOT NULL,
+			entity_id TEXT NOT NULL,
+			action_type VARCHAR(64) NOT NULL,
+			summary TEXT NOT NULL,
+			metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+			occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			document_id UUID NULL,
+			task_id UUID NULL,
+			board_id UUID NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS activity_event_subjects (
+			event_id UUID NOT NULL REFERENCES activity_events(id) ON DELETE CASCADE,
+			subject_type VARCHAR(32) NOT NULL,
+			subject_id TEXT NOT NULL,
+			PRIMARY KEY (event_id, subject_type, subject_id)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_activity_events_org_occurred ON activity_events(organization_id, occurred_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_activity_events_entity ON activity_events(entity_type, entity_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_activity_event_subjects_filter ON activity_event_subjects(subject_type, subject_id, event_id)`,
 	}
 
 	for _, statement := range statements {

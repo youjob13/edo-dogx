@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"edo/services/document-service/internal/adapters/inbound/grpc/pb"
+	appservice "edo/services/document-service/internal/application/service"
 	"edo/services/document-service/internal/domain/model"
 	"edo/services/document-service/internal/ports/outbound"
 
@@ -18,11 +19,12 @@ import (
 type TaskOrchestrationHandler struct {
 	pb.UnimplementedTaskOrchestrationServiceServer
 	taskRepository outbound.TaskRepository
+	activity       *appservice.ActivityService
 	syncer         ProjectionSyncer
 }
 
-func NewTaskOrchestrationHandler(taskRepository outbound.TaskRepository, syncer ProjectionSyncer) *TaskOrchestrationHandler {
-	return &TaskOrchestrationHandler{taskRepository: taskRepository, syncer: syncer}
+func NewTaskOrchestrationHandler(taskRepository outbound.TaskRepository, activity *appservice.ActivityService, syncer ProjectionSyncer) *TaskOrchestrationHandler {
+	return &TaskOrchestrationHandler{taskRepository: taskRepository, activity: activity, syncer: syncer}
 }
 
 func (h *TaskOrchestrationHandler) Register(server *grpc.Server) {
@@ -202,6 +204,17 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	h.syncProjectionAsync(createdTask.ID, "TASK")
+	h.recordTaskActivityAsync(model.ActivityEvent{
+		OrganizationID: "org-main",
+		ActorUserID:    req.GetActorUserId(),
+		ActorUserName:  req.GetActorUserId(),
+		EntityType:     model.ActivityEntityTypeTask,
+		EntityID:       createdTask.ID,
+		ActionType:     model.ActivityActionTaskCreated,
+		Summary:        "Создана задача: " + createdTask.Title,
+		TaskID:         &createdTask.ID,
+		BoardID:        &createdTask.BoardID,
+	}, createdTask)
 
 	return &pb.CreateTaskResponse{Task: mapTaskToProto(createdTask)}, nil
 }
@@ -250,6 +263,17 @@ func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	h.syncProjectionAsync(task.ID, "TASK")
+	h.recordTaskActivityAsync(model.ActivityEvent{
+		OrganizationID: "org-main",
+		ActorUserID:    req.GetActorUserId(),
+		ActorUserName:  req.GetActorUserId(),
+		EntityType:     model.ActivityEntityTypeTask,
+		EntityID:       task.ID,
+		ActionType:     model.ActivityActionTaskStatusUpdated,
+		Summary:        "Обновлен статус задачи: " + task.Title,
+		TaskID:         &task.ID,
+		BoardID:        &task.BoardID,
+	}, task)
 
 	return &pb.UpdateTaskStatusResponse{Task: mapTaskToProto(task)}, nil
 }
@@ -281,6 +305,19 @@ func (h *TaskOrchestrationHandler) AddTaskAttachments(ctx context.Context, req *
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	if task, err := h.taskRepository.GetTask(ctx, req.GetTaskId()); err == nil {
+		h.recordTaskActivityAsync(model.ActivityEvent{
+			OrganizationID: "org-main",
+			ActorUserID:    req.GetActorUserId(),
+			ActorUserName:  req.GetActorUserId(),
+			EntityType:     model.ActivityEntityTypeTask,
+			EntityID:       task.ID,
+			ActionType:     model.ActivityActionTaskAttachmentAdded,
+			Summary:        "Добавлены вложения к задаче: " + task.Title,
+			TaskID:         &task.ID,
+			BoardID:        &task.BoardID,
+		}, task)
+	}
 
 	return &pb.AddTaskAttachmentsResponse{Attachments: mapAttachmentsToProto(persisted)}, nil
 }
@@ -304,6 +341,17 @@ func (h *TaskOrchestrationHandler) RemoveTaskAttachment(ctx context.Context, req
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	h.recordTaskActivityAsync(model.ActivityEvent{
+		OrganizationID: "org-main",
+		ActorUserID:    req.GetActorUserId(),
+		ActorUserName:  req.GetActorUserId(),
+		EntityType:     model.ActivityEntityTypeTask,
+		EntityID:       task.ID,
+		ActionType:     model.ActivityActionTaskAttachmentRemoved,
+		Summary:        "Удалено вложение из задачи: " + task.Title,
+		TaskID:         &task.ID,
+		BoardID:        &task.BoardID,
+	}, task)
 
 	return mapTaskToProto(task), nil
 }
@@ -445,6 +493,7 @@ func (h *TaskOrchestrationHandler) AddTaskBoardMember(ctx context.Context, req *
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	h.recordBoardMemberEventAsync(req.GetActorUserId(), req.GetBoardId(), member.UserID, member.FullName)
 
 	return &pb.AddTaskBoardMemberResponse{Member: &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email}}, nil
 }
@@ -583,5 +632,52 @@ func (h *TaskOrchestrationHandler) syncProjectionAsync(entityID string, entityTy
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 		_ = h.syncer.Sync(ctx, entityType, entityID, false)
+	}()
+}
+
+func (h *TaskOrchestrationHandler) recordTaskActivityAsync(event model.ActivityEvent, task model.Task) {
+	if h.activity == nil {
+		return
+	}
+	subjects := []outbound.ActivitySubject{
+		{SubjectType: "TASK", SubjectID: task.ID},
+		{SubjectType: "USER", SubjectID: task.CreatedByUserID},
+		{SubjectType: "USER", SubjectID: task.AssignedUserID},
+	}
+	if task.BoardID != "" {
+		subjects = append(subjects, outbound.ActivitySubject{SubjectType: "BOARD", SubjectID: task.BoardID})
+	}
+	if task.ApproverUserID != nil && strings.TrimSpace(*task.ApproverUserID) != "" {
+		subjects = append(subjects, outbound.ActivitySubject{SubjectType: "USER", SubjectID: *task.ApproverUserID})
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = h.activity.RecordEvent(ctx, event, subjects)
+	}()
+}
+
+func (h *TaskOrchestrationHandler) recordBoardMemberEventAsync(actorUserID, boardID, memberUserID, memberName string) {
+	if h.activity == nil {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = h.activity.RecordEvent(ctx, model.ActivityEvent{
+			OrganizationID: "org-main",
+			ActorUserID:    actorUserID,
+			ActorUserName:  actorUserID,
+			EntityType:     model.ActivityEntityTypeTask,
+			EntityID:       boardID,
+			ActionType:     model.ActivityActionTaskMemberAdded,
+			Summary:        "Участник добавлен в доску: " + memberName,
+			BoardID:        &boardID,
+		}, []outbound.ActivitySubject{
+			{SubjectType: "BOARD", SubjectID: boardID},
+			{SubjectType: "USER", SubjectID: memberUserID},
+			{SubjectType: "USER", SubjectID: actorUserID},
+		})
 	}()
 }

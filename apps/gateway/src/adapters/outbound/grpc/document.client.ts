@@ -85,4 +85,8 @@ export class DocumentServiceClient {
   approveWorkflow(payload: unknown): Promise<unknown> {
     return this.call('ApproveWorkflow', payload);
   }
+
+  listActivityEvents(payload: unknown): Promise<unknown> {
+    return this.call('ListActivityEvents', payload);
+  }
 }
