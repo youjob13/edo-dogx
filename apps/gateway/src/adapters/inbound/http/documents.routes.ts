@@ -4,8 +4,11 @@ import {
   DocumentServiceClient,
   GrpcClientError,
 } from '../../outbound/grpc/document.client.js';
+import { NotificationServiceClient } from '../../outbound/grpc/notification.client.js';
+import { notificationSseHub } from './notifications.sse-hub.js';
 
 const documentClient = new DocumentServiceClient();
+const notificationClient = new NotificationServiceClient();
 
 function enrichOwnerNameWithSession<T extends Record<string, unknown>>(
   payload: T,
@@ -357,6 +360,31 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           document_id: documentId,
         });
+        try {
+          const recipientUserId = request.session.auth?.userId ?? 'gateway-user';
+          const created = (await notificationClient.createNotification({
+            actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+            recipient_user_id: recipientUserId,
+            organization_id: 'org-main',
+            event_type: 'document.submitted',
+            title: 'Документ отправлен на согласование',
+            body: `Документ ${documentId} отправлен на согласование`,
+            entity_type: 'DOCUMENT',
+            entity_id: documentId,
+          })) as { item?: Record<string, unknown> };
+          notificationSseHub.publish(recipientUserId, {
+            type: 'notification',
+            payload: {
+              notificationId: String(created.item?.['id'] ?? ''),
+              title: String(created.item?.['title'] ?? 'Документ отправлен на согласование'),
+              body: String(created.item?.['body'] ?? ''),
+              entityType: 'DOCUMENT',
+              entityId: documentId,
+            },
+          });
+        } catch (error) {
+          request.log.warn({ error }, 'failed to create document submitted notification');
+        }
         return reply.code(202).send(response);
       } catch (error) {
         request.log.error({ error }, 'document-service submit workflow failed');
@@ -402,6 +430,31 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           document_id: documentId,
           expected_version: expectedVersion,
         });
+        try {
+          const recipientUserId = request.session.auth?.userId ?? 'gateway-user';
+          const created = (await notificationClient.createNotification({
+            actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+            recipient_user_id: recipientUserId,
+            organization_id: 'org-main',
+            event_type: 'document.approved',
+            title: 'Документ согласован',
+            body: `Документ ${documentId} согласован`,
+            entity_type: 'DOCUMENT',
+            entity_id: documentId,
+          })) as { item?: Record<string, unknown> };
+          notificationSseHub.publish(recipientUserId, {
+            type: 'notification',
+            payload: {
+              notificationId: String(created.item?.['id'] ?? ''),
+              title: String(created.item?.['title'] ?? 'Документ согласован'),
+              body: String(created.item?.['body'] ?? ''),
+              entityType: 'DOCUMENT',
+              entityId: documentId,
+            },
+          });
+        } catch (error) {
+          request.log.warn({ error }, 'failed to create document approved notification');
+        }
         return reply.code(202).send(response);
       } catch (error) {
         request.log.error({ error }, 'document-service approve workflow failed');

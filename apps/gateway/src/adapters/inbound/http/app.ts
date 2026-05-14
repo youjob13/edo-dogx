@@ -17,6 +17,7 @@ import searchRoutes from './search.routes.js';
 import tasksRoutes from './tasks.routes.js';
 import boardsRoutes from './boards.routes.js';
 import activityRoutes from './activity.routes.js';
+import notificationsRoutes from './notifications.routes.js';
 import type { AuthSession } from '../../../domain/auth.js';
 
 declare module 'fastify' {
@@ -83,6 +84,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   void app.register(tasksRoutes, { prefix: '/api' });
   void app.register(boardsRoutes, { prefix: '/api' });
   void app.register(activityRoutes, { prefix: '/api' });
+  void app.register(notificationsRoutes, { prefix: '/api' });
 
   app.get('/health', async () => {
     return { status: 'ok' };

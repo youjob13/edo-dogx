@@ -71,6 +71,8 @@ export class DashboardLayoutComponent {
   protected readonly searchTooltipOpen = signal(false);
   protected readonly searchLoading = signal(false);
   protected readonly searchHits = signal<Array<GlobalSearchHit>>([]);
+  protected readonly unreadNotificationCount = signal(0);
+  protected readonly seenNotificationIds = signal<Set<string>>(new Set<string>());
 
   protected readonly accountItems = computed<Array<UiKitDropdownItem>>(() => [
     { id: 'profile', label: 'Профиль', icon: 'account' },
@@ -86,14 +88,12 @@ export class DashboardLayoutComponent {
     { id: 'logout', label: 'Выйти', icon: 'account' },
   ]);
 
-  protected readonly notificationItems: Array<UiKitDropdownItem> = [
-    { id: 'n1', label: 'Новый договор требует проверки', icon: 'warning' },
-    { id: 'n2', label: 'Отчет за неделю готов', icon: 'success' },
-  ];
+  protected readonly notificationItems = signal<Array<UiKitDropdownItem>>([]);
 
   constructor() {
     this.initializeThemeMode();
     this.setupSearchTooltip();
+    this.initializeNotifications();
   }
 
   protected onSearchSubmit(): void {
@@ -127,7 +127,7 @@ export class DashboardLayoutComponent {
 
   protected onNotificationSelected(id: string): void {
     this.notificationsOpen.set(false);
-    this.lastAction.set(`Открыто уведомление: ${id}`);
+    this.markNotificationRead(id);
   }
 
   protected onAccountSelected(id: string): void {
@@ -290,6 +290,115 @@ export class DashboardLayoutComponent {
           this.searchHits.set([]);
           this.searchTooltipOpen.set(this.searchControl.value.trim().length > 0);
           this.searchLoading.set(false);
+        },
+      });
+  }
+
+  private initializeNotifications(): void {
+    this.reloadNotificationCenter();
+    this.reloadUnreadCount();
+    if (!this.isBrowser) {
+      return;
+    }
+    this.connectNotificationsSse();
+  }
+
+  private reloadNotificationCenter(): void {
+    this.http
+      .get<{ items: Array<Record<string, unknown>> }>('/api/notifications', {
+        params: { limit: 10, offset: 0 },
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          const items = Array.isArray(response.items) ? response.items : [];
+          const seen = new Set<string>();
+          this.notificationItems.set(
+            items.map((item) => {
+              const id = String(item['id'] ?? '');
+              seen.add(id);
+              return {
+                id,
+                label: String(item['title'] ?? 'Уведомление'),
+                icon: 'notifications',
+              } satisfies UiKitDropdownItem;
+            }),
+          );
+          this.seenNotificationIds.set(seen);
+        },
+      });
+  }
+
+  private reloadUnreadCount(): void {
+    this.http
+      .get<{ total: number }>('/api/notifications/unread-count')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.unreadNotificationCount.set(Number(response.total ?? 0)),
+      });
+  }
+
+  private connectNotificationsSse(): void {
+    const stream = new EventSource('/api/notifications/stream');
+
+    stream.addEventListener('ready', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent).data) as { unreadCount?: number };
+        this.unreadNotificationCount.set(Number(payload.unreadCount ?? 0));
+      } catch {
+        this.unreadNotificationCount.set(0);
+      }
+    });
+
+    stream.addEventListener('notification', (event) => {
+      let payload: Record<string, unknown> = {};
+      try {
+        payload = JSON.parse((event as MessageEvent).data) as Record<string, unknown>;
+      } catch {
+        return;
+      }
+      const id = String(payload['notificationId'] ?? '');
+      if (!id) {
+        return;
+      }
+      const seen = new Set(this.seenNotificationIds());
+      if (seen.has(id)) {
+        return;
+      }
+      seen.add(id);
+      this.seenNotificationIds.set(seen);
+      this.notificationItems.update((items) => [
+        {
+          id,
+          label: String(payload['title'] ?? 'Уведомление'),
+          icon: 'notifications',
+        },
+        ...items,
+      ]);
+      this.unreadNotificationCount.update((value) => value + 1);
+    });
+
+    stream.addEventListener('read', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent).data) as { id?: string };
+        if (!payload.id) {
+          return;
+        }
+        this.unreadNotificationCount.update((value) => Math.max(0, value - 1));
+      } catch {
+        // ignore
+      }
+    });
+  }
+
+  private markNotificationRead(notificationId: string): void {
+    this.http
+      .post(`/api/notifications/${notificationId}/read`, {})
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.unreadNotificationCount.update((value) => Math.max(0, value - 1));
+          this.lastAction.set(`Открыто уведомление: ${notificationId}`);
         },
       });
   }

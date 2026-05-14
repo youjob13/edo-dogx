@@ -1,8 +1,10 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { edmsRbacGuard } from './middleware/edms-rbac.guard.js';
 import { SearchNotificationServiceClient } from '../../outbound/grpc/search_notification.client.js';
+import { NotificationServiceClient } from '../../outbound/grpc/notification.client.js';
 
 const searchNotificationClient = new SearchNotificationServiceClient();
+const notificationClient = new NotificationServiceClient();
 
 const searchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.get<{
@@ -144,13 +146,13 @@ const searchRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
     async (request, reply) => {
       try {
-        const response = await searchNotificationClient.emitNotification({
+        const response = await notificationClient.listNotifications({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
-          event_type: 'notifications.center.read',
-          recipient_user_id: request.session.auth?.userId ?? 'gateway-user',
-          document_id: '',
+          organization_id: 'org-main',
+          limit: 20,
+          offset: 0,
         });
-        return reply.send({ items: [response] });
+        return reply.send(response);
       } catch (error) {
         request.log.error({ error }, 'search-notification-service notification center failed');
         return reply.code(503).send({ error: 'search-notification-service unavailable' });

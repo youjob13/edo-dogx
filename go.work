@@ -5,3 +5,5 @@ use ./services/document-service
 use ./services/signature-service
 
 use ./services/search-notification-service
+
+use ./services/notification-service

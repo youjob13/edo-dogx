@@ -867,6 +867,80 @@ paths:
                   total:
                     type: integer
 
+  /api/notifications:
+    get:
+      tags: [documents]
+      summary: List notifications
+      operationId: listNotifications
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Notification center items
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationCenterItem"
+                  total:
+                    type: integer
+
+  /api/notifications/unread-count:
+    get:
+      tags: [documents]
+      summary: Get unread notifications count
+      operationId: getUnreadNotificationsCount
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total]
+                properties:
+                  total:
+                    type: integer
+
+  /api/notifications/{notificationId}/read:
+    post:
+      tags: [documents]
+      summary: Mark notification as read
+      operationId: markNotificationRead
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated notification
+
+  /api/notifications/stream:
+    get:
+      tags: [documents]
+      summary: Notifications SSE stream
+      operationId: notificationsStream
+      responses:
+        "200":
+          description: Server-sent events stream
+
   /api/auth/login:
     get:
       tags: [auth]

@@ -204,6 +204,20 @@ services:
     networks:
       - edo-network
 
+  notification-service:
+    build:
+      context: services/notification-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GRPC_ADDR: :50056
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - edo-network
+
   # ── Applications ──────────────────────────────────────────────────
 
   gateway:
@@ -229,6 +243,8 @@ services:
       signature-service:
         condition: service_started
       search-notification-service:
+        condition: service_started
+      notification-service:
         condition: service_started
       elasticsearch:
         condition: service_healthy

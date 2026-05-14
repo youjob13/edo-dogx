@@ -246,6 +246,39 @@ export interface ActivityItemResponse {
   boardId?: string;
 }
 
+export interface NotificationItem {
+  id: string;
+  recipientUserId: string;
+  organizationId: string;
+  eventType: string;
+  title: string;
+  body: string;
+  entityType: string;
+  entityId: string;
+  status: string;
+  isRead: boolean;
+  createdAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+}
+
+export interface NotificationListResponse {
+  items: NotificationItem[];
+  total: number;
+}
+
+export interface UnreadCountResponse {
+  total: number;
+}
+
+export interface NotificationSseEvent {
+  notificationId: string;
+  title: string;
+  body: string;
+  entityType: string;
+  entityId: string;
+}
+
 
 /**
  * <--- Tasks

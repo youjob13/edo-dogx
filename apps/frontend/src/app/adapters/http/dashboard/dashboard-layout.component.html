@@ -43,7 +43,7 @@
       <edo-dogx-topbar-action
         icon="notifications"
         ariaLabel="Открыть уведомления"
-        [badgeCount]="2"
+        [badgeCount]="unreadNotificationCount()"
         (pressed)="onNotificationsPressed()"
       />
       <edo-dogx-topbar-action icon="history" ariaLabel="Открыть историю" (pressed)="onHistoryPressed()" />
@@ -52,7 +52,7 @@
 
     @if (notificationsOpen()) {
       <div class="dashboard-topbar__menu dashboard-topbar__menu--notifications">
-        <edo-dogx-dropdown-menu [items]="notificationItems" (itemPressed)="onNotificationSelected($event)" />
+        <edo-dogx-dropdown-menu [items]="notificationItems()" (itemPressed)="onNotificationSelected($event)" />
       </div>
     }
 

@@ -2,12 +2,15 @@ import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply 
 import { TaskOrchestrationServiceClient, GrpcClientError } from '../../outbound/grpc/task.client.js';
 import { TaskService, type UpdateTaskStatusRequest } from '../../../application/task.service.js';
 import { TaskValidationService } from '../../../application/validation/task.validation.js';
+import { NotificationServiceClient } from '../../outbound/grpc/notification.client.js';
+import { notificationSseHub } from './notifications.sse-hub.js';
 import type { AuthSession } from '../../../domain/auth.js';
 import { CreateTaskRequest } from '@edo/types';
 
 const grpcClient = new TaskOrchestrationServiceClient();
 const taskService = new TaskService(grpcClient);
 const validationService = new TaskValidationService();
+const notificationClient = new NotificationServiceClient();
 
 function mapGrpcError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof GrpcClientError)) {
@@ -73,6 +76,32 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         email: authData.email,
         roles: authData.roles,
       });
+      if (task.assigneeId) {
+        try {
+          const created = (await notificationClient.createNotification({
+            actor_user_id: authData.userId,
+            recipient_user_id: task.assigneeId,
+            organization_id: 'org-main',
+            event_type: 'task.assigned',
+            title: 'Назначена задача',
+            body: `Вам назначена задача: ${task.title}`,
+            entity_type: 'TASK',
+            entity_id: task.id,
+          })) as { item?: Record<string, unknown> };
+          notificationSseHub.publish(task.assigneeId, {
+            type: 'notification',
+            payload: {
+              notificationId: String(created.item?.['id'] ?? ''),
+              title: String(created.item?.['title'] ?? 'Назначена задача'),
+              body: String(created.item?.['body'] ?? `Вам назначена задача: ${task.title}`),
+              entityType: 'TASK',
+              entityId: task.id,
+            },
+          });
+        } catch (error) {
+          request.log.warn({ error }, 'failed to create task assignment notification');
+        }
+      }
 
       return reply.code(201).send({ task });
     } catch (error) {
@@ -127,6 +156,36 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           email: authData.email,
           roles: authData.roles,
         });
+        const recipient =
+          task.status === 'approved' || task.status === 'declined'
+            ? task.creatorId || task.assigneeId
+            : task.approverId || task.assigneeId;
+        if (recipient) {
+          try {
+            const created = (await notificationClient.createNotification({
+              actor_user_id: authData.userId,
+              recipient_user_id: recipient,
+              organization_id: 'org-main',
+              event_type: `task.${task.status}`,
+              title: 'Обновлен статус задачи',
+              body: `Задача «${task.title}» перешла в статус ${task.status}`,
+              entity_type: 'TASK',
+              entity_id: task.id,
+            })) as { item?: Record<string, unknown> };
+            notificationSseHub.publish(recipient, {
+              type: 'notification',
+              payload: {
+                notificationId: String(created.item?.['id'] ?? ''),
+                title: String(created.item?.['title'] ?? 'Обновлен статус задачи'),
+                body: String(created.item?.['body'] ?? ''),
+                entityType: 'TASK',
+                entityId: task.id,
+              },
+            });
+          } catch (error) {
+            request.log.warn({ error }, 'failed to create task status notification');
+          }
+        }
 
         return reply.send({ task });
       } catch (error) {
