@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   KanbanBoardDetails,
@@ -104,3 +104,4 @@ export class TaskBoardUseCases {
     return this.api.addBoardMember(boardId, userId);
   }
 }
+

@@ -180,7 +180,7 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         TableKit.configure({ table: { resizable: true, HTMLAttributes: {} }, tableHeader: { HTMLAttributes: { class: 'table-header' } }, tableCell: { HTMLAttributes: { class: 'table-cell' } } }),
         Placeholder.configure({
-          placeholder: 'Start writing your document...',
+          placeholder: 'Начните вводить текст документа...',
         }),
       ],
       content: {
@@ -217,7 +217,7 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
       case 'alignCenter': return chain.setTextAlign('center').run();
 
       case 'setLink': {
-        const url = prompt('Enter URL');
+        const url = prompt('Введите URL');
         if (url) chain.setLink({ href: url }).run();
         return;
       }

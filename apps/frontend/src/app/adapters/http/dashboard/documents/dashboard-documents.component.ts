@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -52,10 +52,10 @@ export class DashboardDocumentsComponent {
   private readonly defaultPageSize = 5;
 
  protected readonly categoryOptions: Array<{ value: DashboardDocumentCategory | 'all'; label: string }> = [
-    { value: 'all', label: 'Все категории' },
-    { value: 'HR', label: 'Кадровый' },
-    { value: 'FINANCE', label: 'Финансы' },
-    { value: 'GENERAL', label: 'Общее' },
+    { value: 'all', label: 'Р’СЃРµ РєР°С‚РµРіРѕСЂРёРё' },
+    { value: 'HR', label: 'РљР°РґСЂРѕРІС‹Р№' },
+    { value: 'FINANCE', label: 'Р¤РёРЅР°РЅСЃС‹' },
+    { value: 'GENERAL', label: 'РћР±С‰РµРµ' },
   ];
 
 
@@ -215,7 +215,7 @@ export class DashboardDocumentsComponent {
         category: base.category,
         version,
         updatedAt: String(payload['created_at'] ?? base.updatedAt),
-        body: contentDocument ? JSON.stringify(contentDocument) : 'Не удалось загрузить содержимое документа.',
+        body: contentDocument ? JSON.stringify(contentDocument) : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРѕРґРµСЂР¶РёРјРѕРµ РґРѕРєСѓРјРµРЅС‚Р°.',
         contentDocument,
         contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
         ownerUserId: base.ownerUserId,
@@ -259,7 +259,7 @@ export class DashboardDocumentsComponent {
       .updateDocument(selectedId, payload)
       .pipe(take(1))
       .subscribe((result) => {
-        this.message.set(`Документ ${result.title} сохранен.`);
+        this.message.set(`Р”РѕРєСѓРјРµРЅС‚ ${result.title} СЃРѕС…СЂР°РЅРµРЅ.`);
         this.editOpen.set(false);
         this.loadDocuments();
       });
@@ -344,9 +344,9 @@ export class DashboardDocumentsComponent {
 
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
     const labels: Record<DashboardDocumentCategory, string> = {
-      HR: 'Кадровый',
-      FINANCE: 'Финансы',
-      GENERAL: 'Общее',
+      HR: 'РљР°РґСЂРѕРІС‹Р№',
+      FINANCE: 'Р¤РёРЅР°РЅСЃС‹',
+      GENERAL: 'РћР±С‰РµРµ',
     };
 
     return labels[category];
@@ -377,7 +377,7 @@ export class DashboardDocumentsComponent {
   }
 
   private downloadDocumentExport(documentId: string, format: DashboardExportFormat, sourceVersion?: number): void {
-    this.message.set(`Формат ${format}. Поддерживается только PDF и DOCX.`);
+    this.message.set(`Р¤РѕСЂРјР°С‚ ${format}. РџРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ PDF Рё DOCX.`);
 
     this.documentUseCases
       .getDocumentById(documentId)
@@ -395,10 +395,10 @@ export class DashboardDocumentsComponent {
       .subscribe({
         next: (request) => {
           this.startExportDownload(documentId, request.id);
-          this.message.set('Экспорт запущен. Ожидайте завершения.');
+          this.message.set('Р­РєСЃРїРѕСЂС‚ Р·Р°РїСѓС‰РµРЅ. РћР¶РёРґР°Р№С‚Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ.');
         },
         error: (error: unknown) => {
-          const message = error instanceof Error ? error.message : 'Не удалось запустить экспорт';
+          const message = error instanceof Error ? error.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ СЌРєСЃРїРѕСЂС‚';
           this.message.set(message);
         },
       });
@@ -411,7 +411,7 @@ export class DashboardDocumentsComponent {
       take(1),
       switchMap((request) =>
         request.status === 'FAILED'
-          ? throwError(() => new Error(request.errorMessage ?? '������� ���������� � �������.'))
+          ? throwError(() => new Error(request.errorMessage ?? 'Экспорт завершился с ошибкой.'))
           : [request],
       ),
     );
@@ -435,3 +435,4 @@ export class DashboardDocumentsComponent {
     return value === 'title' || value === 'categoryLabel' || value === 'modifiedAtLabel';
   }
 }
+

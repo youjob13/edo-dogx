@@ -1,6 +1,6 @@
 ﻿import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import {
   ActivityItem,
   DashboardCreateDocumentPayload,
@@ -23,18 +23,6 @@ import {
 } from '../../domain/dashboard/dashboard.models';
 import { DocumentApiPort } from '../../ports/outbound/document-api.port';
 import { Params } from '@angular/router';
-
-const MOCK_WEEKLY_VOLUME: Array<WeeklyVolumePoint> = [
-  { day: 'mon', value: 22 },
-  { day: 'tue', value: 45 },
-  { day: 'wed', value: 30 },
-  { day: 'thu', value: 80 },
-  { day: 'fri', value: 100 },
-  { day: 'sat', value: 63 },
-  { day: 'sun', value: 40 },
-];
-
-
 
 const emptyRichDocument = (): DashboardRichContentDocument => ({
   type: 'doc',
@@ -76,6 +64,12 @@ interface GatewayActivityResponse {
     boardId?: string;
     board_id?: string;
   }>;
+}
+
+interface DashboardStorageResponse {
+  usedTb: number;
+  totalTb: number;
+  usedPercent: number;
 }
 
 const parseGatewayContentDocument = (
@@ -249,7 +243,7 @@ export class DashboardHttpAdapter implements DocumentApiPort {
   private readonly http = inject(HttpClient);
 
    getWeeklyVolume(): Observable<Array<WeeklyVolumePoint>> {
-    return of(MOCK_WEEKLY_VOLUME)
+    return this.http.get<Array<WeeklyVolumePoint>>('/api/dashboard/weekly-volume');
   }
 
   getDocumentsData(query: DashboardQuery = {}): Observable<PaginatedResult<DocumentItem>> {
@@ -305,11 +299,13 @@ export class DashboardHttpAdapter implements DocumentApiPort {
   }
 
   public getStorageUsage(): Observable<StorageUsage> {
-    return of({
-      usedTb: 1.2,
-      totalTb: 1.5,
-      usedPercent: 80,
-    })
+    return this.http.get<DashboardStorageResponse>('/api/dashboard/storage').pipe(
+      map((response) => ({
+        usedTb: Number(response.usedTb ?? 0),
+        totalTb: Number(response.totalTb ?? 0),
+        usedPercent: Number(response.usedPercent ?? 0),
+      })),
+    );
   }
 
   public previewDocument(id: string): Observable<DashboardPreviewDocument> {
