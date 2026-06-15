@@ -42,6 +42,10 @@ export class TaskOrchestrationServiceClient {
     return this.call('UpdateTaskStatus', payload);
   }
 
+  updateTaskAssignee(payload: unknown): Promise<unknown> {
+    return this.call('UpdateTaskAssignee', payload);
+  }
+
   getTask(payload: unknown): Promise<unknown> {
     return this.call('GetTask', payload);
   }

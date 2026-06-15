@@ -49,6 +49,12 @@ textarea {
   resize: vertical;
 }
 
+.dashboard-task-details__decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .dashboard-task-details__comments {
   margin-top: 0.9rem;
   display: grid;

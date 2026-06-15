@@ -213,6 +213,7 @@ export class DashboardDocumentsComponent {
         id: documentId,
         title: String(payload['title'] ?? base.title),
         category: base.category,
+        status: base.status,
         version,
         updatedAt: String(payload['created_at'] ?? base.updatedAt),
         body: contentDocument ? JSON.stringify(contentDocument) : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРѕРґРµСЂР¶РёРјРѕРµ РґРѕРєСѓРјРµРЅС‚Р°.',
@@ -220,6 +221,11 @@ export class DashboardDocumentsComponent {
         contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
         ownerUserId: base.ownerUserId,
         ownerUserName: base.ownerUserName,
+        canEdit: base.canEdit,
+        canSubmit: base.canSubmit,
+        canApprove: base.canApprove,
+        canRequestChanges: base.canRequestChanges,
+        canArchive: base.canArchive,
       });
       this.previewOpen.set(true);
     });

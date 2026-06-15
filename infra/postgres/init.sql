@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(300) NOT NULL,
     category VARCHAR(32) NOT NULL,
+    organization_id TEXT NOT NULL DEFAULT 'org-main',
     status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
     owner_user_id TEXT NOT NULL,
     owner_user_name TEXT NOT NULL,
@@ -36,7 +37,47 @@ CREATE TABLE IF NOT EXISTS document_versions (
 CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_documents_owner_name ON documents(owner_user_name);
 CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
+CREATE INDEX IF NOT EXISTS idx_documents_organization_id ON documents(organization_id);
 CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id);
+
+CREATE TABLE IF NOT EXISTS document_workflows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    organization_id TEXT NOT NULL,
+    submitted_version BIGINT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    submitted_by_user_id TEXT NOT NULL,
+    approver_user_id TEXT NOT NULL DEFAULT '',
+    decision_comment TEXT,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    decided_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_document_workflows_document UNIQUE (document_id)
+);
+
+CREATE TABLE IF NOT EXISTS document_workflow_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workflow_id UUID NOT NULL REFERENCES document_workflows(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    actor_user_id TEXT NOT NULL,
+    event_type VARCHAR(32) NOT NULL,
+    previous_status VARCHAR(32) NOT NULL,
+    new_status VARCHAR(32) NOT NULL,
+    document_version BIGINT NOT NULL,
+    comment TEXT,
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_document_workflows_organization
+    ON document_workflows(organization_id);
+CREATE INDEX IF NOT EXISTS idx_document_workflows_approver_status
+    ON document_workflows(approver_user_id, status);
+CREATE INDEX IF NOT EXISTS idx_document_workflows_status_submitted
+    ON document_workflows(status, submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_document_workflow_events_document
+    ON document_workflow_events(document_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_document_workflow_events_workflow
+    ON document_workflow_events(workflow_id, occurred_at ASC);
 
 -- ============================================================
 -- document-service: 002_editor_profiles_and_exports
@@ -98,3 +139,83 @@ CREATE INDEX IF NOT EXISTS idx_export_requests_status
 
 CREATE INDEX IF NOT EXISTS idx_export_artifacts_export_request_id
     ON export_artifacts(export_request_id);
+
+-- ============================================================
+-- document-service: task identity and membership
+-- ============================================================
+CREATE TABLE IF NOT EXISTS task_boards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id TEXT NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS task_board_members (
+    board_id UUID NOT NULL REFERENCES task_boards(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    department TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    role VARCHAR(16) NOT NULL DEFAULT 'MEMBER',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_task_board_members_role CHECK (role IN ('OWNER', 'MANAGER', 'MEMBER')),
+    PRIMARY KEY (board_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS organization_members (
+    organization_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    full_name TEXT NOT NULL DEFAULT '',
+    department TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    roles TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (organization_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    board_id UUID REFERENCES task_boards(id) ON DELETE SET NULL,
+    title VARCHAR(300) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    task_type VARCHAR(32) NOT NULL DEFAULT 'approval',
+    creator_user_id TEXT NOT NULL,
+    creator_user_name TEXT NOT NULL,
+    assignee_user_id TEXT NOT NULL,
+    assignee_user_name TEXT NOT NULL,
+    approver_user_id TEXT,
+    approver_user_name TEXT,
+    decision VARCHAR(32),
+    decision_comment TEXT,
+    due_date DATE,
+    updated_by_user_id TEXT,
+    updated_by_user_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS task_attachments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE RESTRICT,
+    title VARCHAR(300) NOT NULL,
+    category VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_task_attachments_task_document UNIQUE (task_id, document_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_boards_organization_id ON task_boards(organization_id);
+CREATE INDEX IF NOT EXISTS idx_task_board_members_board_id ON task_board_members(board_id);
+CREATE INDEX IF NOT EXISTS idx_organization_members_org_id ON organization_members(organization_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_creator_user_id ON tasks(creator_user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assignee_user_id ON tasks(assignee_user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_approver_user_id ON tasks(approver_user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_board_id ON tasks(board_id);
+CREATE INDEX IF NOT EXISTS idx_task_attachments_task_id ON task_attachments(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_attachments_document_id ON task_attachments(document_id);

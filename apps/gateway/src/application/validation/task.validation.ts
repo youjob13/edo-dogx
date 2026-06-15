@@ -27,7 +27,11 @@ export class TaskValidationService {
     const errors: ValidationError[] = [];
 
     // Validate title
-    if (!payload.boardId || typeof payload.boardId !== 'string' || payload.boardId.trim().length === 0) {
+    if (
+      !payload.boardId ||
+      typeof payload.boardId !== 'string' ||
+      payload.boardId.trim().length === 0
+    ) {
       errors.push({
         field: 'boardId',
         message: 'Task must be created within a board (boardId is required)',
@@ -45,7 +49,11 @@ export class TaskValidationService {
     }
 
     // Validate assignee (MANDATORY)
-    if (!payload.assigneeId || typeof payload.assigneeId !== 'string' || payload.assigneeId.trim().length === 0) {
+    if (
+      !payload.assigneeId ||
+      typeof payload.assigneeId !== 'string' ||
+      payload.assigneeId.trim().length === 0
+    ) {
       errors.push({
         field: 'assigneeId',
         message: 'Task must be assigned to someone (assigneeId is required)',
@@ -64,7 +72,11 @@ export class TaskValidationService {
 
     // For approval tasks, validate approver is provided
     if (payload.taskType === 'approval') {
-      if (!payload.approverId || typeof payload.approverId !== 'string' || payload.approverId.trim().length === 0) {
+      if (
+        !payload.approverId ||
+        typeof payload.approverId !== 'string' ||
+        payload.approverId.trim().length === 0
+      ) {
         errors.push({
           field: 'approverId',
           message: 'Approval tasks must have an assigned approver',
@@ -79,22 +91,17 @@ export class TaskValidationService {
     };
   }
 
-  /**
-   * Validate task status update request
-   * - Status must be valid
-   * - If decision is provided, task must be in 'in_review' status
-   * - Only valid state transitions are allowed
-   */
-  validateTaskStatusUpdate(
-    payload: Record<string, unknown>,
-    currentStatus?: string,
-  ): TaskValidationResult {
+  validateTaskStatusUpdate(payload: Record<string, unknown>): TaskValidationResult {
     const errors: ValidationError[] = [];
     const validStatuses = ['pending', 'in_review', 'approved', 'declined'];
     const validDecisions = ['approved', 'declined'];
 
     // Validate task ID
-    if (!payload.taskId || typeof payload.taskId !== 'string' || payload.taskId.trim().length === 0) {
+    if (
+      !payload.taskId ||
+      typeof payload.taskId !== 'string' ||
+      payload.taskId.trim().length === 0
+    ) {
       errors.push({
         field: 'taskId',
         message: 'Task ID is required',
@@ -111,40 +118,50 @@ export class TaskValidationService {
       });
     }
 
-    // Validate state transition if current status is known
-    if (currentStatus && payload.status && currentStatus !== payload.status) {
-      const isValidTransition = this.isValidStateTransition(currentStatus, payload.status as string);
-      if (!isValidTransition) {
-        errors.push({
-          field: 'status',
-          message: `Invalid state transition from "${currentStatus}" to "${payload.status}"`,
-          code: 'INVALID_STATE_TRANSITION',
-        });
-      }
+    const status = payload.status as string | undefined;
+    const decision = payload.decision as string | undefined;
+    const decisionComment =
+      typeof payload.decisionComment === 'string' ? payload.decisionComment.trim() : '';
+
+    if (decision && !validDecisions.includes(decision)) {
+      errors.push({
+        field: 'decision',
+        message: `Decision must be one of: ${validDecisions.join(', ')}`,
+        code: 'INVALID_DECISION',
+      });
     }
 
-    // Validate decision
-    if (payload.decision) {
-      if (!validDecisions.includes(payload.decision as string)) {
-        errors.push({
-          field: 'decision',
-          message: `Decision must be one of: ${validDecisions.join(', ')}`,
-          code: 'INVALID_DECISION',
-        });
-      }
-
-      // Decision can only be made when task is in review
-      if (payload.status && payload.status !== 'in_review') {
-        errors.push({
-          field: 'decision',
-          message: 'Decisions can only be made when task is in "in_review" status',
-          code: 'DECISION_REQUIRES_IN_REVIEW_STATUS',
-        });
-      }
+    if (status === 'approved' && decision !== 'approved') {
+      errors.push({
+        field: 'decision',
+        message: 'Approved status requires the approved decision',
+        code: 'APPROVED_DECISION_REQUIRED',
+      });
     }
 
-    // If decision is provided, decision comment is optional but recommended
-    // No validation error for missing decision comment, just a note
+    if (status === 'declined' && decision !== 'declined') {
+      errors.push({
+        field: 'decision',
+        message: 'Declined status requires the declined decision',
+        code: 'DECLINED_DECISION_REQUIRED',
+      });
+    }
+
+    if (status === 'declined' && !decisionComment) {
+      errors.push({
+        field: 'decisionComment',
+        message: 'Decision comment is required when declining a task',
+        code: 'DECLINE_COMMENT_REQUIRED',
+      });
+    }
+
+    if ((status === 'pending' || status === 'in_review') && (decision || decisionComment)) {
+      errors.push({
+        field: 'decision',
+        message: 'Decision fields are only allowed for approval or decline',
+        code: 'DECISION_NOT_ALLOWED',
+      });
+    }
 
     return {
       isValid: errors.length === 0,
@@ -178,25 +195,5 @@ export class TaskValidationService {
       isValid: errors.length === 0,
       errors,
     };
-  }
-
-  /**
-   * Determine if a state transition is valid
-   * State machine:
-   * - pending -> in_review, approved, declined
-   * - in_review -> approved, declined, pending
-   * - approved -> (final state, no transitions)
-   * - declined -> (final state, no transitions)
-   */
-  private isValidStateTransition(fromStatus: string, toStatus: string): boolean {
-    const validTransitions: Record<string, Set<string>> = {
-      pending: new Set(['in_review', 'approved', 'declined']),
-      in_review: new Set(['approved', 'declined', 'pending']),
-      approved: new Set(),
-      declined: new Set(),
-    };
-
-    const allowedTransitions = validTransitions[fromStatus];
-    return allowedTransitions ? allowedTransitions.has(toStatus) : false;
   }
 }

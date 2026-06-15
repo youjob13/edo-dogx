@@ -1,4 +1,18 @@
 export type DashboardDocumentCategory = 'HR' | 'FINANCE' | 'GENERAL';
+export type DashboardDocumentStatus =
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'CHANGES_REQUESTED'
+  | 'APPROVED'
+  | 'ARCHIVED';
+
+export interface DashboardDocumentCapabilities {
+  readonly canEdit: boolean;
+  readonly canSubmit: boolean;
+  readonly canApprove: boolean;
+  readonly canRequestChanges: boolean;
+  readonly canArchive: boolean;
+}
 
 export interface WeeklyVolumePoint {
   readonly day: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
@@ -9,11 +23,17 @@ export interface DocumentItem {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly status: DashboardDocumentStatus;
   readonly updatedAt: string;
   readonly sizeKb: number;
   readonly version?: number;
   readonly ownerUserId?: string;
   readonly ownerUserName?: string;
+  readonly canEdit: boolean;
+  readonly canSubmit: boolean;
+  readonly canApprove: boolean;
+  readonly canRequestChanges: boolean;
+  readonly canArchive: boolean;
 }
 
 export interface ActivityItem {
@@ -81,8 +101,70 @@ export interface DashboardEditableDocument {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly status: DashboardDocumentStatus;
   readonly version: number;
   readonly contentDocument?: DashboardRichContentDocument;
+  readonly canEdit: boolean;
+  readonly canSubmit: boolean;
+  readonly canApprove: boolean;
+  readonly canRequestChanges: boolean;
+  readonly canArchive: boolean;
+}
+
+export interface DashboardWorkflowInstance {
+  readonly id: string;
+  readonly documentId: string;
+  readonly currentStepCode?: string;
+  readonly status: DashboardDocumentStatus;
+  readonly assignedUserId?: string;
+  readonly updatedAt: string;
+  readonly submittedVersion: number;
+  readonly submittedByUserId: string;
+  readonly approverUserId: string;
+  readonly decisionComment?: string;
+  readonly submittedAt: string;
+  readonly decidedAt?: string;
+  readonly canEdit: boolean;
+  readonly canSubmit: boolean;
+  readonly canApprove: boolean;
+  readonly canRequestChanges: boolean;
+  readonly canArchive: boolean;
+}
+
+export interface DashboardWorkflowEvent {
+  readonly id: string;
+  readonly workflowId: string;
+  readonly documentId: string;
+  readonly actorUserId: string;
+  readonly eventType: string;
+  readonly previousStatus: DashboardDocumentStatus;
+  readonly newStatus: DashboardDocumentStatus;
+  readonly documentVersion: number;
+  readonly comment?: string;
+  readonly occurredAt: string;
+}
+
+export interface DashboardSubmitWorkflowPayload {
+  readonly approverUserId: string;
+  readonly expectedVersion: number;
+}
+
+export interface DashboardApproveWorkflowPayload {
+  readonly expectedVersion: number;
+}
+
+export interface DashboardRequestWorkflowChangesPayload {
+  readonly comment: string;
+  readonly expectedVersion: number;
+}
+
+export interface DashboardArchiveDocumentPayload {
+  readonly expectedVersion: number;
+}
+
+export interface DashboardArchiveDocumentResult {
+  readonly archived: boolean;
+  readonly archivedAt: string;
 }
 
 export type DashboardEditorContextType = 'CATEGORY' | 'TEMPLATE';
@@ -146,6 +228,7 @@ export interface DashboardPreviewDocument {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly status: DashboardDocumentStatus;
   readonly version: number;
   readonly updatedAt: string;
   readonly body: string;
@@ -153,6 +236,11 @@ export interface DashboardPreviewDocument {
   readonly contentDocumentJson?: string;
   readonly ownerUserId?: string;
   readonly ownerUserName?: string;
+  readonly canEdit: boolean;
+  readonly canSubmit: boolean;
+  readonly canApprove: boolean;
+  readonly canRequestChanges: boolean;
+  readonly canArchive: boolean;
 }
 
 export type KanbanTaskStatus = 'pending' | 'in_review' | 'approved' | 'declined';
@@ -245,11 +333,15 @@ export interface KanbanTaskDetails {
   readonly task: KanbanTask;
   readonly members: Array<KanbanBoardMember>;
   readonly currentUserId: string;
-  readonly canManage: boolean;
+  readonly canEdit: boolean;
+  readonly canAssign: boolean;
+  readonly canMoveToReview: boolean;
+  readonly canApprove: boolean;
+  readonly canComment: boolean;
 }
 
 export interface KanbanTaskAssignPayload {
-  readonly assigneeId: string | null;
+  readonly assigneeId: string;
 }
 
 export interface KanbanTaskMovePayload {

@@ -77,8 +77,8 @@ func (r *DocumentVersionRepository) LoadContent(ctx context.Context, objectKey s
 
 func (r *DocumentVersionRepository) AppendVersionTx(ctx context.Context, tx *sql.Tx, version model.DocumentVersion) error {
 	const query = `
-		INSERT INTO document_versions (document_id, version_number, title, category, changed_by_user_id, change_summary, object_key, object_version_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO document_versions (document_id, version_number, title, category, status, changed_by_user_id, change_summary, object_key, object_version_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 	_, err := tx.ExecContext(
 		ctx,
@@ -87,6 +87,7 @@ func (r *DocumentVersionRepository) AppendVersionTx(ctx context.Context, tx *sql
 		version.VersionNumber,
 		version.Title,
 		version.Category,
+		string(version.Status),
 		version.ChangedByUserID,
 		version.ChangeSummary,
 		version.ObjectKey,
@@ -109,7 +110,7 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 	}
 
 	const query = `
-		SELECT document_id, version_number, title, category, changed_by_user_id, change_summary, created_at, object_key, object_version_id
+		SELECT document_id, version_number, title, category, status, changed_by_user_id, change_summary, created_at, object_key, object_version_id
 		FROM document_versions
 		WHERE document_id = $1
 		ORDER BY version_number DESC
@@ -124,7 +125,7 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 	items := make([]model.DocumentVersion, 0, limit)
 	for rows.Next() {
 		var item model.DocumentVersion
-		if err := rows.Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.ChangedByUserID, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+		if err := rows.Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
 			return nil, 0, err
 		}
 		items = append(items, item)
@@ -134,12 +135,12 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 
 func (r *DocumentVersionRepository) GetVersion(ctx context.Context, documentID string, versionNumber int64) (model.DocumentVersion, error) {
 	const query = `
-		SELECT document_id, version_number, title, category, changed_by_user_id, change_summary, created_at, object_key, object_version_id
+		SELECT document_id, version_number, title, category, status, changed_by_user_id, change_summary, created_at, object_key, object_version_id
 		FROM document_versions
 		WHERE document_id = $1 AND version_number = $2
 	`
 	var item model.DocumentVersion
-	if err := r.db.QueryRowContext(ctx, query, documentID, versionNumber).Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.ChangedByUserID, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+	if err := r.db.QueryRowContext(ctx, query, documentID, versionNumber).Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
 		if err == sql.ErrNoRows {
 			return model.DocumentVersion{}, model.ErrDocumentNotFound
 		}

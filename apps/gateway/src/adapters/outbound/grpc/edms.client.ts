@@ -3,7 +3,6 @@ import { createGrpcClient } from './grpc-client.util.js';
 import { resolveServiceProtoPath } from './proto-path.js';
 
 interface EdmsGrpcClients {
-  documentService: Client;
   documentWorkflowService: Client;
   signatureService: Client;
   searchNotificationService: Client;
@@ -28,7 +27,6 @@ export class EdmsGrpcClientBootstrap {
     const protoPath = resolveServiceProtoPath();
 
     return {
-      documentService: createGrpcClient('DocumentService', this.documentAddress, protoPath),
       documentWorkflowService: createGrpcClient(
         'DocumentWorkflowService',
         this.documentAddress,

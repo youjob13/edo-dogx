@@ -24,6 +24,8 @@ service DocumentWorkflowService {
   rpc SubmitWorkflow(SubmitWorkflowRequest) returns (WorkflowInstance);
   rpc ApproveWorkflow(ApproveWorkflowRequest) returns (WorkflowInstance);
   rpc RequestWorkflowChanges(RequestWorkflowChangesRequest) returns (WorkflowInstance);
+  rpc GetWorkflow(GetWorkflowRequest) returns (WorkflowInstance);
+  rpc ListWorkflowEvents(ListWorkflowEventsRequest) returns (ListWorkflowEventsResponse);
   rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
   rpc ListActivityEvents(ListActivityEventsRequest) returns (ListActivityEventsResponse);
 }
@@ -34,28 +36,6 @@ service SearchNotificationService {
   rpc SearchGlobal(SearchGlobalRequest) returns (SearchGlobalResponse);
   rpc EmitNotification(EmitNotificationRequest) returns (EmitNotificationResponse);
   rpc RetryFailedNotifications(RetryFailedNotificationsRequest) returns (RetryFailedNotificationsResponse);
-}
-
-service DocumentService {
-  rpc CreateDraft(CreateDraftRequest) returns (Document);
-  rpc UpdateDraft(UpdateDraftRequest) returns (Document);
-  rpc GetDocument(GetDocumentRequest) returns (Document);
-  rpc GetEditorControlProfile(GetEditorControlProfileRequest) returns (EditorControlProfile);
-  rpc UpdateEditorControlProfile(UpdateEditorControlProfileRequest) returns (EditorControlProfile);
-  rpc CreateExportRequest(CreateExportPayload) returns (ExportRequest);
-  rpc GetExportRequest(GetExportRequestRequest) returns (ExportRequest);
-  rpc DownloadExportArtifact(DownloadExportArtifactRequest) returns (DownloadExportArtifactResponse);
-  rpc SearchDocuments(SearchDocumentsRequest) returns (SearchDocumentsResponse);
-  rpc ListDocumentVersions(ListDocumentVersionsRequest) returns (ListDocumentVersionsResponse);
-  rpc GetDocumentVersion(GetDocumentVersionRequest) returns (DocumentVersion);
-  rpc ArchiveDocument(ArchiveDocumentRequest) returns (ArchiveDocumentResponse);
-}
-
-service WorkflowService {
-  rpc StartWorkflow(StartWorkflowRequest) returns (WorkflowInstance);
-  rpc ApproveStep(ApproveStepRequest) returns (WorkflowInstance);
-  rpc RejectStep(RejectStepRequest) returns (WorkflowInstance);
-  rpc RequestChanges(RequestChangesRequest) returns (WorkflowInstance);
 }
 
 service SignatureService {
@@ -92,6 +72,7 @@ message Document {
   string owner_user_name = 8;
   string object_key = 9;
   string object_version_id = 10;
+  string status = 11;
 }
 
 message DocumentVersion {
@@ -105,6 +86,7 @@ message DocumentVersion {
   string object_key = 8;
   string object_version_id = 9;
   string content_document_json = 10;
+  string status = 11;
 }
 
 message EditorControlProfile {
@@ -146,6 +128,30 @@ message WorkflowInstance {
   string status = 4;
   string assigned_user_id = 5;
   string updated_at = 6;
+  int64 submitted_version = 7;
+  string submitted_by_user_id = 8;
+  string approver_user_id = 9;
+  string decision_comment = 10;
+  string submitted_at = 11;
+  string decided_at = 12;
+}
+
+message WorkflowEvent {
+  string id = 1;
+  string workflow_id = 2;
+  string document_id = 3;
+  string actor_user_id = 4;
+  string event_type = 5;
+  string previous_status = 6;
+  string new_status = 7;
+  int64 document_version = 8;
+  string comment = 9;
+  string occurred_at = 10;
+}
+
+message ListWorkflowEventsResponse {
+  repeated WorkflowEvent items = 1;
+  int32 total = 2;
 }
 
 message BoardMember {
@@ -153,6 +159,8 @@ message BoardMember {
   string full_name = 2;
   string department = 3;
   string email = 4;
+  string board_role = 5;
+  repeated string roles = 6;
 }
 
 message TaskAttachment {
@@ -197,14 +205,37 @@ message CreateTaskResponse {
   Task task = 1;
 }
 
+message ListTasksRequest {
+  string actor_user_id = 1;
+  string assignee_user_id = 2;
+  string status = 3;
+  string task_type = 4;
+  int32 limit = 5;
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
+
 message UpdateTaskStatusRequest {
   string actor_user_id = 1;
   string task_id = 2;
   string status = 3;
   string decision_comment = 4;
+  string decision = 5;
 }
 
 message UpdateTaskStatusResponse {
+  Task task = 1;
+}
+
+message UpdateTaskAssigneeRequest {
+  string actor_user_id = 1;
+  string task_id = 2;
+  string assignee_user_id = 3;
+}
+
+message UpdateTaskAssigneeResponse {
   Task task = 1;
 }
 
@@ -291,12 +322,15 @@ message GetTaskDetailsResponse {
   bool can_edit = 4;
   bool can_approve = 5;
   bool can_move_to_review = 6;
+  bool can_assign = 7;
+  bool can_comment = 8;
 }
 
 message AvailableApproversRequest {
-  string board_id = 1;
-  string search = 2;
-  int32 limit = 3;
+  string actor_user_id = 1;
+  string board_id = 2;
+  string search = 3;
+  int32 limit = 4;
 }
 
 message AvailableApproversResponse {
@@ -320,6 +354,7 @@ message AddTaskBoardMemberRequest {
   string actor_user_id = 1;
   string board_id = 2;
   string user_id = 3;
+  string role = 4;
 }
 
 message AddTaskBoardMemberResponse {
@@ -333,6 +368,7 @@ message CreateOrganizationMemberRequest {
   string full_name = 4;
   string department = 5;
   string email = 6;
+  repeated string roles = 7;
 }
 
 message CreateOrganizationMemberResponse {
@@ -350,11 +386,12 @@ message DocumentItem {
 }
 
 message AvailableDocumentsRequest {
-  string board_id = 1;
-  string category = 2;
-  string status = 3;
-  string search = 4;
-  int32 limit = 5;
+  string actor_user_id = 1;
+  string board_id = 2;
+  string category = 3;
+  string status = 4;
+  string search = 5;
+  int32 limit = 6;
 }
 
 message AvailableDocumentsResponse {
@@ -365,7 +402,9 @@ message AvailableDocumentsResponse {
 service TaskOrchestrationService {
   rpc CreateTaskBoard(CreateTaskBoardRequest) returns (CreateTaskBoardResponse);
   rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
   rpc UpdateTaskStatus(UpdateTaskStatusRequest) returns (UpdateTaskStatusResponse);
+  rpc UpdateTaskAssignee(UpdateTaskAssigneeRequest) returns (UpdateTaskAssigneeResponse);
   rpc AddTaskAttachments(AddTaskAttachmentsRequest) returns (AddTaskAttachmentsResponse);
   rpc RemoveTaskAttachment(RemoveTaskAttachmentRequest) returns (Task);
   rpc ListTaskBoards(ListTaskBoardsRequest) returns (ListTaskBoardsResponse);
@@ -516,6 +555,8 @@ message RequestChangesRequest {
 message SubmitWorkflowRequest {
   string actor_user_id = 1;
   string document_id = 2;
+  string approver_user_id = 3;
+  int64 expected_version = 4;
 }
 
 message ApproveWorkflowRequest {
@@ -529,6 +570,18 @@ message RequestWorkflowChangesRequest {
   string document_id = 2;
   string comment = 3;
   int64 expected_version = 4;
+}
+
+message GetWorkflowRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+}
+
+message ListWorkflowEventsRequest {
+  string actor_user_id = 1;
+  string document_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
 }
 
 message StartSignatureRequest {

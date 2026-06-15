@@ -17,6 +17,7 @@ export class OrganizationMemberProvisioningAdapter implements OrganizationMember
       full_name: payload.fullName,
       department: payload.department,
       email: payload.email,
+      roles: payload.roles,
     });
   }
 }

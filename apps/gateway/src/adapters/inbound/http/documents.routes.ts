@@ -10,6 +10,87 @@ import { notificationSseHub } from './notifications.sse-hub.js';
 const documentClient = new DocumentServiceClient();
 const notificationClient = new NotificationServiceClient();
 
+interface DocumentCapabilities {
+  canEdit: boolean;
+  canSubmit: boolean;
+  canApprove: boolean;
+  canRequestChanges: boolean;
+  canArchive: boolean;
+};
+
+type SessionAuthView = { userId?: string; fullName?: string; roles?: string[] } | undefined;
+
+function actorIsAdmin(auth: SessionAuthView): boolean {
+  return Array.isArray(auth?.roles) && auth.roles.includes('edms.admin');
+}
+
+function isEditableDocumentStatus(status: string | undefined): boolean {
+  return status === 'DRAFT' || status === 'CHANGES_REQUESTED';
+}
+
+function pickStringValue(
+  payload: Record<string, unknown>,
+  keys: string[],
+): string | undefined {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === 'string' && value.trim() !== '') {
+      return value.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function enrichDocumentCapabilities<T extends Record<string, unknown>>(
+  payload: T,
+  auth: SessionAuthView,
+): T & DocumentCapabilities {
+  const status = pickStringValue(payload, ['status']) ?? 'DRAFT';
+  const ownerUserId = pickStringValue(payload, ['owner_user_id', 'ownerUserId']);
+  const isOwner = Boolean(auth?.userId) && ownerUserId === auth?.userId;
+  const isAdmin = actorIsAdmin(auth);
+  const editable = isEditableDocumentStatus(status) && (isOwner || isAdmin);
+  const archivable = status === 'APPROVED' && (isOwner || isAdmin);
+
+  return {
+    ...payload,
+    canEdit: editable,
+    canSubmit: editable,
+    canApprove: false,
+    canRequestChanges: false,
+    canArchive: archivable,
+  };
+}
+
+function enrichWorkflowCapabilities<T extends Record<string, unknown>>(
+  payload: T,
+  auth: SessionAuthView,
+): T & DocumentCapabilities {
+  const status = pickStringValue(payload, ['status']) ?? 'DRAFT';
+  const approverUserId = pickStringValue(payload, [
+    'approver_user_id',
+    'approverUserId',
+    'assigned_user_id',
+    'assignedUserId',
+  ]);
+  const submittedByUserId = pickStringValue(payload, ['submitted_by_user_id', 'submittedByUserId']);
+  const isAdmin = actorIsAdmin(auth);
+  const isSubmitter = Boolean(auth?.userId) && submittedByUserId === auth?.userId;
+  const canApprove = status === 'IN_REVIEW' && ((Boolean(auth?.userId) && approverUserId === auth?.userId) || isAdmin);
+  const canEdit = isEditableDocumentStatus(status) && (isSubmitter || isAdmin);
+  const canArchive = status === 'APPROVED' && (isSubmitter || isAdmin);
+
+  return {
+    ...payload,
+    canEdit,
+    canSubmit: canEdit,
+    canApprove,
+    canRequestChanges: canApprove,
+    canArchive,
+  };
+}
+
 function enrichOwnerNameWithSession<T extends Record<string, unknown>>(
   payload: T,
   auth: { userId?: string; fullName?: string } | undefined,
@@ -53,6 +134,50 @@ function enrichSearchOwnerNames(
         : item,
     ),
   };
+}
+
+function pickWorkflowUserId(payload: unknown, keys: string[]): string | undefined {
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+
+  return pickStringValue(payload as Record<string, unknown>, keys);
+}
+
+async function createWorkflowNotification(
+  actorUserId: string,
+  recipientUserId: string | undefined,
+  eventType: string,
+  title: string,
+  body: string,
+  documentId: string,
+  fallbackTitle: string,
+) {
+  if (!recipientUserId) {
+    return;
+  }
+
+  const created = (await notificationClient.createNotification({
+    actor_user_id: actorUserId,
+    recipient_user_id: recipientUserId,
+    organization_id: 'org-main',
+    event_type: eventType,
+    title,
+    body,
+    entity_type: 'DOCUMENT',
+    entity_id: documentId,
+  })) as { item?: Record<string, unknown> };
+
+  notificationSseHub.publish(recipientUserId, {
+    type: 'notification',
+    payload: {
+      notificationId: String(created.item?.['id'] ?? ''),
+      title: String(created.item?.['title'] ?? fallbackTitle),
+      body: String(created.item?.['body'] ?? ''),
+      entityType: 'DOCUMENT',
+      entityId: documentId,
+    },
+  });
 }
 
 function toContentDocumentJSON(contentDocument: Record<string, unknown> | undefined): string | undefined {
@@ -134,7 +259,10 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         });
         return reply.code(201).send(
           response && typeof response === 'object'
-            ? enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)
+            ? enrichDocumentCapabilities(
+                enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth),
+                request.session.auth,
+              )
             : response,
         );
       } catch (error) {
@@ -193,7 +321,14 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           content_document_json: contentDocumentJSON,
           expected_version: expectedVersion,
         });
-        return reply.send(response);
+        return reply.send(
+          response && typeof response === 'object'
+            ? enrichDocumentCapabilities(
+                enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth),
+                request.session.auth,
+              )
+            : response,
+        );
       } catch (error) {
         request.log.error({ error }, 'document-service update draft failed');
         return mapGrpcError(reply, error);
@@ -228,7 +363,10 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         });
         return reply.send(
           response && typeof response === 'object'
-            ? enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)
+            ? enrichDocumentCapabilities(
+                enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth),
+                request.session.auth,
+              )
             : response,
         );
       } catch (error) {
@@ -282,11 +420,23 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           limit,
           offset,
         });
-        return reply.send(
-          response && typeof response === 'object'
-            ? enrichSearchOwnerNames(response as Record<string, unknown>, request.session.auth)
-            : response,
-        );
+        if (!response || typeof response !== 'object') {
+          return reply.send(response);
+        }
+
+        const payload = enrichSearchOwnerNames(response as Record<string, unknown>, request.session.auth);
+        const items = Array.isArray(payload['items'])
+          ? payload['items'].map((item) =>
+              item && typeof item === 'object'
+                ? enrichDocumentCapabilities(item as Record<string, unknown>, request.session.auth)
+                : item,
+            )
+          : payload['items'];
+
+        return reply.send({
+          ...payload,
+          items,
+        });
       } catch (error) {
         request.log.error({ error }, 'document-service search failed');
         return mapGrpcError(reply, error);
@@ -335,7 +485,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
     },
   );
 
-  fastify.post<{ Params: { documentId: string } }>(
+  fastify.post<{ Params: { documentId: string }; Body: { approverUserId: string; expectedVersion: number } }>(
     '/:documentId/workflow/submit',
     {
       preHandler: [fastify.authenticate, edmsRbacGuard('documents.submit')],
@@ -347,45 +497,58 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
             documentId: { type: 'string', minLength: 1 },
           },
         },
+        body: {
+          type: 'object',
+          required: ['approverUserId', 'expectedVersion'],
+          properties: {
+            approverUserId: { type: 'string', minLength: 1 },
+            expectedVersion: { type: 'integer', minimum: 1 },
+          },
+        },
       },
     },
     async (request, reply) => {
       const { documentId } = request.params;
+      const { approverUserId, expectedVersion } = request.body;
+      const actorUserId = request.session.auth?.userId ?? 'gateway-user';
       if (typeof documentId !== 'string' || documentId.trim() === '') {
         return reply.code(400).send({ error: 'documentId is required' });
+      }
+      if (typeof approverUserId !== 'string' || approverUserId.trim() === '') {
+        return reply.code(400).send({ error: 'approverUserId is required' });
+      }
+      if (!Number.isInteger(expectedVersion) || expectedVersion <= 0) {
+        return reply.code(400).send({ error: 'expectedVersion must be a positive integer' });
       }
 
       try {
         const response = await documentClient.submitWorkflow({
-          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          actor_user_id: actorUserId,
           document_id: documentId,
+          approver_user_id: approverUserId.trim(),
+          expected_version: expectedVersion,
         });
         try {
-          const recipientUserId = request.session.auth?.userId ?? 'gateway-user';
-          const created = (await notificationClient.createNotification({
-            actor_user_id: request.session.auth?.userId ?? 'gateway-user',
-            recipient_user_id: recipientUserId,
-            organization_id: 'org-main',
-            event_type: 'document.submitted',
-            title: 'Документ отправлен на согласование',
-            body: `Документ ${documentId} отправлен на согласование`,
-            entity_type: 'DOCUMENT',
-            entity_id: documentId,
-          })) as { item?: Record<string, unknown> };
-          notificationSseHub.publish(recipientUserId, {
-            type: 'notification',
-            payload: {
-              notificationId: String(created.item?.['id'] ?? ''),
-              title: String(created.item?.['title'] ?? 'Документ отправлен на согласование'),
-              body: String(created.item?.['body'] ?? ''),
-              entityType: 'DOCUMENT',
-              entityId: documentId,
-            },
-          });
+          const recipientUserId =
+            pickWorkflowUserId(response, ['approver_user_id', 'approverUserId', 'assigned_user_id', 'assignedUserId']) ??
+            approverUserId.trim();
+          await createWorkflowNotification(
+            actorUserId,
+            recipientUserId,
+            'document.submitted',
+            'Документ отправлен на согласование',
+            `Документ ${documentId} отправлен на согласование`,
+            documentId,
+            'Документ отправлен на согласование',
+          );
         } catch (error) {
           request.log.warn({ error }, 'failed to create document submitted notification');
         }
-        return reply.code(202).send(response);
+        return reply.code(202).send(
+          response && typeof response === 'object'
+            ? enrichWorkflowCapabilities(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
       } catch (error) {
         request.log.error({ error }, 'document-service submit workflow failed');
         return mapGrpcError(reply, error);
@@ -417,6 +580,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
     async (request, reply) => {
       const { documentId } = request.params;
       const { expectedVersion } = request.body;
+      const actorUserId = request.session.auth?.userId ?? 'gateway-user';
       if (typeof documentId !== 'string' || documentId.trim() === '') {
         return reply.code(400).send({ error: 'documentId is required' });
       }
@@ -426,38 +590,224 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
       try {
         const response = await documentClient.approveWorkflow({
-          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          actor_user_id: actorUserId,
           document_id: documentId,
           expected_version: expectedVersion,
         });
         try {
-          const recipientUserId = request.session.auth?.userId ?? 'gateway-user';
-          const created = (await notificationClient.createNotification({
-            actor_user_id: request.session.auth?.userId ?? 'gateway-user',
-            recipient_user_id: recipientUserId,
-            organization_id: 'org-main',
-            event_type: 'document.approved',
-            title: 'Документ согласован',
-            body: `Документ ${documentId} согласован`,
-            entity_type: 'DOCUMENT',
-            entity_id: documentId,
-          })) as { item?: Record<string, unknown> };
-          notificationSseHub.publish(recipientUserId, {
-            type: 'notification',
-            payload: {
-              notificationId: String(created.item?.['id'] ?? ''),
-              title: String(created.item?.['title'] ?? 'Документ согласован'),
-              body: String(created.item?.['body'] ?? ''),
-              entityType: 'DOCUMENT',
-              entityId: documentId,
-            },
-          });
+          const recipientUserId = pickWorkflowUserId(response, ['submitted_by_user_id', 'submittedByUserId']);
+          await createWorkflowNotification(
+            actorUserId,
+            recipientUserId,
+            'document.approved',
+            'Документ согласован',
+            `Документ ${documentId} согласован`,
+            documentId,
+            'Документ согласован',
+          );
         } catch (error) {
           request.log.warn({ error }, 'failed to create document approved notification');
         }
-        return reply.code(202).send(response);
+        return reply.code(202).send(
+          response && typeof response === 'object'
+            ? enrichWorkflowCapabilities(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
       } catch (error) {
         request.log.error({ error }, 'document-service approve workflow failed');
+        return mapGrpcError(reply, error);
+      }
+    },
+  );
+
+  fastify.post<{ Params: { documentId: string }; Body: { comment: string; expectedVersion: number } }>(
+    '/:documentId/workflow/request-changes',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('documents.approve')],
+      schema: {
+        params: {
+          type: 'object',
+          required: ['documentId'],
+          properties: {
+            documentId: { type: 'string', minLength: 1 },
+          },
+        },
+        body: {
+          type: 'object',
+          required: ['comment', 'expectedVersion'],
+          properties: {
+            comment: { type: 'string', minLength: 1 },
+            expectedVersion: { type: 'integer', minimum: 1 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { documentId } = request.params;
+      const { comment, expectedVersion } = request.body;
+      const actorUserId = request.session.auth?.userId ?? 'gateway-user';
+      if (typeof documentId !== 'string' || documentId.trim() === '') {
+        return reply.code(400).send({ error: 'documentId is required' });
+      }
+      if (typeof comment !== 'string' || comment.trim() === '') {
+        return reply.code(400).send({ error: 'comment is required' });
+      }
+      if (!Number.isInteger(expectedVersion) || expectedVersion <= 0) {
+        return reply.code(400).send({ error: 'expectedVersion must be a positive integer' });
+      }
+
+      try {
+        const response = await documentClient.requestWorkflowChanges({
+          actor_user_id: actorUserId,
+          document_id: documentId,
+          comment: comment.trim(),
+          expected_version: expectedVersion,
+        });
+        try {
+          const recipientUserId = pickWorkflowUserId(response, ['submitted_by_user_id', 'submittedByUserId']);
+          await createWorkflowNotification(
+            actorUserId,
+            recipientUserId,
+            'document.changes_requested',
+            'Нужны изменения по документу',
+            `По документу ${documentId} запрошены изменения`,
+            documentId,
+            'Нужны изменения по документу',
+          );
+        } catch (error) {
+          request.log.warn({ error }, 'failed to create document changes requested notification');
+        }
+        return reply.code(202).send(
+          response && typeof response === 'object'
+            ? enrichWorkflowCapabilities(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
+      } catch (error) {
+        request.log.error({ error }, 'document-service request workflow changes failed');
+        return mapGrpcError(reply, error);
+      }
+    },
+  );
+
+  fastify.post<{ Params: { documentId: string }; Body: { expectedVersion: number } }>(
+    '/:documentId/archive',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('documents.archive')],
+      schema: {
+        params: {
+          type: 'object',
+          required: ['documentId'],
+          properties: {
+            documentId: { type: 'string', minLength: 1 },
+          },
+        },
+        body: {
+          type: 'object',
+          required: ['expectedVersion'],
+          properties: {
+            expectedVersion: { type: 'integer', minimum: 1 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { documentId } = request.params;
+      const { expectedVersion } = request.body;
+      if (typeof documentId !== 'string' || documentId.trim() === '') {
+        return reply.code(400).send({ error: 'documentId is required' });
+      }
+      if (!Number.isInteger(expectedVersion) || expectedVersion <= 0) {
+        return reply.code(400).send({ error: 'expectedVersion must be a positive integer' });
+      }
+
+      try {
+        const response = await documentClient.archiveDocument({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+          expected_version: expectedVersion,
+        });
+        return reply.code(202).send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service archive document failed');
+        return mapGrpcError(reply, error);
+      }
+    },
+  );
+
+  fastify.get<{ Params: { documentId: string } }>(
+    '/:documentId/workflow',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('documents.read')],
+      schema: {
+        params: {
+          type: 'object',
+          required: ['documentId'],
+          properties: {
+            documentId: { type: 'string', minLength: 1 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { documentId } = request.params;
+      if (typeof documentId !== 'string' || documentId.trim() === '') {
+        return reply.code(400).send({ error: 'documentId is required' });
+      }
+
+      try {
+        const response = await documentClient.getWorkflow({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+        });
+        return reply.send(
+          response && typeof response === 'object'
+            ? enrichWorkflowCapabilities(response as Record<string, unknown>, request.session.auth)
+            : response,
+        );
+      } catch (error) {
+        request.log.error({ error }, 'document-service get workflow failed');
+        return mapGrpcError(reply, error);
+      }
+    },
+  );
+
+  fastify.get<{ Params: { documentId: string }; Querystring: { limit?: number; offset?: number } }>(
+    '/:documentId/workflow/events',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('documents.read')],
+      schema: {
+        params: {
+          type: 'object',
+          required: ['documentId'],
+          properties: {
+            documentId: { type: 'string', minLength: 1 },
+          },
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'integer', minimum: 1, maximum: 100 },
+            offset: { type: 'integer', minimum: 0 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { documentId } = request.params;
+      if (typeof documentId !== 'string' || documentId.trim() === '') {
+        return reply.code(400).send({ error: 'documentId is required' });
+      }
+
+      try {
+        const response = await documentClient.listWorkflowEvents({
+          actor_user_id: request.session.auth?.userId ?? 'gateway-user',
+          document_id: documentId,
+          limit: request.query.limit ?? 20,
+          offset: request.query.offset ?? 0,
+        });
+        return reply.send(response);
+      } catch (error) {
+        request.log.error({ error }, 'document-service list workflow events failed');
         return mapGrpcError(reply, error);
       }
     },

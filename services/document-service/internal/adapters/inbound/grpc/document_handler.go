@@ -21,16 +21,17 @@ import (
 type DocumentHandler struct {
 	pb.UnimplementedDocumentWorkflowServiceServer
 	lifecycle *appservice.DocumentLifecycleService
+	workflow  *appservice.DocumentWorkflowService
 	activity  *appservice.ActivityService
 	syncer    ProjectionSyncer
 }
 
-func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService, activity *appservice.ActivityService, syncer ProjectionSyncer) *DocumentHandler {
+func NewDocumentHandler(lifecycle *appservice.DocumentLifecycleService, workflow *appservice.DocumentWorkflowService, activity *appservice.ActivityService, syncer ProjectionSyncer) *DocumentHandler {
 	if lifecycle == nil {
 		lifecycle = appservice.NewInMemoryDocumentLifecycleService()
 	}
 
-	return &DocumentHandler{lifecycle: lifecycle, activity: activity, syncer: syncer}
+	return &DocumentHandler{lifecycle: lifecycle, workflow: workflow, activity: activity, syncer: syncer}
 }
 
 func (h *DocumentHandler) Register(server *grpc.Server) {
@@ -143,6 +144,104 @@ func (h *DocumentHandler) GetDocument(ctx context.Context, req *pb.GetDocumentRe
 	return mapDocument(document)
 }
 
+func (h *DocumentHandler) SubmitWorkflow(ctx context.Context, req *pb.SubmitWorkflowRequest) (*pb.WorkflowInstance, error) {
+	if h.workflow == nil {
+		return nil, status.Error(codes.FailedPrecondition, "document workflow service is not configured")
+	}
+	workflow, err := h.workflow.SubmitWorkflow(ctx, appservice.SubmitWorkflowInput{
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		ApproverUserID:  req.GetApproverUserId(),
+		ExpectedVersion: req.GetExpectedVersion(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	h.syncProjectionAsync(workflow.DocumentID, "DOCUMENT")
+	return mapWorkflow(workflow), nil
+}
+
+func (h *DocumentHandler) ApproveWorkflow(ctx context.Context, req *pb.ApproveWorkflowRequest) (*pb.WorkflowInstance, error) {
+	if h.workflow == nil {
+		return nil, status.Error(codes.FailedPrecondition, "document workflow service is not configured")
+	}
+	workflow, err := h.workflow.ApproveWorkflow(ctx, appservice.DecideWorkflowInput{
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		ExpectedVersion: req.GetExpectedVersion(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	h.syncProjectionAsync(workflow.DocumentID, "DOCUMENT")
+	return mapWorkflow(workflow), nil
+}
+
+func (h *DocumentHandler) RequestWorkflowChanges(ctx context.Context, req *pb.RequestWorkflowChangesRequest) (*pb.WorkflowInstance, error) {
+	if h.workflow == nil {
+		return nil, status.Error(codes.FailedPrecondition, "document workflow service is not configured")
+	}
+	workflow, err := h.workflow.RequestWorkflowChanges(ctx, appservice.DecideWorkflowInput{
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		ExpectedVersion: req.GetExpectedVersion(),
+		Comment:         req.GetComment(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	h.syncProjectionAsync(workflow.DocumentID, "DOCUMENT")
+	return mapWorkflow(workflow), nil
+}
+
+func (h *DocumentHandler) GetWorkflow(ctx context.Context, req *pb.GetWorkflowRequest) (*pb.WorkflowInstance, error) {
+	if h.workflow == nil {
+		return nil, status.Error(codes.FailedPrecondition, "document workflow service is not configured")
+	}
+	workflow, err := h.workflow.GetWorkflow(ctx, req.GetActorUserId(), req.GetDocumentId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return mapWorkflow(workflow), nil
+}
+
+func (h *DocumentHandler) ListWorkflowEvents(ctx context.Context, req *pb.ListWorkflowEventsRequest) (*pb.ListWorkflowEventsResponse, error) {
+	if h.workflow == nil {
+		return nil, status.Error(codes.FailedPrecondition, "document workflow service is not configured")
+	}
+	items, total, err := h.workflow.ListWorkflowEvents(
+		ctx,
+		req.GetActorUserId(),
+		req.GetDocumentId(),
+		int(req.GetLimit()),
+		int(req.GetOffset()),
+	)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	responseItems := make([]*pb.WorkflowEvent, 0, len(items))
+	for _, item := range items {
+		responseItems = append(responseItems, mapWorkflowEvent(item))
+	}
+	return &pb.ListWorkflowEventsResponse{Items: responseItems, Total: int32(total)}, nil
+}
+
+func (h *DocumentHandler) ArchiveDocument(ctx context.Context, req *pb.ArchiveDocumentRequest) (*pb.ArchiveDocumentResponse, error) {
+	if h.workflow == nil {
+		return nil, status.Error(codes.FailedPrecondition, "document workflow service is not configured")
+	}
+	document, err := h.workflow.ArchiveDocument(ctx, appservice.ArchiveDocumentInput{
+		ActorUserID:     req.GetActorUserId(),
+		DocumentID:      req.GetDocumentId(),
+		ExpectedVersion: req.GetExpectedVersion(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	h.syncProjectionAsync(document.ID, "DOCUMENT")
+	return &pb.ArchiveDocumentResponse{Archived: true, ArchivedAt: document.UpdatedAt}, nil
+}
+
 func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDocumentsRequest) (*pb.SearchDocumentsResponse, error) {
 	documents, total, err := h.lifecycle.SearchDocuments(ctx, appservice.SearchDocumentsInput{
 		ActorUserID: req.GetActorUserId(),
@@ -180,6 +279,7 @@ func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDoc
 			Id:                  document.ID,
 			Title:               document.Title,
 			Category:            document.Category,
+			Status:              string(document.Status),
 			OwnerUserId:         document.OwnerUser,
 			OwnerUserName:       document.OwnerUserName,
 			Version:             document.Version,
@@ -210,6 +310,7 @@ func (h *DocumentHandler) ListDocumentVersions(ctx context.Context, req *pb.List
 			VersionNumber:   item.VersionNumber,
 			Title:           item.Title,
 			Category:        item.Category,
+			Status:          string(item.Status),
 			ChangedByUserId: item.ChangedByUserID,
 			ChangeSummary:   item.ChangeSummary,
 			CreatedAt:       item.CreatedAt,
@@ -242,6 +343,7 @@ func (h *DocumentHandler) GetDocumentVersion(ctx context.Context, req *pb.GetDoc
 		VersionNumber:       item.VersionNumber,
 		Title:               item.Title,
 		Category:            item.Category,
+		Status:              string(item.Status),
 		ChangedByUserId:     item.ChangedByUserID,
 		ChangeSummary:       item.ChangeSummary,
 		CreatedAt:           item.CreatedAt,
@@ -498,6 +600,7 @@ func mapDocument(document model.Document) (*pb.Document, error) {
 		Id:                  document.ID,
 		Title:               document.Title,
 		Category:            document.Category,
+		Status:              string(document.Status),
 		OwnerUserId:         document.OwnerUser,
 		OwnerUserName:       document.OwnerUserName,
 		Version:             document.Version,
@@ -534,6 +637,43 @@ func mapExportRequest(exportRequest model.ExportRequest) *pb.ExportRequest {
 	return response
 }
 
+func mapWorkflow(workflow model.WorkflowInstance) *pb.WorkflowInstance {
+	decidedAt := ""
+	if workflow.DecidedAt != nil {
+		decidedAt = workflow.DecidedAt.Format(time.RFC3339)
+	}
+
+	return &pb.WorkflowInstance{
+		Id:                workflow.ID,
+		DocumentId:        workflow.DocumentID,
+		CurrentStepCode:   string(workflow.Status),
+		Status:            string(workflow.Status),
+		AssignedUserId:    workflow.ApproverUserID,
+		UpdatedAt:         workflow.UpdatedAt.Format(time.RFC3339),
+		SubmittedVersion:  workflow.SubmittedVersion,
+		SubmittedByUserId: workflow.SubmittedByUserID,
+		ApproverUserId:    workflow.ApproverUserID,
+		DecisionComment:   workflow.DecisionComment,
+		SubmittedAt:       workflow.SubmittedAt.Format(time.RFC3339),
+		DecidedAt:         decidedAt,
+	}
+}
+
+func mapWorkflowEvent(event model.WorkflowEvent) *pb.WorkflowEvent {
+	return &pb.WorkflowEvent{
+		Id:              event.ID,
+		WorkflowId:      event.WorkflowID,
+		DocumentId:      event.DocumentID,
+		ActorUserId:     event.ActorUserID,
+		EventType:       event.EventType,
+		PreviousStatus:  string(event.PreviousStatus),
+		NewStatus:       string(event.NewStatus),
+		DocumentVersion: event.DocumentVersion,
+		Comment:         event.Comment,
+		OccurredAt:      event.OccurredAt.Format(time.RFC3339),
+	}
+}
+
 func toStatusError(err error) error {
 	if err == nil {
 		return nil
@@ -542,7 +682,16 @@ func toStatusError(err error) error {
 	if errors.Is(err, model.ErrDocumentNotFound) {
 		return status.Error(codes.NotFound, err.Error())
 	}
+	if errors.Is(err, model.ErrDocumentAccessDenied) {
+		return status.Error(codes.PermissionDenied, err.Error())
+	}
+	if errors.Is(err, model.ErrWorkflowNotFound) {
+		return status.Error(codes.NotFound, err.Error())
+	}
 	if errors.Is(err, model.ErrInvalidDocumentTitle) || errors.Is(err, model.ErrInvalidDocumentContent) {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if errors.Is(err, model.ErrWorkflowCommentRequired) || errors.Is(err, model.ErrWorkflowVersionRequired) {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	if errors.Is(err, model.ErrDocumentNotEditable) {
@@ -552,6 +701,10 @@ func toStatusError(err error) error {
 	var versionConflict model.VersionConflictError
 	if errors.As(err, &versionConflict) {
 		return status.Error(codes.Aborted, versionConflict.Error())
+	}
+	var invalidTransition model.InvalidDocumentStatusTransitionError
+	if errors.As(err, &invalidTransition) {
+		return status.Error(codes.FailedPrecondition, invalidTransition.Error())
 	}
 
 	return status.Error(codes.Internal, err.Error())

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -39,10 +40,18 @@ func (r *ActivityRepository) RecordEvent(ctx context.Context, input outbound.Rec
 	const insertEvent = `
 		INSERT INTO activity_events (
 			organization_id, actor_user_id, actor_user_name,
-			entity_type, entity_id, action_type, summary, occurred_at,
+			entity_type, entity_id, action_type, summary, metadata, occurred_at,
 			document_id, task_id, board_id
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::uuid,$10::uuid,$11::uuid)
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::uuid,$11::uuid,$12::uuid)
 		RETURNING id`
+
+	metadata, err := json.Marshal(event.Metadata)
+	if err != nil {
+		return fmt.Errorf("failed to encode activity metadata: %w", err)
+	}
+	if event.Metadata == nil {
+		metadata = []byte(`{}`)
+	}
 
 	var eventID string
 	if err := tx.QueryRowContext(ctx, insertEvent,
@@ -53,6 +62,7 @@ func (r *ActivityRepository) RecordEvent(ctx context.Context, input outbound.Rec
 		event.EntityID,
 		string(event.ActionType),
 		event.Summary,
+		string(metadata),
 		event.OccurredAt,
 		toNullableString(event.DocumentID),
 		toNullableString(event.TaskID),

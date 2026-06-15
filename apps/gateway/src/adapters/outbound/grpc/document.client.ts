@@ -86,6 +86,22 @@ export class DocumentServiceClient {
     return this.call('ApproveWorkflow', payload);
   }
 
+  requestWorkflowChanges(payload: unknown): Promise<unknown> {
+    return this.call('RequestWorkflowChanges', payload);
+  }
+
+  getWorkflow(payload: unknown): Promise<unknown> {
+    return this.call('GetWorkflow', payload);
+  }
+
+  listWorkflowEvents(payload: unknown): Promise<unknown> {
+    return this.call('ListWorkflowEvents', payload);
+  }
+
+  archiveDocument(payload: unknown): Promise<unknown> {
+    return this.call('ArchiveDocument', payload);
+  }
+
   listActivityEvents(payload: unknown): Promise<unknown> {
     return this.call('ListActivityEvents', payload);
   }

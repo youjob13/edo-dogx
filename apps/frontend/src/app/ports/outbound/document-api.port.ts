@@ -2,6 +2,9 @@ import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   ActivityItem,
+  DashboardApproveWorkflowPayload,
+  DashboardArchiveDocumentPayload,
+  DashboardArchiveDocumentResult,
   DashboardCreateDocumentPayload,
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
@@ -10,8 +13,12 @@ import {
   DashboardUpdateEditorControlProfilePayload,
   DashboardCreateExportPayload,
   DashboardExportRequest,
+  DashboardRequestWorkflowChangesPayload,
+  DashboardSubmitWorkflowPayload,
   DashboardPreviewDocument,
   DashboardQuery,
+  DashboardWorkflowEvent,
+  DashboardWorkflowInstance,
   DocumentItem,
   PaginatedResult,
   StorageUsage,
@@ -33,6 +40,18 @@ export interface DocumentApiPort {
   ): Observable<{ items: Array<Record<string, unknown>>; total: number }>;
   getDocumentVersion(id: string, versionNumber: number): Observable<Record<string, unknown>>;
   updateDocument(id: string, payload: DashboardEditDocumentPayload): Observable<DocumentItem>;
+  submitWorkflow(id: string, payload: DashboardSubmitWorkflowPayload): Observable<DashboardWorkflowInstance>;
+  approveWorkflow(id: string, payload: DashboardApproveWorkflowPayload): Observable<DashboardWorkflowInstance>;
+  requestWorkflowChanges(
+    id: string,
+    payload: DashboardRequestWorkflowChangesPayload,
+  ): Observable<DashboardWorkflowInstance>;
+  archiveDocument(id: string, payload: DashboardArchiveDocumentPayload): Observable<DashboardArchiveDocumentResult>;
+  getWorkflow(id: string): Observable<DashboardWorkflowInstance>;
+  getWorkflowEvents(
+    id: string,
+    options?: { limit?: number; offset?: number },
+  ): Observable<{ items: Array<DashboardWorkflowEvent>; total: number }>;
   getEditorControlProfile(contextType: DashboardEditorContextType, contextKey: string): Observable<DashboardEditorControlProfile>;
   updateEditorControlProfile(
     profileId: string,

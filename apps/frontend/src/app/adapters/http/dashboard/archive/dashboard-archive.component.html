@@ -1,16 +1,91 @@
-<edo-dogx-page-section title="Архив" subtitle="Заглушка для проверки маршрута /dashboard/archive">
-  <edo-dogx-card title="Раздел архива" subtitle="Маршрут работает корректно">
-    <p class="dashboard-page__text">Здесь будет реализована архивная выдача и фильтры.</p>
+<edo-dogx-page-section title="Архив" subtitle="Архивированные документы организации">
+  <edo-dogx-card title="Архив документов" subtitle="Поиск, предпросмотр и переход к карточке документа">
+    <div class="dashboard-archive__filters">
+      <label>
+        <span>Поиск</span>
+        <input type="text" [formControl]="searchControl" placeholder="Название, владелец или категория" />
+      </label>
+    </div>
 
-    <edo-dogx-button
-      label="Выполнить тестовое действие"
-      appearance="secondary"
-      size="m"
-      (pressed)="onActionPressed()"
-    />
+    <div class="dashboard-archive__table-wrap">
+      <table class="dashboard-archive__table">
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Владелец</th>
+            <th>Статус</th>
+            <th>Дата изменения</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filteredDocuments(); track item.id) {
+            <tr>
+              <td>{{ item.title }}</td>
+              <td>{{ getCategoryLabel(item.category) }}</td>
+              <td>{{ item.ownerUserName || '—' }}</td>
+              <td>
+                <edo-dogx-status-chip [label]="'Архивирован'" [tone]="'archived'" />
+              </td>
+              <td>{{ item.updatedAt | date: 'dd.MM.yyyy, HH:mm' }}</td>
+              <td>
+                <div class="dashboard-archive__actions">
+                  <button type="button" (click)="preview(item)">Предпросмотр</button>
+                  <button type="button" (click)="openDocument(item)">Открыть</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">В архиве пока нет документов по текущему фильтру.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (loading()) {
+      <p class="dashboard-archive__message">Загружаем архив...</p>
+    }
 
     @if (message()) {
-      <p class="dashboard-page__message" aria-live="polite">{{ message() }}</p>
+      <p class="dashboard-archive__message" aria-live="polite">{{ message() }}</p>
     }
+
+    <edo-dogx-drawer
+      [open]="previewOpen()"
+      [title]="'Архивный документ: ' + (previewDocument()?.title ?? '')"
+      ariaLabel="Предпросмотр архивного документа"
+      (closed)="closePreview()"
+    >
+      @if (previewDocument(); as preview) {
+        <div class="dashboard-archive__preview">
+          <dl class="dashboard-archive__preview-meta">
+            <div>
+              <dt>Название</dt>
+              <dd>{{ preview.title }}</dd>
+            </div>
+            <div>
+              <dt>Категория</dt>
+              <dd>{{ getCategoryLabel(preview.category) }}</dd>
+            </div>
+            <div>
+              <dt>Версия</dt>
+              <dd>v{{ preview.version }}</dd>
+            </div>
+            <div>
+              <dt>Обновлен</dt>
+              <dd>{{ preview.updatedAt | date: 'dd.MM.yyyy, HH:mm' }}</dd>
+            </div>
+          </dl>
+
+          <section class="dashboard-archive__preview-section">
+            <h3>Содержимое</h3>
+            <p>{{ preview.body }}</p>
+          </section>
+        </div>
+      }
+    </edo-dogx-drawer>
   </edo-dogx-card>
 </edo-dogx-page-section>

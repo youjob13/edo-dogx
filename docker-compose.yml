@@ -164,6 +164,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-edo-exports}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_PRESIGNED_EXPIRY_SECONDS: ${MINIO_PRESIGNED_EXPIRY_SECONDS:-900}
+      NOTIFICATION_SERVICE_GRPC_ADDR: notification-service:50056
     depends_on:
       postgres:
         condition: service_healthy
@@ -171,6 +172,10 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      search-notification-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
     networks:
       - edo-network
 

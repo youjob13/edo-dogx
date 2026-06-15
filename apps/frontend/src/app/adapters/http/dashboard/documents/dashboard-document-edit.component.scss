@@ -2,78 +2,155 @@
   display: block;
 }
 
+.dashboard-document-edit__layout {
+  display: grid;
+  gap: 1rem;
+}
+
 .dashboard-document-edit {
   display: grid;
   gap: 0.9rem;
 }
 
-.dashboard-document-edit__actions {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.dashboard-document-export {
-  border: 1px solid var(--edo-ui-border-subtle);
-  border-radius: var(--edo-ui-radius-m);
-  background: color-mix(in srgb, var(--edo-ui-surface-primary) 92%, white 8%);
-  padding: 0.8rem;
+.dashboard-document-edit__meta {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
-.dashboard-document-export__header {
+.dashboard-document-edit__meta-item,
+.dashboard-document-workflow__state > div {
   display: grid;
   gap: 0.25rem;
 }
 
-.dashboard-document-export__header h3,
-.dashboard-document-export__header p {
-  margin: 0;
-}
-
-.dashboard-document-export__header h3 {
-  font-size: 0.9rem;
-}
-
-.dashboard-document-export__header p {
-  color: var(--edo-ui-ink-muted);
-  font-size: 0.75rem;
-}
-
-.dashboard-document-export__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: end;
-}
-
-.dashboard-document-export__format {
-  display: grid;
-  gap: 0.25rem;
-}
-
+.dashboard-document-edit__meta-item span,
+.dashboard-document-workflow__state span,
+.dashboard-document-workflow__field span,
+.dashboard-document-workflow__decision span,
+.dashboard-document-history__meta dt,
 .dashboard-document-export__format span {
   color: var(--edo-ui-ink-muted);
   font-size: 0.75rem;
 }
 
-.dashboard-document-export__format select {
-  border: 1px solid var(--edo-ui-border-subtle);
-  border-radius: var(--edo-ui-radius-s);
-  background: var(--edo-ui-surface-primary);
-  color: var(--edo-ui-ink-primary);
-  min-height: 2rem;
-  padding: 0.25rem 0.7rem;
-  font: inherit;
+.dashboard-document-edit__actions,
+.dashboard-document-workflow__actions,
+.dashboard-document-export__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
+.dashboard-document-edit__message,
+.dashboard-document-workflow__message,
+.dashboard-document-export__status,
+.dashboard-document-export__message,
+.dashboard-document-history__empty {
+  margin: 0;
+  color: var(--edo-ui-ink-muted);
+  font-size: 0.75rem;
+}
+
+.dashboard-document-workflow,
+.dashboard-document-export {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-document-workflow__state {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.dashboard-document-workflow__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dashboard-document-workflow__field select,
+.dashboard-document-workflow__field textarea,
+.dashboard-document-export__format select,
 .dashboard-document-export__button {
   border: 1px solid var(--edo-ui-border-subtle);
   border-radius: var(--edo-ui-radius-s);
   background: var(--edo-ui-surface-primary);
   color: var(--edo-ui-ink-primary);
-  min-height: 2rem;
+  font: inherit;
+}
+
+.dashboard-document-workflow__field select,
+.dashboard-document-export__format select {
+  min-height: 2.2rem;
+  padding: 0.25rem 0.7rem;
+}
+
+.dashboard-document-workflow__field textarea {
+  min-height: 6rem;
+  padding: 0.65rem 0.7rem;
+  resize: vertical;
+}
+
+.dashboard-document-workflow__decision {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--edo-ui-border-subtle);
+  border-radius: var(--edo-ui-radius-m);
+  background: color-mix(in srgb, var(--edo-ui-surface-primary) 92%, white 8%);
+}
+
+.dashboard-document-workflow__decision p {
+  margin: 0;
+}
+
+.dashboard-document-history {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-document-history__item {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid var(--edo-ui-border-subtle);
+  border-radius: var(--edo-ui-radius-m);
+  background: color-mix(in srgb, var(--edo-ui-surface-primary) 94%, white 6%);
+}
+
+.dashboard-document-history__headline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-document-history__meta {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.dashboard-document-history__meta div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.dashboard-document-history__meta dd {
+  margin: 0;
+}
+
+.dashboard-document-history__comment {
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--edo-ui-border-subtle);
+}
+
+.dashboard-document-export__button {
+  min-height: 2.2rem;
   padding: 0.25rem 0.7rem;
   cursor: pointer;
 }
@@ -83,25 +160,12 @@
   background: color-mix(in srgb, var(--edo-ui-accent-primary) 14%, var(--edo-ui-surface-primary) 86%);
 }
 
-.dashboard-document-export__status,
-.dashboard-document-export__message {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--edo-ui-ink-muted);
-}
-
-.dashboard-document-edit__message {
-  margin: 0;
-  color: var(--edo-ui-ink-muted);
-  font-size: 0.75rem;
-}
-
 .dashboard-rich-editor {
   display: grid;
   gap: 0.55rem;
 }
 
-.dashboard-rich-editor__toolbar {
+.editor__toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -111,22 +175,13 @@
   padding: 0.45rem;
 }
 
-.dashboard-rich-editor__toolbar-group {
+.editor__group {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  border-right: 1px solid color-mix(in srgb, var(--edo-ui-border-subtle) 80%, transparent 20%);
-  padding-right: 0.45rem;
-  margin-right: 0.15rem;
 }
 
-.dashboard-rich-editor__toolbar-group:last-child {
-  border-right: 0;
-  padding-right: 0;
-  margin-right: 0;
-}
-
-.dashboard-rich-editor__tool {
+.editor__btn {
   border: 1px solid var(--edo-ui-border-subtle);
   background: var(--edo-ui-surface-primary);
   color: var(--edo-ui-ink-primary);
@@ -137,26 +192,14 @@
   font-size: 0.75rem;
 }
 
-.dashboard-rich-editor__tool--active {
+.editor__btn.active {
   border-color: var(--edo-ui-accent-primary);
   background: color-mix(in srgb, var(--edo-ui-accent-primary) 18%, white 82%);
 }
 
-.dashboard-rich-editor__tool:focus-visible {
-  outline: 2px solid var(--edo-ui-focus);
-  outline-offset: 2px;
-}
-
-.dashboard-rich-editor__tool:disabled {
+.editor__btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-.dashboard-rich-editor__host {
-  min-height: 14rem;
-  border: 1px solid var(--edo-ui-border-subtle);
-  border-radius: var(--edo-ui-radius-m);
-  background: var(--edo-ui-surface-primary);
 }
 
 .dashboard-rich-editor__loading {
@@ -185,37 +228,18 @@
 }
 
 @media (max-width: 720px) {
-  .dashboard-document-export__format {
-    width: 100%;
+  .dashboard-document-edit__actions > *,
+  .dashboard-document-workflow__actions > *,
+  .dashboard-document-export__actions > * {
+    flex: 1 1 100%;
   }
 
+  .dashboard-document-workflow__field select,
   .dashboard-document-export__format select {
     width: 100%;
   }
 
-  .dashboard-document-export__button {
-    flex: 1 1 100%;
-  }
-
-  .dashboard-rich-editor__tool {
-    flex: 1 1 calc(50% - 0.35rem);
-  }
-
-  .dashboard-rich-editor__toolbar-group {
-    border-right: 0;
-    padding-right: 0;
-    margin-right: 0;
-    width: 100%;
-  }
-
-  .dashboard-rich-editor__host {
-    min-height: 11rem;
-  }
-
-  .dashboard-rich-editor__loading {
-    min-height: 11rem;
-  }
-
+  .dashboard-rich-editor__loading,
   :host ::ng-deep .dashboard-rich-editor__content {
     min-height: 11rem;
   }

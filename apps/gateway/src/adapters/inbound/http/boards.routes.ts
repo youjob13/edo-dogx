@@ -1,5 +1,8 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-import { TaskOrchestrationServiceClient, GrpcClientError } from '../../outbound/grpc/task.client.js';
+import {
+  TaskOrchestrationServiceClient,
+  GrpcClientError,
+} from '../../outbound/grpc/task.client.js';
 import { DocumentServiceClient } from '../../outbound/grpc/document.client.js';
 import type { AuthSession } from '../../../domain/auth.js';
 
@@ -50,6 +53,8 @@ function mapBoardMember(member: Record<string, unknown>) {
     fullName: pickString(member, ['full_name', 'fullName']),
     department: pickString(member, ['department']),
     email: pickString(member, ['email']),
+    boardRole: pickString(member, ['board_role', 'boardRole'], 'MEMBER'),
+    roles: Array.isArray(member['roles']) ? member['roles'].map((role) => String(role)) : [],
   };
 }
 
@@ -62,7 +67,10 @@ function mapTaskAttachment(attachment: Record<string, unknown>) {
   };
 }
 
-function mapTask(task: Record<string, unknown>, membersById: Map<string, { fullName: string; department: string }>) {
+function mapTask(
+  task: Record<string, unknown>,
+  membersById: Map<string, { fullName: string; department: string }>,
+) {
   const assigneeId = pickString(task, ['assignee_user_id', 'assigneeUserId']);
   const assignee = membersById.get(assigneeId);
   const rawTaskType = pickString(task, ['task_type', 'taskType'], 'general').toLowerCase();
@@ -82,7 +90,11 @@ function mapTask(task: Record<string, unknown>, membersById: Map<string, { fullN
     description: pickString(task, ['description']),
     status,
     assigneeId: assigneeId || null,
-    assigneeName: pickString(task, ['assignee_user_name', 'assigneeUserName'], assignee?.fullName || 'Не назначен'),
+    assigneeName: pickString(
+      task,
+      ['assignee_user_name', 'assigneeUserName'],
+      assignee?.fullName || 'Не назначен',
+    ),
     department: assignee?.department || '',
     groupId: assigneeId || 'unassigned',
     groupName: assignee?.fullName || 'Не назначен',
@@ -160,7 +172,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         description: body.description || '',
       });
 
-      const rawBoard = (board as Record<string, unknown>)['board'] as Record<string, unknown> | undefined;
+      const rawBoard = (board as Record<string, unknown>)['board'] as
+        | Record<string, unknown>
+        | undefined;
       return reply.code(201).send({
         board: mapBoardSummary(rawBoard ?? (board as Record<string, unknown>)),
       });
@@ -186,6 +200,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         // Get task board from gRPC service
         const board = await grpcClient.getTaskBoard({
+          actor_user_id: authData.userId,
           board_id: request.params.boardId,
         });
 
@@ -208,7 +223,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
               title: String(doc.title || ''),
               category: String(doc.category || ''),
               status: String(doc.status || 'PUBLISHED'),
-              updatedAt: doc.updatedAt ? new Date(String(doc.updatedAt)).toISOString() : new Date().toISOString(),
+              updatedAt: doc.updatedAt
+                ? new Date(String(doc.updatedAt)).toISOString()
+                : new Date().toISOString(),
               sizeKb: Number(doc.sizeKb || 0),
               version: Number(doc.version || 1),
             }));
@@ -235,16 +252,28 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         // Get available approvers (for now, return board members who can approve)
         // In a real system, this would query from a directory service
-        const boardPayload = ((board as Record<string, unknown>)['board'] ||
-          board) as Record<string, unknown>;
+        const boardPayload = ((board as Record<string, unknown>)['board'] || board) as Record<
+          string,
+          unknown
+        >;
         const members = Array.isArray(boardPayload['members'])
           ? (boardPayload['members'] as Array<Record<string, unknown>>).map(mapBoardMember)
           : [];
         const membersById = new Map(
-          members.map((member) => [member.id, { fullName: member.fullName, department: member.department }]),
+          members.map((member) => [
+            member.id,
+            { fullName: member.fullName, department: member.department },
+          ]),
         );
         const tasks = Array.isArray(boardPayload['tasks'])
-          ? (boardPayload['tasks'] as Array<Record<string, unknown>>).map((task) => mapTask(task, membersById))
+          ? (boardPayload['tasks'] as Array<Record<string, unknown>>).map((task) =>
+              mapTask(task, membersById),
+            )
+          : [];
+        const availableApprovers = Array.isArray(boardPayload['available_approvers'])
+          ? (boardPayload['available_approvers'] as Array<Record<string, unknown>>).map(
+              mapBoardMember,
+            )
           : [];
 
         return reply.send({
@@ -257,7 +286,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             : ['assignee', 'department', 'group'],
           members,
           tasks,
-          availableApprovers: members,
+          availableApprovers,
           availableDocuments: availableDocuments.map(mapTaskAttachment),
         });
       } catch (error) {
@@ -272,10 +301,16 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   );
 
   // GET /api/organizations/:organizationId/members - List organization members available for board assignment
-  fastify.get<{ Params: { organizationId: string }; Querystring: { limit?: number; offset?: number } }>(
+  fastify.get<{
+    Params: { organizationId: string };
+    Querystring: { limit?: number; offset?: number };
+  }>(
     '/organizations/:organizationId/members',
     async (
-      request: FastifyRequest<{ Params: { organizationId: string }; Querystring: { limit?: number; offset?: number } }>,
+      request: FastifyRequest<{
+        Params: { organizationId: string };
+        Querystring: { limit?: number; offset?: number };
+      }>,
       reply: FastifyReply,
     ) => {
       try {
@@ -314,9 +349,18 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   );
 
   // POST /api/boards/:boardId/members - Add organization member to board
-  fastify.post<{ Params: { boardId: string }; Body: { userId?: string } }>(
+  fastify.post<{
+    Params: { boardId: string };
+    Body: { userId?: string; role?: 'OWNER' | 'MANAGER' | 'MEMBER' };
+  }>(
     '/boards/:boardId/members',
-    async (request: FastifyRequest<{ Params: { boardId: string }; Body: { userId?: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { boardId: string };
+        Body: { userId?: string; role?: 'OWNER' | 'MANAGER' | 'MEMBER' };
+      }>,
+      reply: FastifyReply,
+    ) => {
       try {
         const authData = request.session?.auth as AuthSession | undefined;
         if (!authData) {
@@ -332,8 +376,10 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           actor_user_id: authData.userId,
           board_id: request.params.boardId,
           user_id: userId,
+          role: request.body.role ?? 'MEMBER',
         })) as Record<string, unknown>;
-        const memberPayload = (response['member'] as Record<string, unknown> | undefined) ?? response;
+        const memberPayload =
+          (response['member'] as Record<string, unknown> | undefined) ?? response;
 
         return reply.code(201).send({
           member: mapBoardMember(memberPayload),
@@ -353,7 +399,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.get<{ Querystring: { organizationId?: string; limit?: number; offset?: number } }>(
     '/boards',
     async (
-      request: FastifyRequest<{ Querystring: { organizationId?: string; limit?: number; offset?: number } }>,
+      request: FastifyRequest<{
+        Querystring: { organizationId?: string; limit?: number; offset?: number };
+      }>,
       reply: FastifyReply,
     ) => {
       try {
@@ -368,6 +416,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         // Query task board list from gRPC service
         const boards = (await grpcClient.listTaskBoards({
+          actor_user_id: authData.userId,
           organization_id: organizationId,
           limit,
           offset,
@@ -395,4 +444,3 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 };
 
 export default routes;
-

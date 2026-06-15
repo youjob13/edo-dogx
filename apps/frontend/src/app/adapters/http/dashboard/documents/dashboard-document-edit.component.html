@@ -1,42 +1,222 @@
 <edo-dogx-page-section
   title="Редактирование документа"
-  subtitle="Изменения сохраняются как новая версия черновика"
+  subtitle="Сохранение черновика, согласование, история и архив"
 >
-  <edo-dogx-card title="Параметры документа" subtitle="Обновите данные и сохраните изменения">
-    <form class="dashboard-document-edit" (submit)="$event.preventDefault(); saveDocument()">
-      <edo-dogx-input
-        label="Название"
-        [control]="titleControl"
-        [errorText]="'Укажите название (до 300 символов)'"
-      />
+  <div class="dashboard-document-edit__layout">
+    <edo-dogx-card title="Параметры документа" subtitle="Обновите данные и сохраните изменения">
+      <form class="dashboard-document-edit" (submit)="$event.preventDefault(); saveDocument()">
+        <div class="dashboard-document-edit__meta">
+          <div class="dashboard-document-edit__meta-item">
+            <span>Статус</span>
+            <edo-dogx-status-chip [label]="statusLabel()" [tone]="statusTone()" />
+          </div>
+          <div class="dashboard-document-edit__meta-item">
+            <span>Версия</span>
+            <strong>v{{ version() }}</strong>
+          </div>
+          <div class="dashboard-document-edit__meta-item">
+            <span>Категория</span>
+            <strong>{{ category() }}</strong>
+          </div>
+        </div>
 
-       <section class="editor dashboard-rich-editor" aria-label="Редактор содержимого">
-        <div class="editor__toolbar">
-          @for (group of toolbarGroups; track group.id) {
-          <div class="editor__group">
-            @for (actionId of group.actionIds; track actionId) {
-            @if (shouldShowAction(actionId)) {
-            <button type="button" class="editor__btn" [class.active]="isActive(actionId)" (click)="run(actionId)">
-              {{ getAction(actionId).icon }}
-            </button>
-            }
+        <edo-dogx-input
+          label="Название"
+          [control]="titleControl"
+          [errorText]="'Укажите название (до 300 символов)'"
+        />
+
+        <section class="editor dashboard-rich-editor" aria-label="Редактор содержимого">
+          <div class="editor__toolbar">
+            @for (group of toolbarGroups; track group.id) {
+              <div class="editor__group">
+                @for (actionId of group.actionIds; track actionId) {
+                  @if (shouldShowAction(actionId)) {
+                    <button
+                      type="button"
+                      class="editor__btn"
+                      [class.active]="isActive(actionId)"
+                      [disabled]="!isEditable()"
+                      (click)="run(actionId)"
+                    >
+                      {{ getAction(actionId).icon }}
+                    </button>
+                  }
+                }
+              </div>
             }
           </div>
+
+          @if (editor; as editorInstance) {
+            <tiptap-editor [editor]="editorInstance" class="editor__content" />
+          } @else {
+            <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
           }
+        </section>
+
+        <div class="dashboard-document-edit__actions">
+          <edo-dogx-button
+            label="Сохранить"
+            appearance="primary"
+            size="m"
+            [disabled]="loading() || !isEditable()"
+            (pressed)="saveDocument()"
+          />
+          <edo-dogx-button
+            label="К списку"
+            appearance="secondary"
+            size="m"
+            (pressed)="goBack()"
+          />
         </div>
 
-        @if (editor; as editorInstance) {
-        <tiptap-editor [editor]="editorInstance" class="editor__content" />
-        } @else {
-        <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
+        @if (message()) {
+          <p class="dashboard-document-edit__message" aria-live="polite">{{ message() }}</p>
+        }
+      </form>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Маршрут согласования" subtitle="Выберите согласующего и выполните переход workflow">
+      <section class="dashboard-document-workflow">
+        <div class="dashboard-document-workflow__state">
+          <div>
+            <span>Текущий статус</span>
+            <edo-dogx-status-chip [label]="statusLabel()" [tone]="statusTone()" />
+          </div>
+          <div>
+            <span>Автор</span>
+            <strong>{{ workflow()?.submittedByUserId || currentUser()?.userName || '—' }}</strong>
+          </div>
+          <div>
+            <span>Согласующий</span>
+            <strong>{{ workflow()?.approverUserId || approverControl.value || '—' }}</strong>
+          </div>
+          <div>
+            <span>Отправленная версия</span>
+            <strong>{{ workflow()?.submittedVersion || version() }}</strong>
+          </div>
+          <div>
+            <span>Отправлено</span>
+            <strong>{{ formatDateTime(workflow()?.submittedAt) }}</strong>
+          </div>
+          <div>
+            <span>Решение</span>
+            <strong>{{ formatDateTime(workflow()?.decidedAt) }}</strong>
+          </div>
+        </div>
+
+        <label class="dashboard-document-workflow__field">
+          <span>Согласующий</span>
+          <select [formControl]="approverControl" [disabled]="!canSubmit()">
+            @for (approver of approvers(); track approver.id) {
+              <option [value]="approver.id">{{ getApproverLabel(approver) }}</option>
+            } @empty {
+              <option value="">Нет доступных сотрудников</option>
+            }
+          </select>
+        </label>
+
+        <label class="dashboard-document-workflow__field">
+          <span>Комментарий для доработки</span>
+          <textarea
+            rows="4"
+            [formControl]="decisionCommentControl"
+            [disabled]="!canRequestChanges()"
+            placeholder="Опишите, что нужно поправить в документе"
+          ></textarea>
+        </label>
+
+        <div class="dashboard-document-workflow__actions">
+          <edo-dogx-button
+            label="Отправить на согласование"
+            appearance="primary"
+            size="m"
+            [disabled]="!canSubmit()"
+            (pressed)="submitWorkflow()"
+          />
+          <edo-dogx-button
+            label="Согласовать"
+            appearance="secondary"
+            size="m"
+            [disabled]="!canApprove()"
+            (pressed)="approveWorkflow()"
+          />
+          <edo-dogx-button
+            label="Вернуть на доработку"
+            appearance="secondary"
+            size="m"
+            [disabled]="!canRequestChanges()"
+            (pressed)="requestChanges()"
+          />
+          <edo-dogx-button
+            label="Архивировать"
+            appearance="secondary"
+            size="m"
+            [disabled]="!canArchive()"
+            (pressed)="archiveDocument()"
+          />
+        </div>
+
+        @if (workflowLoading()) {
+          <p class="dashboard-document-workflow__message">Загружаем состояние workflow...</p>
+        }
+
+        @if (workflow()?.decisionComment) {
+          <div class="dashboard-document-workflow__decision">
+            <span>Последний комментарий</span>
+            <p>{{ workflow()?.decisionComment }}</p>
+          </div>
+        }
+
+        @if (workflowMessage()) {
+          <p class="dashboard-document-workflow__message" aria-live="polite">{{ workflowMessage() }}</p>
         }
       </section>
+    </edo-dogx-card>
 
+    <edo-dogx-card title="История workflow" subtitle="Последние изменения статуса документа">
+      <section class="dashboard-document-history">
+        @for (event of workflowEvents(); track event.id) {
+          <article class="dashboard-document-history__item">
+            <div class="dashboard-document-history__headline">
+              <strong>{{ formatEventTitle(event) }}</strong>
+              <edo-dogx-status-chip
+                [label]="getStatusText(event.newStatus)"
+                [tone]="getStatusChipTone(event.newStatus)"
+              />
+            </div>
+            <dl class="dashboard-document-history__meta">
+              <div>
+                <dt>Исполнитель</dt>
+                <dd>{{ event.actorUserId }}</dd>
+              </div>
+              <div>
+                <dt>Версия</dt>
+                <dd>v{{ event.documentVersion }}</dd>
+              </div>
+              <div>
+                <dt>Дата</dt>
+                <dd>{{ formatDateTime(event.occurredAt) }}</dd>
+              </div>
+              <div>
+                <dt>Переход</dt>
+                <dd>{{ getStatusText(event.previousStatus) }} → {{ getStatusText(event.newStatus) }}</dd>
+              </div>
+            </dl>
+            @if (event.comment) {
+              <p class="dashboard-document-history__comment">{{ event.comment }}</p>
+            }
+          </article>
+        } @empty {
+          <p class="dashboard-document-history__empty">
+            История пока пуста. Документ еще не проходил этапы согласования.
+          </p>
+        }
+      </section>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Экспорт" subtitle="Скачайте текущую версию документа">
       <section class="dashboard-document-export" aria-label="Экспорт документа">
-        <div class="dashboard-document-export__header">
-          <h3>Экспорт</h3>
-          <p>Выберите формат и скачайте текущую версию документа.</p>
-        </div>
         <div class="dashboard-document-export__actions">
           <label class="dashboard-document-export__format">
             <span>Формат</span>
@@ -50,7 +230,9 @@
             class="dashboard-document-export__button dashboard-document-export__button--download"
             [disabled]="loading() || exportLoading()"
             (click)="downloadSelectedFormat()"
-          >{{ exportLoading() ? 'Готовим файл...' : 'Скачать файл' }}</button>
+          >
+            {{ exportLoading() ? 'Готовим файл...' : 'Скачать файл' }}
+          </button>
         </div>
         <p class="dashboard-document-export__status" aria-live="polite">
           Статус: <strong>{{ exportStatusLabel() }}</strong>
@@ -59,26 +241,6 @@
           <p class="dashboard-document-export__message" aria-live="polite">{{ exportMessage() }}</p>
         }
       </section>
-
-      <div class="dashboard-document-edit__actions">
-        <edo-dogx-button
-          label="Сохранить"
-          appearance="primary"
-          size="m"
-          [disabled]="loading()"
-          (pressed)="saveDocument()"
-        />
-        <edo-dogx-button
-          label="К списку"
-          appearance="secondary"
-          size="m"
-          (pressed)="goBack()"
-        />
-      </div>
-
-      @if (message()) {
-        <p class="dashboard-document-edit__message" aria-live="polite">{{ message() }}</p>
-      }
-    </form>
-  </edo-dogx-card>
+    </edo-dogx-card>
+  </div>
 </edo-dogx-page-section>

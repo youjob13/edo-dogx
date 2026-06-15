@@ -7,9 +7,12 @@ import {
   KanbanTaskDetails,
   KanbanTaskStatus,
 } from '../../../../domain/dashboard/dashboard.models';
-import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
+import {
+  ButtonComponent,
+  CardComponent,
+  PageSectionComponent,
+} from '../../../../design-system/ui-kit';
 import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
-import { AuthSessionStore } from '../../../../application/auth-session.store';
 
 @Component({
   selector: 'edo-dogx-dashboard-task-details',
@@ -20,7 +23,6 @@ import { AuthSessionStore } from '../../../../application/auth-session.store';
 })
 export class DashboardTaskDetailsComponent {
   private readonly useCases = inject(TaskBoardUseCases);
-  private readonly authSessionStore = inject(AuthSessionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -29,34 +31,36 @@ export class DashboardTaskDetailsComponent {
     nonNullable: true,
   });
   protected readonly commentControl = new FormControl('', { nonNullable: true });
+  protected readonly decisionCommentControl = new FormControl('', { nonNullable: true });
 
   protected readonly loading = signal(false);
   protected readonly details = signal<KanbanTaskDetails | null>(null);
   protected readonly message = signal('');
 
   protected readonly task = computed(() => this.details()?.task ?? null);
-  protected readonly canManage = computed(() => {
+  protected readonly hasAnyCapability = computed(() => {
+    const details = this.details();
+    return Boolean(
+      details &&
+      (details.canEdit ||
+        details.canAssign ||
+        details.canMoveToReview ||
+        details.canApprove ||
+        details.canComment),
+    );
+  });
+  protected canUpdateStatus(): boolean {
     const details = this.details();
     if (!details) {
       return false;
     }
 
-    if (details.canManage) {
-      return true;
-    }
-
-    const currentUserId = this.authSessionStore.currentUser()?.userId;
-    if (!currentUserId) {
+    if (this.statusControl.value === details.task.status) {
       return false;
     }
 
-    const isBoardMember = details.members.some((member) => member.id === currentUserId);
-    const isCreator = details.task.creatorId === currentUserId;
-    const isAssignee = details.task.assigneeId === currentUserId;
-    const isApprover = details.task.approverId === currentUserId;
-
-    return isBoardMember || isCreator || isAssignee || isApprover;
-  });
+    return details.canMoveToReview;
+  }
 
   constructor() {
     this.route.paramMap.pipe(take(1)).subscribe((params) => {
@@ -74,13 +78,13 @@ export class DashboardTaskDetailsComponent {
 
   protected assignTask(): void {
     const details = this.details();
-    if (!details || !this.canManage()) {
+    if (!details?.canAssign) {
       return;
     }
 
     this.useCases
       .assignTask(details.board.id, details.task.id, {
-        assigneeId: this.assigneeControl.value || null,
+        assigneeId: this.assigneeControl.value,
       })
       .pipe(take(1))
       .subscribe((task) => {
@@ -91,7 +95,7 @@ export class DashboardTaskDetailsComponent {
 
   protected moveTask(): void {
     const details = this.details();
-    if (!details || !this.canManage()) {
+    if (!details || !this.canUpdateStatus()) {
       return;
     }
 
@@ -108,7 +112,7 @@ export class DashboardTaskDetailsComponent {
 
   protected addComment(): void {
     const details = this.details();
-    if (!details || !this.canManage()) {
+    if (!details?.canComment) {
       return;
     }
 
@@ -125,6 +129,53 @@ export class DashboardTaskDetailsComponent {
         this.commentControl.setValue('');
         this.message.set('Комментарий добавлен.');
       });
+  }
+
+  protected approveTask(): void {
+    const details = this.details();
+    if (!details?.canApprove) {
+      return;
+    }
+
+    const decisionComment = this.decisionCommentControl.value.trim();
+    this.useCases
+      .updateTaskStatus(details.task.id, {
+        status: 'approved',
+        decision: 'approved',
+        decisionComment: decisionComment || undefined,
+      })
+      .pipe(take(1))
+      .subscribe((task) => {
+        this.applyUpdatedTask(task);
+        this.decisionCommentControl.setValue('');
+        this.message.set('Задача одобрена.');
+      });
+  }
+
+  protected declineTask(): void {
+    const details = this.details();
+    const decisionComment = this.decisionCommentControl.value.trim();
+    if (!details?.canApprove || !decisionComment) {
+      this.message.set('Для отклонения задачи необходимо указать комментарий.');
+      return;
+    }
+
+    this.useCases
+      .updateTaskStatus(details.task.id, {
+        status: 'declined',
+        decision: 'declined',
+        decisionComment,
+      })
+      .pipe(take(1))
+      .subscribe((task) => {
+        this.applyUpdatedTask(task);
+        this.decisionCommentControl.setValue('');
+        this.message.set('Задача отклонена.');
+      });
+  }
+
+  protected isFinalStatus(status: KanbanTaskStatus): boolean {
+    return status === 'approved' || status === 'declined';
   }
 
   protected navigateBackToBoard(): void {

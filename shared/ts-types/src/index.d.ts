@@ -9,7 +9,7 @@ export interface UserProfile {
     email: string;
     roles: string[];
 }
-export type DocumentCategory = 'HR' | 'FINANCE' | 'GENERAL';
+export type DocumentCategory = "HR" | "FINANCE" | "GENERAL";
 export interface CreateDocumentRequest {
     title: string;
     category: DocumentCategory;
@@ -29,7 +29,7 @@ export interface DocumentResponse {
     version?: number;
     updatedAt?: string;
 }
-export type EditorContextType = 'CATEGORY' | 'TEMPLATE';
+export type EditorContextType = "CATEGORY" | "TEMPLATE";
 export interface EditorControlProfileResponse {
     id: string;
     contextType: EditorContextType;
@@ -45,8 +45,8 @@ export interface UpdateEditorControlProfileRequest {
     disabledControls: string[];
     isActive: boolean;
 }
-export type ExportFormat = 'PDF' | 'DOCX';
-export type ExportRequestStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+export type ExportFormat = "PDF" | "DOCX";
+export type ExportRequestStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
 export interface CreateExportRequest {
     format: ExportFormat;
     sourceVersion: number;
@@ -72,13 +72,13 @@ export interface ExportRequestResponse {
 }
 export interface DocumentConflictResponse {
     error: string;
-    code: 'VERSION_CONFLICT';
+    code: "VERSION_CONFLICT";
     expectedVersion: number;
     currentVersion: number;
 }
-export type TaskStatus = 'pending' | 'in_review' | 'approved' | 'declined';
-export type TaskType = 'approval' | 'general';
-export type TaskDecision = 'approved' | 'declined';
+export type TaskStatus = "pending" | "in_review" | "approved" | "declined";
+export type TaskType = "approval" | "general";
+export type TaskDecision = "approved" | "declined";
 export interface TaskAttachment {
     documentId: string;
     title: string;
@@ -106,17 +106,28 @@ export interface Task {
 }
 export interface UpdateTaskStatusRequest {
     status: TaskStatus;
+    decision?: TaskDecision;
     decisionComment?: string;
 }
 export interface AddTaskAttachmentsRequest {
     documentIds: string[];
 }
-export interface AvailableApprover {
+export interface UpdateTaskAssigneeRequest {
+    assigneeId: string;
+}
+export interface UpdateTaskAssigneeResponse {
+    task: TaskResponse;
+}
+export type TaskBoardRole = "OWNER" | "MANAGER" | "MEMBER";
+export interface TaskBoardMember {
     id: string;
     fullName: string;
     department: string;
     email: string;
+    boardRole: TaskBoardRole;
+    roles: string[];
 }
+export type AvailableApprover = TaskBoardMember;
 export interface DocumentItem {
     id: string;
     title: string;
@@ -129,28 +140,20 @@ export interface DocumentItem {
 export interface TaskBoard {
     id: string;
     name: string;
-    members: {
-        id: string;
-        fullName: string;
-        department: string;
-        email: string;
-    }[];
+    members: TaskBoardMember[];
     tasks: Task[];
     availableApprovers: AvailableApprover[];
     availableDocuments: DocumentItem[];
 }
 export interface TaskDetailsResponse {
     task: Task;
-    members: {
-        id: string;
-        fullName: string;
-        department: string;
-        email: string;
-    }[];
+    members: TaskBoardMember[];
     currentUserId: string;
     canEdit: boolean;
+    canAssign: boolean;
     canApprove: boolean;
     canMoveToReview: boolean;
+    canComment: boolean;
 }
 export interface AvailableApproversResponse {
     items: AvailableApprover[];
@@ -170,8 +173,71 @@ export interface CreateSignatureRequest {
 export interface AuditEventResponse {
     id: string;
     actionType: string;
-    outcome: 'SUCCESS' | 'DENIED' | 'FAILED';
+    outcome: "SUCCESS" | "DENIED" | "FAILED";
     occurredAt: string;
+}
+export type GlobalSearchEntityType = "DOCUMENT" | "TASK";
+export interface GlobalSearchHit {
+    entityType: GlobalSearchEntityType;
+    id: string;
+    title: string;
+    subtitle: string;
+    status: string;
+    updatedAt: string;
+    route: string;
+    documentId?: string;
+    taskId?: string;
+    boardId?: string;
+    category?: string;
+}
+export interface GlobalSearchResponse {
+    items: GlobalSearchHit[];
+    total: number;
+}
+export type ActivityEventEntityType = "DOCUMENT" | "TASK";
+export type ActivityActionType = "DOCUMENT_CREATED" | "DOCUMENT_UPDATED" | "DOCUMENT_SUBMITTED" | "DOCUMENT_APPROVED" | "EXPORT_REQUESTED" | "EXPORT_SUCCEEDED" | "EXPORT_FAILED" | "TASK_CREATED" | "TASK_STATUS_UPDATED" | "TASK_ATTACHMENT_ADDED" | "TASK_ATTACHMENT_REMOVED" | "TASK_MEMBER_ADDED";
+export interface ActivityItemResponse {
+    id: string;
+    organizationId: string;
+    actorUserId: string;
+    actorUserName: string;
+    entityType: ActivityEventEntityType;
+    entityId: string;
+    actionType: ActivityActionType;
+    summary: string;
+    occurredAt: string;
+    documentId?: string;
+    taskId?: string;
+    boardId?: string;
+}
+export interface NotificationItem {
+    id: string;
+    recipientUserId: string;
+    organizationId: string;
+    eventType: string;
+    title: string;
+    body: string;
+    entityType: string;
+    entityId: string;
+    status: string;
+    isRead: boolean;
+    createdAt: string;
+    deliveredAt?: string;
+    readAt?: string;
+}
+export interface NotificationListResponse {
+    items: NotificationItem[];
+    total: number;
+}
+export interface UnreadCountResponse {
+    total: number;
+}
+export interface NotificationSseEvent {
+    notificationId: string;
+    title: string;
+    body: string;
+    entityType: string;
+    entityId: string;
 }
 /**
  * <--- Tasks
@@ -184,7 +250,7 @@ export interface CreateTaskRequest {
     readonly assigneeName: string;
     readonly approverId?: string;
     readonly approverName?: string;
-    readonly taskType: 'approval' | 'general';
+    readonly taskType: "approval" | "general";
     readonly dueDate?: Date;
     readonly priority?: number;
     readonly attachmentIds?: string[];
@@ -193,15 +259,15 @@ export interface TaskResponse {
     readonly id: string;
     readonly title: string;
     readonly description?: string;
-    readonly status: 'pending' | 'in_review' | 'approved' | 'declined';
-    readonly taskType: 'approval' | 'general';
+    readonly status: "pending" | "in_review" | "approved" | "declined";
+    readonly taskType: "approval" | "general";
     readonly creatorId: string;
     readonly creatorName: string;
     readonly assigneeId: string;
     readonly assigneeName: string;
     readonly approverId?: string;
     readonly approverName?: string;
-    readonly decision?: 'approved' | 'declined';
+    readonly decision?: "approved" | "declined";
     readonly decisionComment?: string;
     readonly dueDate?: Date;
     readonly priority?: number;

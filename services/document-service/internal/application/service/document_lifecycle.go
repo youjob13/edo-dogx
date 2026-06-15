@@ -130,6 +130,7 @@ func (s *DocumentLifecycleService) CreateDraft(ctx context.Context, input Create
 	document := model.Document{
 		Title:           title,
 		Category:        input.Category,
+		Status:          model.DocumentStatusDraft,
 		ContentDocument: contentDocument,
 		OwnerUser:       input.ActorUserID,
 		OwnerUserName:   input.ActorUserID,
@@ -169,31 +170,38 @@ func (s *DocumentLifecycleService) UpdateDraft(ctx context.Context, input Update
 	if err != nil {
 		return model.Document{}, err
 	}
+	if !updated.Status.IsEditable() {
+		return model.Document{}, model.ErrDocumentNotEditable
+	}
 
 	return updated, nil
 }
 
 func (s *DocumentLifecycleService) GetDocument(ctx context.Context, input GetDocumentInput) (model.Document, error) {
-	_ = input.ActorUserID
-	return s.documents.GetByID(ctx, input.DocumentID)
+	return s.documents.GetAccessibleByID(ctx, input.DocumentID, input.ActorUserID)
 }
 
 func (s *DocumentLifecycleService) ListDocumentVersions(ctx context.Context, input ListDocumentVersionsInput) ([]model.DocumentVersion, int64, error) {
-	_ = input.ActorUserID
+	if _, err := s.documents.GetAccessibleByID(ctx, input.DocumentID, input.ActorUserID); err != nil {
+		return nil, 0, err
+	}
 	return s.versions.ListVersions(ctx, input.DocumentID, input.Limit, input.Offset)
 }
 
 func (s *DocumentLifecycleService) GetDocumentVersion(ctx context.Context, input GetDocumentVersionInput) (model.DocumentVersion, error) {
-	_ = input.ActorUserID
+	if _, err := s.documents.GetAccessibleByID(ctx, input.DocumentID, input.ActorUserID); err != nil {
+		return model.DocumentVersion{}, err
+	}
 	return s.versions.GetVersion(ctx, input.DocumentID, input.VersionNumber)
 }
 
 func (s *DocumentLifecycleService) SearchDocuments(ctx context.Context, input SearchDocumentsInput) ([]model.Document, int64, error) {
 	return s.documents.SearchDocuments(ctx, outbound.SearchDocumentsInput{
-		Query:    input.Query,
-		Category: input.Category,
-		Limit:    input.Limit,
-		Offset:   input.Offset,
+		ActorUserID: input.ActorUserID,
+		Query:       input.Query,
+		Category:    input.Category,
+		Limit:       input.Limit,
+		Offset:      input.Offset,
 	})
 }
 
@@ -246,7 +254,7 @@ func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, inpu
 		"sourceVersion", input.SourceVersion,
 	)
 
-	document, err := s.documents.GetByID(ctx, input.DocumentID)
+	document, err := s.documents.GetAccessibleByID(ctx, input.DocumentID, input.ActorUserID)
 	if err != nil {
 		slog.Error("create export request failed to load document",
 			"actorUserId", input.ActorUserID,
@@ -340,12 +348,16 @@ func (s *DocumentLifecycleService) CreateExportRequest(ctx context.Context, inpu
 }
 
 func (s *DocumentLifecycleService) GetExportRequest(ctx context.Context, input GetExportRequestInput) (model.ExportRequest, error) {
-	_ = input.ActorUserID
+	if _, err := s.documents.GetAccessibleByID(ctx, input.DocumentID, input.ActorUserID); err != nil {
+		return model.ExportRequest{}, err
+	}
 	return s.documents.GetExportRequest(ctx, input.DocumentID, input.ExportRequestID)
 }
 
 func (s *DocumentLifecycleService) DownloadExportArtifact(ctx context.Context, input DownloadExportArtifactInput) (model.ExportArtifact, error) {
-	_ = input.ActorUserID
+	if _, err := s.documents.GetAccessibleByID(ctx, input.DocumentID, input.ActorUserID); err != nil {
+		return model.ExportArtifact{}, err
+	}
 	return s.documents.GetExportArtifact(ctx, input.DocumentID, input.ExportRequestID)
 }
 
@@ -366,6 +378,12 @@ func newInMemoryDocumentRepository() *inMemoryDocumentRepository {
 
 func (r *inMemoryDocumentRepository) CreateDraft(_ context.Context, document model.Document) (model.Document, error) {
 	document.ID = time.Now().UTC().Format("20060102150405.000000000")
+	if document.Status == "" {
+		document.Status = model.DocumentStatusDraft
+	}
+	if strings.TrimSpace(document.OrganizationID) == "" {
+		document.OrganizationID = "org-main"
+	}
 	r.items[document.ID] = document
 	return document, nil
 }
@@ -378,13 +396,30 @@ func (r *inMemoryDocumentRepository) GetByID(_ context.Context, id string) (mode
 	return document, nil
 }
 
+func (r *inMemoryDocumentRepository) GetAccessibleByID(_ context.Context, id string, actorUserID string) (model.Document, error) {
+	document, ok := r.items[id]
+	if !ok {
+		return model.Document{}, model.ErrDocumentNotFound
+	}
+	if strings.TrimSpace(actorUserID) == "" {
+		return model.Document{}, model.ErrDocumentAccessDenied
+	}
+	return document, nil
+}
+
 func (r *inMemoryDocumentRepository) UpdateDraft(_ context.Context, input outbound.UpdateDraftInput) (model.Document, error) {
 	document, ok := r.items[input.DocumentID]
 	if !ok {
 		return model.Document{}, model.ErrDocumentNotFound
 	}
+	if document.OwnerUser != input.ActorUserID {
+		return model.Document{}, model.ErrDocumentAccessDenied
+	}
 	if document.Version != input.ExpectedVersion {
 		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, document.Version)
+	}
+	if !document.Status.IsEditable() {
+		return model.Document{}, model.ErrDocumentNotEditable
 	}
 
 	document.Title = input.Title
@@ -404,6 +439,9 @@ func (r *inMemoryDocumentRepository) SearchDocuments(_ context.Context, input ou
 	filtered := make([]model.Document, 0, len(r.items))
 
 	for _, item := range r.items {
+		if strings.TrimSpace(input.ActorUserID) == "" {
+			continue
+		}
 		if query != "" {
 			if !strings.Contains(strings.ToLower(item.Title), query) && !strings.Contains(strings.ToLower(item.Category), query) {
 				continue

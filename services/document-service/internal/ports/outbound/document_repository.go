@@ -9,6 +9,7 @@ import (
 type DocumentRepository interface {
 	CreateDraft(ctx context.Context, document model.Document) (model.Document, error)
 	GetByID(ctx context.Context, id string) (model.Document, error)
+	GetAccessibleByID(ctx context.Context, id string, actorUserID string) (model.Document, error)
 	UpdateDraft(ctx context.Context, input UpdateDraftInput) (model.Document, error)
 	SearchDocuments(ctx context.Context, input SearchDocumentsInput) ([]model.Document, int64, error)
 	GetEditorControlProfileByContext(ctx context.Context, contextType string, contextKey string) (model.EditorControlProfile, error)
@@ -20,10 +21,11 @@ type DocumentRepository interface {
 }
 
 type SearchDocumentsInput struct {
-	Query    string
-	Category string
-	Limit    int
-	Offset   int
+	ActorUserID string
+	Query       string
+	Category    string
+	Limit       int
+	Offset      int
 }
 
 type UpdateDraftInput struct {

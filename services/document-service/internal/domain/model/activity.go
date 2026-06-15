@@ -15,6 +15,7 @@ type ActivityEvent struct {
 	EntityID       string
 	ActionType     ActivityActionType
 	Summary        string
+	Metadata       map[string]interface{}
 	OccurredAt     time.Time
 	DocumentID     *string
 	TaskID         *string
@@ -39,4 +40,5 @@ const (
 	ActivityActionTaskAttachmentAdded   ActivityActionType = "TASK_ATTACHMENT_ADDED"
 	ActivityActionTaskAttachmentRemoved ActivityActionType = "TASK_ATTACHMENT_REMOVED"
 	ActivityActionTaskMemberAdded       ActivityActionType = "TASK_MEMBER_ADDED"
+	ActivityActionTaskAssigneeUpdated   ActivityActionType = "TASK_ASSIGNEE_UPDATED"
 )

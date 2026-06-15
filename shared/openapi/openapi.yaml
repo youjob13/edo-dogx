@@ -87,7 +87,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaskResponse"
+                type: object
+                required: [task]
+                properties:
+                  task:
+                    $ref: "#/components/schemas/TaskResponse"
 
   /api/tasks/{taskId}/status:
     patch:
@@ -112,7 +116,46 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaskResponse"
+                type: object
+                required: [task]
+                properties:
+                  task:
+                    $ref: "#/components/schemas/TaskResponse"
+
+  /api/tasks/{taskId}/assignee:
+    patch:
+      tags: [documents]
+      summary: Assign or reassign a task
+      operationId: updateTaskAssignee
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskAssigneeRequest"
+      responses:
+        "200":
+          description: Task assignee updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [task]
+                properties:
+                  task:
+                    $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: Invalid assignee
+        "403":
+          description: Assignment is not permitted
+        "404":
+          description: Task not found
 
   /api/tasks/{taskId}/attachments:
     post:
@@ -335,9 +378,19 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitWorkflowRequest"
       responses:
         "202":
           description: Workflow started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowInstanceResponse"
 
   /api/documents/{documentId}:
     patch:
@@ -654,9 +707,132 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveWorkflowRequest"
       responses:
         "202":
           description: Approval accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowInstanceResponse"
+
+  /api/documents/{documentId}/workflow/request-changes:
+    post:
+      tags: [documents]
+      summary: Request workflow changes
+      operationId: requestWorkflowChanges
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestWorkflowChangesRequest"
+      responses:
+        "202":
+          description: Change request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowInstanceResponse"
+
+  /api/documents/{documentId}/archive:
+    post:
+      tags: [documents]
+      summary: Archive approved document
+      operationId: archiveDocument
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveDocumentRequest"
+      responses:
+        "202":
+          description: Document archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveDocumentResponse"
+
+  /api/documents/{documentId}/workflow:
+    get:
+      tags: [documents]
+      summary: Get document workflow state
+      operationId: getWorkflow
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Current workflow state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowInstanceResponse"
+
+  /api/documents/{documentId}/workflow/events:
+    get:
+      tags: [documents]
+      summary: List document workflow events
+      operationId: listWorkflowEvents
+      description: Routed via gateway to document-service during migration wave 1.
+      x-migration-wave: wave-1-document-service
+      parameters:
+        - in: path
+          name: documentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Workflow event history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowEventsResponse"
 
   /api/documents/{documentId}/signatures:
     post:
@@ -1166,7 +1342,26 @@ components:
 
     ExportRequestStatus:
       type: string
-      enum: [DRAFT, IN_REVIEW, APPROVED, ARCHIVED]
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED]
+
+    DocumentStatus:
+      type: string
+      enum: [DRAFT, IN_REVIEW, CHANGES_REQUESTED, APPROVED, ARCHIVED]
+
+    DocumentCapabilities:
+      type: object
+      required: [canEdit, canSubmit, canApprove, canRequestChanges, canArchive]
+      properties:
+        canEdit:
+          type: boolean
+        canSubmit:
+          type: boolean
+        canApprove:
+          type: boolean
+        canRequestChanges:
+          type: boolean
+        canArchive:
+          type: boolean
 
     ExportArtifactResponse:
       type: object
@@ -1234,33 +1429,37 @@ components:
                 format: date-time
 
     DocumentResponse:
-      type: object
-      required: [id, title, category, version, updatedAt]
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        category:
-          type: string
-        contentDocument:
-          type: object
-          additionalProperties: true
-        version:
-          type: integer
-          minimum: 1
-        updatedAt:
-          type: string
-          format: date-time
-        objectKey:
-          type: string
-        objectVersionId:
-          type: string
+      allOf:
+        - $ref: "#/components/schemas/DocumentCapabilities"
+        - type: object
+          required: [id, title, category, status, version, updatedAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            title:
+              type: string
+            category:
+              type: string
+            status:
+              $ref: "#/components/schemas/DocumentStatus"
+            contentDocument:
+              type: object
+              additionalProperties: true
+            version:
+              type: integer
+              minimum: 1
+            updatedAt:
+              type: string
+              format: date-time
+            objectKey:
+              type: string
+            objectVersionId:
+              type: string
 
     DocumentVersionResponse:
       type: object
-      required: [documentId, versionNumber, title, category, createdAt, objectKey, objectVersionId]
+      required: [documentId, versionNumber, title, category, status, createdAt, objectKey, objectVersionId]
       properties:
         documentId:
           type: string
@@ -1272,6 +1471,8 @@ components:
           type: string
         category:
           type: string
+        status:
+          $ref: "#/components/schemas/DocumentStatus"
         changedByUserId:
           type: string
         changeSummary:
@@ -1295,6 +1496,132 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DocumentVersionResponse"
+        total:
+          type: integer
+          minimum: 0
+
+    SubmitWorkflowRequest:
+      type: object
+      required: [approverUserId, expectedVersion]
+      properties:
+        approverUserId:
+          type: string
+        expectedVersion:
+          type: integer
+          minimum: 1
+
+    ApproveWorkflowRequest:
+      type: object
+      required: [expectedVersion]
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+
+    RequestWorkflowChangesRequest:
+      type: object
+      required: [comment, expectedVersion]
+      properties:
+        comment:
+          type: string
+          minLength: 1
+        expectedVersion:
+          type: integer
+          minimum: 1
+
+    ArchiveDocumentRequest:
+      type: object
+      required: [expectedVersion]
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 1
+
+    ArchiveDocumentResponse:
+      type: object
+      required: [archived, archivedAt]
+      properties:
+        archived:
+          type: boolean
+        archivedAt:
+          type: string
+          format: date-time
+
+    WorkflowInstanceResponse:
+      allOf:
+        - $ref: "#/components/schemas/DocumentCapabilities"
+        - type: object
+          required: [id, documentId, status, updatedAt, submittedVersion, submittedByUserId, approverUserId, submittedAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            documentId:
+              type: string
+              format: uuid
+            currentStepCode:
+              type: string
+            status:
+              $ref: "#/components/schemas/DocumentStatus"
+            assignedUserId:
+              type: string
+            updatedAt:
+              type: string
+              format: date-time
+            submittedVersion:
+              type: integer
+              minimum: 1
+            submittedByUserId:
+              type: string
+            approverUserId:
+              type: string
+            decisionComment:
+              type: string
+            submittedAt:
+              type: string
+              format: date-time
+            decidedAt:
+              type: string
+              format: date-time
+
+    WorkflowEventResponse:
+      type: object
+      required: [id, workflowId, documentId, actorUserId, eventType, previousStatus, newStatus, documentVersion, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workflowId:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        actorUserId:
+          type: string
+        eventType:
+          type: string
+        previousStatus:
+          $ref: "#/components/schemas/DocumentStatus"
+        newStatus:
+          $ref: "#/components/schemas/DocumentStatus"
+        documentVersion:
+          type: integer
+          minimum: 1
+        comment:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+
+    WorkflowEventsResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowEventResponse"
         total:
           type: integer
           minimum: 0
@@ -1371,6 +1698,7 @@ components:
           type: string
           maxLength: 2000
           description: Optional task description
+
         assigneeId:
           type: string
           description: ID of the user assigned to the task
@@ -1400,6 +1728,15 @@ components:
             type: string
           description: IDs of documents to attach to the task
 
+    UpdateTaskAssigneeRequest:
+      type: object
+      required: [assigneeId]
+      properties:
+        assigneeId:
+          type: string
+          minLength: 1
+          description: Active board member to assign
+
     UpdateTaskStatusRequest:
       type: object
       required: [status]
@@ -1411,7 +1748,7 @@ components:
         decisionComment:
           type: string
           maxLength: 1000
-          description: Optional comment from the approver
+          description: Approver comment; required when status is declined
 
     TaskAttachment:
       type: object
@@ -1428,8 +1765,7 @@ components:
           enum: [HR, FINANCE, GENERAL]
           description: Document category
         status:
-          type: string
-          enum: [IN_REVIEW, DRAFT, ARCHIVED, APPROVED]
+          $ref: "#/components/schemas/DocumentStatus"
           description: Document status
 
     TaskComment:

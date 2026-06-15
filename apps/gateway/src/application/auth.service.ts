@@ -1,9 +1,6 @@
 import type { UserProfile } from '@edo/types';
 import type { AuthSession, PkceState } from '../domain/auth.js';
-import type {
-  AuthPort,
-  InitiateLoginResult,
-} from '../ports/inbound/auth.port.js';
+import type { AuthPort, InitiateLoginResult } from '../ports/inbound/auth.port.js';
 import type { OidcClientPort } from '../ports/outbound/oidc-client.port.js';
 import type { OrganizationMemberProvisioningPort } from '../ports/outbound/organization-member-provisioning.port.js';
 
@@ -25,19 +22,15 @@ export class AuthService implements AuthPort {
     return { authUrl, pkceState };
   }
 
-  async handleCallback(
-    params: Record<string, string>,
-    pkceState: PkceState,
-  ): Promise<AuthSession> {
+  async handleCallback(params: Record<string, string>, pkceState: PkceState): Promise<AuthSession> {
     const tokenData = await this.oidcClient.exchangeCode(params, pkceState);
-    if (tokenData.department) {
-      await this.memberProvisioning.ensureMemberExists({
-        userId: tokenData.userId,
-        fullName: tokenData.fullName,
-        department: tokenData.department,
-        email: tokenData.email,
-      });
-    }
+    await this.memberProvisioning.ensureMemberExists({
+      userId: tokenData.userId,
+      fullName: tokenData.fullName,
+      department: tokenData.department,
+      email: tokenData.email,
+      roles: tokenData.roles,
+    });
 
     return {
       userId: tokenData.userId,

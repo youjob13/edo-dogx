@@ -3,6 +3,7 @@ export interface OrganizationMemberProvisioningPayload {
   readonly fullName: string;
   readonly department: string;
   readonly email: string;
+  readonly roles: string[];
 }
 
 export interface OrganizationMemberProvisioningPort {

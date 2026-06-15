@@ -44,7 +44,15 @@ interface GatewayTaskDetailsResponse {
   task: KanbanTask;
   members: Array<{ id: string; fullName: string; department: string }>;
   currentUserId: string;
-  canManage: boolean;
+  canEdit: boolean;
+  canAssign: boolean;
+  canMoveToReview: boolean;
+  canApprove: boolean;
+  canComment: boolean;
+}
+
+interface GatewayTaskResponse {
+  task: KanbanTask;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -84,25 +92,33 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
           task: response.task,
           members: response.members,
           currentUserId: response.currentUserId,
-          canManage: response.canManage,
+          canEdit: response.canEdit,
+          canAssign: response.canAssign,
+          canMoveToReview: response.canMoveToReview,
+          canApprove: response.canApprove,
+          canComment: response.canComment,
         })),
       );
   }
 
   public assignTask(
-    boardId: string,
+    _boardId: string,
     taskId: string,
     payload: KanbanTaskAssignPayload,
   ): Observable<KanbanTask> {
-    return this.http.patch<KanbanTask>(`${this.apiBaseUrl}/tasks/${taskId}`, payload);
+    return this.http
+      .patch<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/assignee`, payload)
+      .pipe(map((response) => response.task));
   }
 
   public moveTask(
-    boardId: string,
+    _boardId: string,
     taskId: string,
     payload: KanbanTaskMovePayload,
   ): Observable<KanbanTask> {
-    return this.http.patch<KanbanTask>(`${this.apiBaseUrl}/tasks/${taskId}/status`, payload);
+    return this.http
+      .patch<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/status`, payload)
+      .pipe(map((response) => response.task));
   }
 
   public addTaskComment(
@@ -128,11 +144,18 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
       attachmentIds: payload.attachmentIds,
     };
 
-    return this.http.post<TaskResponse>(`${this.apiBaseUrl}/tasks`, createRequest);
+    return this.http
+      .post<{task: TaskResponse}>(`${this.apiBaseUrl}/tasks`, createRequest)
+      .pipe(map((response) => response.task));
   }
 
-  public updateTaskStatus(taskId: string, payload: KanbanTaskUpdateStatusPayload): Observable<KanbanTask> {
-    return this.http.patch<KanbanTask>(`${this.apiBaseUrl}/tasks/${taskId}/status`, payload);
+  public updateTaskStatus(
+    taskId: string,
+    payload: KanbanTaskUpdateStatusPayload,
+  ): Observable<KanbanTask> {
+    return this.http
+      .patch<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/status`, payload)
+      .pipe(map((response) => response.task));
   }
 
   public getAvailableApprovers(boardId: string): Observable<Array<AvailableApproverItem>> {
@@ -148,23 +171,32 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
     limit = 50,
     offset = 0,
   ): Observable<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }> {
-    return this.http.get<{ documents: Array<AvailableDocumentItem>; limit: number; offset: number }>(
-      `${this.apiBaseUrl}/tasks/available-documents`,
-      {
-        params: { boardId, limit, offset },
-      },
-    );
+    return this.http.get<{
+      documents: Array<AvailableDocumentItem>;
+      limit: number;
+      offset: number;
+    }>(`${this.apiBaseUrl}/tasks/available-documents`, {
+      params: { boardId, limit, offset },
+    });
   }
 
-  public getOrganizationMembers(organizationId: string): Observable<{ items: Array<OrganizationMember>; total: number }> {
+  public getOrganizationMembers(
+    organizationId: string,
+  ): Observable<{ items: Array<OrganizationMember>; total: number }> {
     return this.http.get<GatewayOrganizationMembersResponse>(
       `${this.apiBaseUrl}/organizations/${organizationId}/members`,
     );
   }
 
-  public addBoardMember(boardId: string, userId: string): Observable<{ member: OrganizationMember }> {
-    return this.http.post<{ member: OrganizationMember }>(`${this.apiBaseUrl}/boards/${boardId}/members`, {
-      userId,
-    });
+  public addBoardMember(
+    boardId: string,
+    userId: string,
+  ): Observable<{ member: OrganizationMember }> {
+    return this.http.post<{ member: OrganizationMember }>(
+      `${this.apiBaseUrl}/boards/${boardId}/members`,
+      {
+        userId,
+      },
+    );
   }
 }

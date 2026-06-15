@@ -2,6 +2,9 @@
 import { Observable } from 'rxjs';
 import {
   ActivityItem,
+  DashboardApproveWorkflowPayload,
+  DashboardArchiveDocumentPayload,
+  DashboardArchiveDocumentResult,
   DashboardConflictError,
   DashboardCreateDocumentPayload,
   DashboardCreateExportPayload,
@@ -10,9 +13,13 @@ import {
   DashboardEditorContextType,
   DashboardEditorControlProfile,
   DashboardExportRequest,
+  DashboardRequestWorkflowChangesPayload,
+  DashboardSubmitWorkflowPayload,
   DashboardUpdateEditorControlProfilePayload,
   DashboardPreviewDocument,
   DashboardQuery,
+  DashboardWorkflowEvent,
+  DashboardWorkflowInstance,
   DocumentItem,
   PaginatedResult,
   StorageUsage,
@@ -75,6 +82,45 @@ export class DocumentUseCases {
     payload: DashboardEditDocumentPayload,
   ): Observable<DocumentItem> {
     return this.api.updateDocument(id, payload);
+  }
+
+  public submitWorkflow(
+    id: string,
+    payload: DashboardSubmitWorkflowPayload,
+  ): Observable<DashboardWorkflowInstance> {
+    return this.api.submitWorkflow(id, payload);
+  }
+
+  public approveWorkflow(
+    id: string,
+    payload: DashboardApproveWorkflowPayload,
+  ): Observable<DashboardWorkflowInstance> {
+    return this.api.approveWorkflow(id, payload);
+  }
+
+  public requestWorkflowChanges(
+    id: string,
+    payload: DashboardRequestWorkflowChangesPayload,
+  ): Observable<DashboardWorkflowInstance> {
+    return this.api.requestWorkflowChanges(id, payload);
+  }
+
+  public archiveDocument(
+    id: string,
+    payload: DashboardArchiveDocumentPayload,
+  ): Observable<DashboardArchiveDocumentResult> {
+    return this.api.archiveDocument(id, payload);
+  }
+
+  public getWorkflow(id: string): Observable<DashboardWorkflowInstance> {
+    return this.api.getWorkflow(id);
+  }
+
+  public getWorkflowEvents(
+    id: string,
+    options?: { limit?: number; offset?: number },
+  ): Observable<{ items: Array<DashboardWorkflowEvent>; total: number }> {
+    return this.api.getWorkflowEvents(id, options);
   }
 
   public getEditorControlProfile(

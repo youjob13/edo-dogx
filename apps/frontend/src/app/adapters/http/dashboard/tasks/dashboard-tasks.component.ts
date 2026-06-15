@@ -19,7 +19,11 @@ import {
   OrganizationMember,
   TaskType,
 } from '../../../../domain/dashboard/dashboard.models';
-import { ButtonComponent, CardComponent, PageSectionComponent } from '../../../../design-system/ui-kit';
+import {
+  ButtonComponent,
+  CardComponent,
+  PageSectionComponent,
+} from '../../../../design-system/ui-kit';
 import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
 
 interface TaskGroupView {
@@ -64,11 +68,15 @@ interface TaskColumnView {
 export class DashboardTasksComponent {
   private readonly useCases = inject(TaskBoardUseCases);
   private readonly router = inject(Router);
-  private readonly statusOrder: Array<KanbanTaskStatus> = ['pending', 'in_review', 'approved', 'declined'];
+  private readonly statusOrder: Array<KanbanTaskStatus> = [
+    'pending',
+    'in_review',
+    'approved',
+    'declined',
+  ];
 
   protected readonly organizationOptions: Array<{ value: string; label: string }> = [
     { value: 'org-main', label: 'ЭДО Group' },
-    { value: 'org-empty', label: 'Пустая организация' },
   ];
 
   protected readonly groupingOptions: Array<{ value: KanbanTaskGroupBy; label: string }> = [
@@ -96,17 +104,26 @@ export class DashboardTasksComponent {
   protected readonly showCreateTaskModal = signal(false);
   protected readonly showCreateBoardModal = signal(false);
   protected readonly createTaskForm = new FormGroup({
-    title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
+    title: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(3)],
+    }),
     description: new FormControl('', { nonNullable: true }),
     assigneeId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     approverId: new FormControl('', { nonNullable: true }),
     taskType: new FormControl<TaskType>('general', { nonNullable: true }),
     dueDate: new FormControl('', { nonNullable: true }),
-    priority: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(5)] }),
+    priority: new FormControl(1, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(1), Validators.max(5)],
+    }),
     attachments: new FormControl<AvailableDocumentItem[]>([], { nonNullable: true }),
   });
   protected readonly createBoardForm = new FormGroup({
-    name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
+    name: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(3)],
+    }),
     description: new FormControl('', { nonNullable: true }),
   });
 
@@ -175,12 +192,12 @@ export class DashboardTasksComponent {
 
   protected onAssigneeChanged(taskId: string, value: string): void {
     const boardId = this.selectedBoard()?.id;
-    if (!boardId) {
+    if (!boardId || !value) {
       return;
     }
 
     this.useCases
-      .assignTask(boardId, taskId, { assigneeId: value || null })
+      .assignTask(boardId, taskId, { assigneeId: value })
       .pipe(take(1))
       .subscribe((task) => {
         this.updateTaskInBoard(task);
@@ -199,14 +216,13 @@ export class DashboardTasksComponent {
       return;
     }
 
-    const currentIndex = this.statusOrder.indexOf(task.status);
-    const nextIndex =
-      direction === 'prev'
-        ? Math.max(0, currentIndex - 1)
-        : Math.min(this.statusOrder.length - 1, currentIndex + 1);
-
-    const nextStatus = this.statusOrder[nextIndex];
-    if (nextStatus === task.status) {
+    const nextStatus =
+      direction === 'next' && task.status === 'pending'
+        ? 'in_review'
+        : direction === 'prev' && task.status === 'in_review'
+          ? 'pending'
+          : null;
+    if (!nextStatus) {
       return;
     }
 
@@ -215,16 +231,18 @@ export class DashboardTasksComponent {
       .pipe(take(1))
       .subscribe((updatedTask) => {
         this.updateTaskInBoard(updatedTask);
-        this.message.set(`Задача «${updatedTask.title}» перемещена в колонку «${this.getStatusLabel(nextStatus)}».`);
+        this.message.set(
+          `Задача «${updatedTask.title}» перемещена в колонку «${this.getStatusLabel(nextStatus)}».`,
+        );
       });
   }
 
   protected canMoveLeft(task: KanbanTask): boolean {
-    return this.statusOrder.indexOf(task.status) > 0;
+    return task.status === 'in_review';
   }
 
   protected canMoveRight(task: KanbanTask): boolean {
-    return this.statusOrder.indexOf(task.status) < this.statusOrder.length - 1;
+    return task.status === 'pending';
   }
 
   protected openTaskDetails(boardId: string, taskId: string): void {
@@ -368,12 +386,16 @@ export class DashboardTasksComponent {
       return;
     }
 
-    const comment = prompt('Комментарий к отклонению:');
+    const comment = prompt('Комментарий к отклонению:')?.trim();
+    if (!comment) {
+      this.message.set('Для отклонения задачи необходимо указать комментарий.');
+      return;
+    }
     this.useCases
       .updateTaskStatus(taskId, {
         status: 'declined',
         decision: 'declined',
-        decisionComment: comment || undefined
+        decisionComment: comment,
       })
       .pipe(take(1))
       .subscribe((task) => {
@@ -383,7 +405,7 @@ export class DashboardTasksComponent {
   }
 
   protected canApproveTask(task: KanbanTask): boolean {
-    return task.taskType === 'approval' && task.status === 'in_review' && task.approverId === 'current-user-id'; // TODO: get current user ID
+    return task.taskType === 'approval' && task.status === 'in_review';
   }
 
   protected getBoardMembers(): Array<KanbanBoardMember> {
@@ -499,7 +521,9 @@ export class DashboardTasksComponent {
         }
 
         const currentBoard = this.boardControl.value;
-        const hasPreferredBoard = preferredBoardId ? boards.some((board) => board.id === preferredBoardId) : false;
+        const hasPreferredBoard = preferredBoardId
+          ? boards.some((board) => board.id === preferredBoardId)
+          : false;
         const hasCurrentBoard = boards.some((board) => board.id === currentBoard);
         const boardToLoad = hasPreferredBoard
           ? preferredBoardId!

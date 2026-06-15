@@ -9,6 +9,11 @@ export interface UpdateTaskStatusRequest {
   readonly decisionComment?: string;
 }
 
+export interface UpdateTaskAssigneeRequest {
+  readonly taskId: string;
+  readonly assigneeId: string;
+}
+
 export interface AvailableApproverId {
   readonly userId: string;
   readonly userName: string;
@@ -28,7 +33,11 @@ export interface TaskDetailsView {
     readonly department: string;
   }>;
   readonly currentUserId: string;
-  readonly canManage: boolean;
+  readonly canEdit: boolean;
+  readonly canAssign: boolean;
+  readonly canMoveToReview: boolean;
+  readonly canApprove: boolean;
+  readonly canComment: boolean;
 }
 
 export class TaskService {
@@ -71,7 +80,10 @@ export class TaskService {
     return this.mapGrpcResponseToTask(response);
   }
 
-  async updateTaskStatus(request: UpdateTaskStatusRequest, currentUser: UserProfile): Promise<TaskResponse> {
+  async updateTaskStatus(
+    request: UpdateTaskStatusRequest,
+    currentUser: UserProfile,
+  ): Promise<TaskResponse> {
     if (!request.taskId || request.taskId.trim().length === 0) {
       throw new Error('Task ID is required');
     }
@@ -83,8 +95,29 @@ export class TaskService {
     const response = await this.grpcClient.updateTaskStatus({
       task_id: request.taskId,
       status: request.status,
+      decision: request.decision || '',
       decision_comment: request.decisionComment || '',
       actor_user_id: currentUser.userId,
+    });
+
+    return this.mapGrpcResponseToTask(response);
+  }
+
+  async updateTaskAssignee(
+    request: UpdateTaskAssigneeRequest,
+    currentUser: UserProfile,
+  ): Promise<TaskResponse> {
+    if (!request.taskId.trim()) {
+      throw new Error('Task ID is required');
+    }
+    if (!request.assigneeId.trim()) {
+      throw new Error('Assignee ID is required');
+    }
+
+    const response = await this.grpcClient.updateTaskAssignee({
+      actor_user_id: currentUser.userId,
+      task_id: request.taskId,
+      assignee_user_id: request.assigneeId,
     });
 
     return this.mapGrpcResponseToTask(response);
@@ -110,51 +143,62 @@ export class TaskService {
     })) as Record<string, unknown>;
 
     const task = this.mapGrpcResponseToTask(response);
-    const membersPayload = Array.isArray(response.members) ? (response.members as Array<Record<string, unknown>>) : [];
+    const membersPayload = Array.isArray(response.members)
+      ? (response.members as Array<Record<string, unknown>>)
+      : [];
     const members = membersPayload.map((member) => ({
       id: String(member.id || ''),
       fullName: String(member.full_name || member.fullName || ''),
       department: String(member.department || ''),
     }));
 
-    const canEdit = Boolean(response.can_edit ?? response.canEdit);
-    const isCreator = task.creatorId === currentUser.userId;
-    const isAssignee = task.assigneeId === currentUser.userId;
-    const isApprover = task.approverId === currentUser.userId;
-    const isBoardMember = members.some((member) => member.id === currentUser.userId);
-
     return {
       task,
       members,
       currentUserId: currentUser.userId,
-      canManage: canEdit || isCreator || isAssignee || isApprover || isBoardMember,
+      canEdit: Boolean(response.can_edit ?? response.canEdit),
+      canAssign: Boolean(response.can_assign ?? response.canAssign),
+      canMoveToReview: Boolean(response.can_move_to_review ?? response.canMoveToReview),
+      canApprove: Boolean(response.can_approve ?? response.canApprove),
+      canComment: Boolean(response.can_comment ?? response.canComment),
     };
   }
 
-  async listTasks(filters?: {
-    readonly assigneeId?: string;
-    readonly status?: string;
-    readonly taskType?: string;
-  }): Promise<TaskResponse[]> {
-    const response = await this.grpcClient.listTasks({
-      assigneeId: filters?.assigneeId || '',
+  async listTasks(
+    filters: {
+      readonly assigneeId?: string;
+      readonly status?: string;
+      readonly taskType?: string;
+    },
+    currentUser: UserProfile,
+  ): Promise<TaskResponse[]> {
+    const response = (await this.grpcClient.listTasks({
+      actor_user_id: currentUser.userId,
+      assignee_user_id: filters?.assigneeId || '',
       status: filters?.status || '',
-      taskType: filters?.taskType || '',
-    });
+      task_type: filters?.taskType || '',
+      limit: 200,
+    })) as { tasks?: unknown[] };
 
-    if (Array.isArray(response)) {
-      return response.map((task) => this.mapGrpcResponseToTask(task));
+    if (Array.isArray(response.tasks)) {
+      return response.tasks.map((task) => this.mapGrpcResponseToTask(task));
     }
 
     return [];
   }
 
-  async getAvailableApprovers(boardId: string, search = '', limit = 50): Promise<AvailableApproverId[]> {
+  async getAvailableApprovers(
+    boardId: string,
+    currentUser: UserProfile,
+    search = '',
+    limit = 50,
+  ): Promise<AvailableApproverId[]> {
     if (!boardId.trim()) {
       throw new Error('Board ID is required');
     }
 
     const response = (await this.grpcClient.getAvailableApprovers({
+      actor_user_id: currentUser.userId,
       board_id: boardId,
       search,
       limit,
@@ -219,7 +263,9 @@ export class TaskService {
         : response.approver_user_name
           ? String(response.approver_user_name)
           : undefined,
-      decision: response.decision ? (String(response.decision) as 'approved' | 'declined') : undefined,
+      decision: response.decision
+        ? (String(response.decision) as 'approved' | 'declined')
+        : undefined,
       decisionComment: response.decisionComment
         ? String(response.decisionComment)
         : response.decision_comment

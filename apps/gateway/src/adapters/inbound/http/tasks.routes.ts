@@ -1,16 +1,31 @@
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-import { TaskOrchestrationServiceClient, GrpcClientError } from '../../outbound/grpc/task.client.js';
+import {
+  TaskOrchestrationServiceClient,
+  GrpcClientError,
+} from '../../outbound/grpc/task.client.js';
 import { TaskService, type UpdateTaskStatusRequest } from '../../../application/task.service.js';
 import { TaskValidationService } from '../../../application/validation/task.validation.js';
 import { NotificationServiceClient } from '../../outbound/grpc/notification.client.js';
 import { notificationSseHub } from './notifications.sse-hub.js';
 import type { AuthSession } from '../../../domain/auth.js';
-import { CreateTaskRequest } from '@edo/types';
+import type { UserProfile, CreateTaskRequest } from '@edo/types';
+import { edmsRbacGuard } from './middleware/edms-rbac.guard.js';
 
 const grpcClient = new TaskOrchestrationServiceClient();
 const taskService = new TaskService(grpcClient);
 const validationService = new TaskValidationService();
 const notificationClient = new NotificationServiceClient();
+
+function buildUserProfile(authData: AuthSession): UserProfile {
+  return {
+    userId: authData.userId,
+    userName: authData.email,
+    fullName: authData.fullName || authData.email,
+    email: authData.email,
+    department: authData.department || '',
+    roles: authData.roles || [],
+  };
+}
 
 function mapGrpcError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof GrpcClientError)) {
@@ -33,51 +48,57 @@ function mapGrpcError(reply: FastifyReply, error: unknown) {
     return reply.code(401).send({ error: 'unauthorized' });
   }
 
+  if (error.code === 9) {
+    return reply.code(409).send({ error: error.message || 'operation conflict' });
+  }
+
   return reply.code(500).send({ error: error.message || 'internal server error' });
 }
 
 const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // POST /api/tasks - Create a new task
-  fastify.post('/tasks', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const authData = request.session?.auth as AuthSession | undefined;
-      if (!authData) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
+  fastify.post(
+    '/tasks',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.create')],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const authData = request.session?.auth as AuthSession | undefined;
+        if (!authData) {
+          return reply.code(401).send({ error: 'Unauthorized' });
+        }
 
-      const body = request.body as CreateTaskRequest & { documentIds?: string[] };
+        const body = request.body as CreateTaskRequest & { documentIds?: string[] };
 
-      // Validate task creation request
-      const validationResult = validationService.validateTaskCreation(body as unknown as Record<string, unknown>);
-      if (!validationResult.isValid) {
-        return reply.code(400).send({
-          error: 'Validation failed',
-          details: validationResult.errors,
-        });
-      }
+        // Validate task creation request
+        const validationResult = validationService.validateTaskCreation(
+          body as unknown as Record<string, unknown>,
+        );
+        if (!validationResult.isValid) {
+          return reply.code(400).send({
+            error: 'Validation failed',
+            details: validationResult.errors,
+          });
+        }
 
-      const taskRequest: CreateTaskRequest = {
-        boardId: body.boardId,
-        title: body.title,
-        description: body.description,
-        assigneeId: body.assigneeId,
-        assigneeName: body.assigneeName,
-        approverId: body.approverId,
-        approverName: body.approverName,
-        taskType: body.taskType,
-        dueDate: body.dueDate ? new Date(body.dueDate as unknown as string) : undefined,
-        priority: body.priority,
-        attachmentIds: body.attachmentIds ?? body.documentIds,
-      };
+        const taskRequest: CreateTaskRequest = {
+          boardId: body.boardId,
+          title: body.title,
+          description: body.description,
+          assigneeId: body.assigneeId,
+          assigneeName: body.assigneeName,
+          approverId: body.approverId,
+          approverName: body.approverName,
+          taskType: body.taskType,
+          dueDate: body.dueDate ? new Date(body.dueDate as unknown as string) : undefined,
+          priority: body.priority,
+          attachmentIds: body.attachmentIds ?? body.documentIds,
+        };
 
-      const task = await taskService.createTask(taskRequest, {
-        userId: authData.userId,
-        userName: authData.email,
-        email: authData.email,
-        roles: authData.roles,
-      });
-      if (task.assigneeId) {
-        try {
+        const task = await taskService.createTask(taskRequest, buildUserProfile(authData));
+        if (task.assigneeId) {
+          try {
           const created = (await notificationClient.createNotification({
             actor_user_id: authData.userId,
             recipient_user_id: task.assigneeId,
@@ -117,6 +138,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // PATCH /api/tasks/:taskId/status - Update task status
   fastify.patch<{ Params: { taskId: string } }>(
     '/tasks/:taskId/status',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.status')],
+    },
     async (request: FastifyRequest<{ Params: { taskId: string } }>, reply: FastifyReply) => {
       try {
         const authData = request.session?.auth as AuthSession | undefined;
@@ -135,7 +159,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         };
 
         // Validate status update request
-        const validationResult = validationService.validateTaskStatusUpdate(validationPayload as Record<string, unknown>);
+        const validationResult = validationService.validateTaskStatusUpdate(
+          validationPayload as Record<string, unknown>,
+        );
         if (!validationResult.isValid) {
           return reply.code(400).send({
             error: 'Validation failed',
@@ -150,12 +176,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           decisionComment: body.decisionComment,
         };
 
-        const task = await taskService.updateTaskStatus(updateRequest, {
-          userId: authData.userId,
-          userName: authData.email,
-          email: authData.email,
-          roles: authData.roles,
-        });
+        const task = await taskService.updateTaskStatus(updateRequest, buildUserProfile(authData));
         const recipient =
           task.status === 'approved' || task.status === 'declined'
             ? task.creatorId || task.assigneeId
@@ -199,9 +220,55 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     },
   );
 
+  // PATCH /api/tasks/:taskId/assignee - Assign or reassign a task
+  fastify.patch<{ Params: { taskId: string }; Body: { assigneeId?: string } }>(
+    '/tasks/:taskId/assignee',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.assign')],
+    },
+    async (
+      request: FastifyRequest<{
+        Params: { taskId: string };
+        Body: { assigneeId?: string };
+      }>,
+      reply: FastifyReply,
+    ) => {
+      try {
+        const authData = request.session?.auth as AuthSession | undefined;
+        if (!authData) {
+          return reply.code(401).send({ error: 'Unauthorized' });
+        }
+
+        const assigneeId = request.body?.assigneeId?.trim();
+        if (!assigneeId) {
+          return reply.code(400).send({ error: 'assigneeId is required' });
+        }
+
+        const task = await taskService.updateTaskAssignee(
+          {
+            taskId: request.params.taskId,
+            assigneeId,
+          },
+          buildUserProfile(authData),
+        );
+
+        return reply.send({ task });
+      } catch (error) {
+        if (error instanceof GrpcClientError) {
+          return mapGrpcError(reply, error);
+        }
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return reply.code(400).send({ error: message });
+      }
+    },
+  );
+
   // GET /api/tasks/:taskId - Get task details
   fastify.get<{ Params: { taskId: string }; Querystring: { boardId?: string } }>(
     '/tasks/:taskId',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (
       request: FastifyRequest<{ Params: { taskId: string }; Querystring: { boardId?: string } }>,
       reply: FastifyReply,
@@ -212,12 +279,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(401).send({ error: 'Unauthorized' });
         }
 
-        const details = await taskService.getTaskDetails(request.params.taskId, {
-          userId: authData.userId,
-          userName: authData.email,
-          email: authData.email,
-          roles: authData.roles,
-        });
+        const details = await taskService.getTaskDetails(request.params.taskId, buildUserProfile(authData));
 
         return reply.send({
           board: {
@@ -231,7 +293,11 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           task: details.task,
           members: details.members,
           currentUserId: details.currentUserId,
-          canManage: details.canManage,
+          canEdit: details.canEdit,
+          canAssign: details.canAssign,
+          canMoveToReview: details.canMoveToReview,
+          canApprove: details.canApprove,
+          canComment: details.canComment,
         });
       } catch (error) {
         if (error instanceof GrpcClientError) {
@@ -247,8 +313,13 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // GET /api/tasks - List tasks with optional filters
   fastify.get<{ Querystring: { assigneeId?: string; status?: string; taskType?: string } }>(
     '/tasks',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (
-      request: FastifyRequest<{ Querystring: { assigneeId?: string; status?: string; taskType?: string } }>,
+      request: FastifyRequest<{
+        Querystring: { assigneeId?: string; status?: string; taskType?: string };
+      }>,
       reply: FastifyReply,
     ) => {
       try {
@@ -257,11 +328,14 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
           return reply.code(401).send({ error: 'Unauthorized' });
         }
 
-        const tasks = await taskService.listTasks({
-          assigneeId: request.query.assigneeId,
-          status: request.query.status,
-          taskType: request.query.taskType,
-        });
+        const tasks = await taskService.listTasks(
+          {
+            assigneeId: request.query.assigneeId,
+            status: request.query.status,
+            taskType: request.query.taskType,
+          },
+          buildUserProfile(authData),
+        );
 
         return reply.send({ tasks });
       } catch (error) {
@@ -278,36 +352,57 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // GET /api/tasks/available-approvers - Get list of available approvers
   fastify.get<{ Querystring: { boardId?: string; search?: string; limit?: number } }>(
     '/tasks/available-approvers',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (
-      request: FastifyRequest<{ Querystring: { boardId?: string; search?: string; limit?: number } }>,
+      request: FastifyRequest<{
+        Querystring: { boardId?: string; search?: string; limit?: number };
+      }>,
       reply: FastifyReply,
     ) => {
-    try {
-      const authData = request.session?.auth as AuthSession | undefined;
-      if (!authData) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
+      try {
+        const authData = request.session?.auth as AuthSession | undefined;
+        if (!authData) {
+          return reply.code(401).send({ error: 'Unauthorized' });
+        }
 
-      const boardId = request.query.boardId ?? '';
-      if (!boardId) {
-        return reply.code(400).send({ error: 'boardId is required' });
-      }
+        const boardId = request.query.boardId ?? '';
+        if (!boardId) {
+          return reply.code(400).send({ error: 'boardId is required' });
+        }
 
-      const search = request.query.search ?? '';
-      const limit = Math.min(request.query.limit ?? 50, 200);
-      const approvers = await taskService.getAvailableApprovers(boardId, search, limit);
-      return reply.send({ approvers });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return reply.code(500).send({ error: message });
-    }
-  });
+        const search = request.query.search ?? '';
+        const limit = Math.min(request.query.limit ?? 50, 200);
+        const approvers = await taskService.getAvailableApprovers(
+          boardId,
+          buildUserProfile(authData),
+          search,
+          limit,
+        );
+        return reply.send({ approvers });
+      } catch (error) {
+        if (error instanceof GrpcClientError) {
+          return mapGrpcError(reply, error);
+        }
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return reply.code(500).send({ error: message });
+      }
+    },
+  );
 
   // GET /api/tasks/available-documents - Get list of available documents for attachment
-  fastify.get<{ Querystring: { boardId?: string; category?: string; search?: string; limit?: number } }>(
+  fastify.get<{
+    Querystring: { boardId?: string; category?: string; search?: string; limit?: number };
+  }>(
     '/tasks/available-documents',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (
-      request: FastifyRequest<{ Querystring: { boardId?: string; category?: string; search?: string; limit?: number } }>,
+      request: FastifyRequest<{
+        Querystring: { boardId?: string; category?: string; search?: string; limit?: number };
+      }>,
       reply: FastifyReply,
     ) => {
       try {
@@ -327,12 +422,7 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         const documents = await taskService.getAvailableDocuments(
           boardId,
-          {
-            userId: authData.userId,
-            userName: authData.email,
-            email: authData.email,
-            roles: authData.roles,
-          },
+          buildUserProfile(authData),
           category,
           search,
           limit,
@@ -340,10 +430,14 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 
         return reply.send({ documents, limit, offset: 0 });
       } catch (error) {
+        if (error instanceof GrpcClientError) {
+          return mapGrpcError(reply, error);
+        }
         const message = error instanceof Error ? error.message : 'Unknown error';
         return reply.code(500).send({ error: message });
       }
-    });
+    },
+  );
 };
 
 export default routes;

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strings"
 	"time"
 
 	"edo/services/document-service/internal/domain/model"
@@ -25,6 +26,8 @@ type DocumentRepository struct {
 	presignedTTL  time.Duration
 	versions      *DocumentVersionRepository
 }
+
+const defaultDocumentOrganizationID = "org-main"
 
 func NewDocumentRepository(db *sql.DB, objectClient *minio.Client, presignClient *minio.Client, bucketName string, presignedTTL time.Duration) *DocumentRepository {
 	if presignedTTL <= 0 {
@@ -52,11 +55,26 @@ func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Doc
 	defer tx.Rollback()
 
 	const query = `
-		INSERT INTO documents (title, category, owner_user_id, owner_user_name, current_version_number)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO documents (title, category, organization_id, status, owner_user_id, owner_user_name, current_version_number)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at, updated_at
 	`
-	row := tx.QueryRowContext(ctx, query, document.Title, document.Category, document.OwnerUser, document.OwnerUserName, 1)
+	organizationID, err := resolveActorOrganizationIDTx(ctx, tx, document.OwnerUser)
+	if err != nil {
+		return model.Document{}, err
+	}
+	document.OrganizationID = organizationID
+	row := tx.QueryRowContext(
+		ctx,
+		query,
+		document.Title,
+		document.Category,
+		document.OrganizationID,
+		string(document.Status),
+		document.OwnerUser,
+		document.OwnerUserName,
+		1,
+	)
 	if err := row.Scan(&document.ID, &document.CreatedAt, &document.UpdatedAt); err != nil {
 		return model.Document{}, err
 	}
@@ -71,6 +89,7 @@ func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Doc
 		VersionNumber:   1,
 		Title:           document.Title,
 		Category:        document.Category,
+		Status:          document.Status,
 		ChangedByUserID: document.OwnerUser,
 		ChangeSummary:   "document draft created",
 		ObjectKey:       objectKey,
@@ -99,17 +118,47 @@ func (r *DocumentRepository) CreateDraft(ctx context.Context, document model.Doc
 }
 
 func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Document, error) {
+	document, err := r.loadDocumentByID(ctx, r.db, id)
+	if err != nil {
+		return model.Document{}, err
+	}
+	content, err := r.versions.LoadContent(ctx, document.ObjectKey, document.ObjectVersionID)
+	if err != nil {
+		return model.Document{}, err
+	}
+	document.ContentDocument = content
+	return document, nil
+}
+
+func (r *DocumentRepository) GetAccessibleByID(ctx context.Context, id string, actorUserID string) (model.Document, error) {
+	document, err := r.GetByID(ctx, id)
+	if err != nil {
+		return model.Document{}, err
+	}
+	allowed, err := r.actorCanAccessOrganization(ctx, document.OrganizationID, actorUserID)
+	if err != nil {
+		return model.Document{}, err
+	}
+	if !allowed && document.OwnerUser != actorUserID {
+		return model.Document{}, model.ErrDocumentAccessDenied
+	}
+	return document, nil
+}
+
+func (r *DocumentRepository) loadDocumentByID(ctx context.Context, querier rowQuerier, id string) (model.Document, error) {
 	const query = `
-		SELECT id, title, category, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
+		SELECT id, title, category, organization_id, status, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
 		FROM documents
 		WHERE id = $1
 	`
 
 	var document model.Document
-	if err := r.db.QueryRowContext(ctx, query, id).Scan(
+	if err := querier.QueryRowContext(ctx, query, id).Scan(
 		&document.ID,
 		&document.Title,
 		&document.Category,
+		&document.OrganizationID,
+		&document.Status,
 		&document.OwnerUser,
 		&document.OwnerUserName,
 		&document.Version,
@@ -123,12 +172,6 @@ func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Docu
 		}
 		return model.Document{}, err
 	}
-
-	content, err := r.versions.LoadContent(ctx, document.ObjectKey, document.ObjectVersionID)
-	if err != nil {
-		return model.Document{}, err
-	}
-	document.ContentDocument = content
 	return document, nil
 }
 
@@ -140,7 +183,7 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 	defer tx.Rollback()
 
 	const selectQuery = `
-		SELECT id, title, category, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
+		SELECT id, title, category, organization_id, status, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
 		FROM documents
 		WHERE id = $1
 		FOR UPDATE
@@ -151,6 +194,8 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		&current.ID,
 		&current.Title,
 		&current.Category,
+		&current.OrganizationID,
+		&current.Status,
 		&current.OwnerUser,
 		&current.OwnerUserName,
 		&current.Version,
@@ -168,6 +213,16 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 	if err != nil {
 		return model.Document{}, err
 	}
+	if current.OwnerUser != input.ActorUserID {
+		return model.Document{}, model.ErrDocumentAccessDenied
+	}
+	allowed, err := actorCanAccessOrganizationTx(ctx, tx, current.OrganizationID, input.ActorUserID)
+	if err != nil {
+		return model.Document{}, err
+	}
+	if !allowed {
+		return model.Document{}, model.ErrDocumentAccessDenied
+	}
 	current.ContentDocument = content
 	newContent := current.ContentDocument
 	if input.ContentDocument != nil {
@@ -175,6 +230,9 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 	}
 	if current.Version != input.ExpectedVersion {
 		return model.Document{}, model.NewVersionConflictError(input.ExpectedVersion, current.Version)
+	}
+	if !current.Status.IsEditable() {
+		return model.Document{}, model.ErrDocumentNotEditable
 	}
 	newVersion := current.Version + 1
 	objectVersionID, err := r.versions.StoreContent(ctx, current.ObjectKey, newContent)
@@ -198,6 +256,7 @@ func (r *DocumentRepository) UpdateDraft(ctx context.Context, input outbound.Upd
 		VersionNumber:   newVersion,
 		Title:           input.Title,
 		Category:        current.Category,
+		Status:          current.Status,
 		ChangedByUserID: input.ActorUserID,
 		ChangeSummary:   "updated by " + input.ActorUserID,
 		ObjectKey:       current.ObjectKey,
@@ -229,6 +288,13 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	args := make([]any, 0, 6)
 	argIdx := 1
 
+	if strings.TrimSpace(input.ActorUserID) == "" {
+		return []model.Document{}, 0, nil
+	}
+	where += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM organization_members om WHERE om.organization_id = documents.organization_id AND om.user_id = $%d)", argIdx)
+	args = append(args, input.ActorUserID)
+	argIdx++
+
 	if input.Query != "" {
 		where += fmt.Sprintf(" AND (title ILIKE $%d OR category ILIKE $%d)", argIdx, argIdx+1)
 		args = append(args, "%"+input.Query+"%", "%"+input.Query+"%")
@@ -248,7 +314,7 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, title, category, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
+		SELECT id, title, category, organization_id, status, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
 		FROM documents
 		%s
 		ORDER BY updated_at DESC
@@ -269,6 +335,8 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 			&document.ID,
 			&document.Title,
 			&document.Category,
+			&document.OrganizationID,
+			&document.Status,
 			&document.OwnerUser,
 			&document.OwnerUserName,
 			&document.Version,
@@ -287,6 +355,55 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	}
 
 	return documents, total, nil
+}
+
+type rowQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+func resolveActorOrganizationIDTx(ctx context.Context, tx *sql.Tx, actorUserID string) (string, error) {
+	var organizationID string
+	err := tx.QueryRowContext(ctx, `
+		SELECT organization_id
+		FROM organization_members
+		WHERE user_id = $1
+		ORDER BY CASE WHEN organization_id = $2 THEN 0 ELSE 1 END, organization_id
+		LIMIT 1
+	`, actorUserID, defaultDocumentOrganizationID).Scan(&organizationID)
+	if err == sql.ErrNoRows {
+		return defaultDocumentOrganizationID, nil
+	}
+	return organizationID, err
+}
+
+func actorCanAccessOrganizationTx(ctx context.Context, tx *sql.Tx, organizationID string, actorUserID string) (bool, error) {
+	if strings.TrimSpace(actorUserID) == "" || strings.TrimSpace(organizationID) == "" {
+		return false, nil
+	}
+	var exists bool
+	err := tx.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM organization_members
+			WHERE organization_id = $1 AND user_id = $2
+		)
+	`, organizationID, actorUserID).Scan(&exists)
+	return exists, err
+}
+
+func (r *DocumentRepository) actorCanAccessOrganization(ctx context.Context, organizationID string, actorUserID string) (bool, error) {
+	if strings.TrimSpace(actorUserID) == "" || strings.TrimSpace(organizationID) == "" {
+		return false, nil
+	}
+	var exists bool
+	err := r.db.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM organization_members
+			WHERE organization_id = $1 AND user_id = $2
+		)
+	`, organizationID, actorUserID).Scan(&exists)
+	return exists, err
 }
 
 func (r *DocumentRepository) ListVersions(ctx context.Context, documentID string, limit int, offset int) ([]model.DocumentVersion, int64, error) {

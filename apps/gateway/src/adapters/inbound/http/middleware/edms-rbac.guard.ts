@@ -9,6 +9,7 @@ const actionRoleMap: Record<string, string[]> = {
   'documents.export': ['edms.user', 'edms.admin'],
   'documents.submit': ['edms.user', 'edms.admin'],
   'documents.approve': ['edms.approver', 'edms.admin'],
+  'documents.archive': ['edms.user', 'edms.admin'],
   'signatures.start': ['edms.user', 'edms.admin'],
   'signatures.read': ['edms.user', 'edms.admin'],
   'signatures.callback': ['edms.approver', 'edms.admin'],
@@ -16,6 +17,10 @@ const actionRoleMap: Record<string, string[]> = {
   'category.assign': ['edms.approver', 'edms.admin'],
   'search.read': ['edms.user', 'edms.admin'],
   'notifications.read': ['edms.user', 'edms.admin'],
+  'tasks.create': ['edms.user', 'edms.admin'],
+  'tasks.read': ['edms.user', 'edms.admin'],
+  'tasks.assign': ['edms.user', 'edms.admin'],
+  'tasks.status': ['edms.user', 'edms.admin'],
 };
 
 function categoryAllowed(roles: string[], category: string | undefined): boolean {

@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(300) NOT NULL,
     category VARCHAR(32) NOT NULL,
+    organization_id TEXT NOT NULL DEFAULT 'org-main',
+    status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
     owner_user_id TEXT NOT NULL,
     owner_user_name TEXT,
     version BIGINT NOT NULL DEFAULT 1,
@@ -19,6 +21,7 @@ CREATE TABLE IF NOT EXISTS document_versions (
     version_number BIGINT NOT NULL,
     title VARCHAR(300) NOT NULL,
     category VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
     changed_by_user_id TEXT NOT NULL,
     change_summary TEXT NOT NULL,
     object_key TEXT,
@@ -93,9 +96,17 @@ CREATE TABLE IF NOT EXISTS tasks (
     decision VARCHAR(32),
     decision_comment TEXT,
     due_date DATE,
+    updated_by_user_id TEXT,
+    updated_by_user_name TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS updated_by_user_id TEXT;
+
+ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS updated_by_user_name TEXT;
 
 CREATE TABLE IF NOT EXISTS task_board_members (
     board_id UUID NOT NULL REFERENCES task_boards(id) ON DELETE CASCADE,
@@ -103,7 +114,9 @@ CREATE TABLE IF NOT EXISTS task_board_members (
     full_name TEXT NOT NULL,
     department TEXT NOT NULL DEFAULT '',
     email TEXT NOT NULL DEFAULT '',
+    role VARCHAR(16) NOT NULL DEFAULT 'MEMBER',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_task_board_members_role CHECK (role IN ('OWNER', 'MANAGER', 'MEMBER')),
     PRIMARY KEY (board_id, user_id)
 );
 
@@ -124,13 +137,38 @@ CREATE TABLE IF NOT EXISTS organization_members (
     full_name TEXT NOT NULL DEFAULT '',
     department TEXT NOT NULL DEFAULT '',
     email TEXT NOT NULL DEFAULT '',
+    roles TEXT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (organization_id, user_id)
 );
+
+ALTER TABLE organization_members
+    ADD COLUMN IF NOT EXISTS roles TEXT[] NOT NULL DEFAULT '{}';
+
+ALTER TABLE organization_members
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER TABLE task_board_members
+    ADD COLUMN IF NOT EXISTS role VARCHAR(16) NOT NULL DEFAULT 'MEMBER';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_task_board_members_role'
+    ) THEN
+        ALTER TABLE task_board_members
+            ADD CONSTRAINT chk_task_board_members_role
+            CHECK (role IN ('OWNER', 'MANAGER', 'MEMBER'));
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_documents_owner ON documents(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_documents_owner_name ON documents(owner_user_name);
 CREATE INDEX IF NOT EXISTS idx_documents_category ON documents(category);
+CREATE INDEX IF NOT EXISTS idx_documents_organization_id ON documents(organization_id);
 CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id);
 CREATE INDEX IF NOT EXISTS idx_document_versions_document_id_version ON document_versions(document_id, version_number DESC);
 CREATE INDEX IF NOT EXISTS idx_editor_control_profiles_context ON editor_control_profiles(context_type, context_key);

@@ -2,6 +2,7 @@ package grpcadapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -21,10 +22,23 @@ type TaskOrchestrationHandler struct {
 	taskRepository outbound.TaskRepository
 	activity       *appservice.ActivityService
 	syncer         ProjectionSyncer
+	authorization  *appservice.TaskAuthorizationPolicy
+	notifier       TaskAssignmentNotifier
 }
 
-func NewTaskOrchestrationHandler(taskRepository outbound.TaskRepository, activity *appservice.ActivityService, syncer ProjectionSyncer) *TaskOrchestrationHandler {
-	return &TaskOrchestrationHandler{taskRepository: taskRepository, activity: activity, syncer: syncer}
+func NewTaskOrchestrationHandler(
+	taskRepository outbound.TaskRepository,
+	activity *appservice.ActivityService,
+	syncer ProjectionSyncer,
+	notifier TaskAssignmentNotifier,
+) *TaskOrchestrationHandler {
+	return &TaskOrchestrationHandler{
+		taskRepository: taskRepository,
+		activity:       activity,
+		syncer:         syncer,
+		authorization:  appservice.NewTaskAuthorizationPolicy(),
+		notifier:       notifier,
+	}
 }
 
 func (h *TaskOrchestrationHandler) Register(server *grpc.Server) {
@@ -32,16 +46,28 @@ func (h *TaskOrchestrationHandler) Register(server *grpc.Server) {
 }
 
 func (h *TaskOrchestrationHandler) CreateTaskBoard(ctx context.Context, req *pb.CreateTaskBoardRequest) (*pb.CreateTaskBoardResponse, error) {
-	if req.GetOrganizationId() == "" || req.GetName() == "" {
-		return nil, status.Error(codes.InvalidArgument, "organization_id and name are required")
+	if req.GetActorUserId() == "" || req.GetOrganizationId() == "" || req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "actor_user_id, organization_id, and name are required")
+	}
+
+	actor, err := h.taskRepository.GetOrganizationActor(ctx, req.GetOrganizationId(), req.GetActorUserId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanCreateBoard(actor) {
+		return nil, status.Error(codes.PermissionDenied, "organization membership is required")
 	}
 
 	board, err := h.taskRepository.CreateTaskBoard(ctx, model.TaskBoard{
-		OrganizationID: req.GetOrganizationId(),
-		Name:           req.GetName(),
-		Description:    req.GetDescription(),
+		OrganizationID:  req.GetOrganizationId(),
+		Name:            req.GetName(),
+		Description:     req.GetDescription(),
+		CreatedByUserID: req.GetActorUserId(),
 	})
 	if err != nil {
+		if err == model.ErrTaskMemberNotFound {
+			return nil, status.Error(codes.FailedPrecondition, "board creator is not an organization member")
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -61,6 +87,20 @@ func (h *TaskOrchestrationHandler) GetTaskBoard(ctx context.Context, req *pb.Get
 	if req.GetBoardId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "board_id is required")
 	}
+	if req.GetActorUserId() == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
+
+	actor, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanReadBoard(actor) {
+		return nil, status.Error(codes.PermissionDenied, "board access denied")
+	}
 
 	board, err := h.taskRepository.GetTaskBoard(ctx, req.GetBoardId())
 	if err != nil {
@@ -77,6 +117,8 @@ func (h *TaskOrchestrationHandler) GetTaskBoard(ctx context.Context, req *pb.Get
 			FullName:   member.FullName,
 			Department: member.Department,
 			Email:      member.Email,
+			BoardRole:  string(member.BoardRole),
+			Roles:      member.Roles,
 		})
 	}
 
@@ -84,21 +126,34 @@ func (h *TaskOrchestrationHandler) GetTaskBoard(ctx context.Context, req *pb.Get
 	for _, task := range board.Tasks {
 		tasks = append(tasks, mapTaskToProto(task))
 	}
+	availableApprovers, _, err := h.taskRepository.GetAvailableApprovers(ctx, board.ID, "", 200)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	approverItems := make([]*pb.BoardMember, 0, len(availableApprovers))
+	for _, approver := range availableApprovers {
+		approverItems = append(approverItems, mapBoardMemberToProto(approver))
+	}
 
 	return &pb.GetTaskBoardResponse{
 		Board: &pb.TaskBoard{
-			Id:              board.ID,
-			Name:            board.Name,
-			Members:         members,
-			Tasks:           tasks,
-			OrganizationId:  board.OrganizationID,
-			Description:     board.Description,
-			AllowedGrouping: board.AllowedGrouping,
+			Id:                 board.ID,
+			Name:               board.Name,
+			Members:            members,
+			Tasks:              tasks,
+			AvailableApprovers: approverItems,
+			OrganizationId:     board.OrganizationID,
+			Description:        board.Description,
+			AllowedGrouping:    board.AllowedGrouping,
 		},
 	}, nil
 }
 
 func (h *TaskOrchestrationHandler) ListTaskBoards(ctx context.Context, req *pb.ListTaskBoardsRequest) (*pb.ListTaskBoardsResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
+
 	limit := int(req.GetLimit())
 	if limit <= 0 {
 		limit = 50
@@ -116,9 +171,11 @@ func (h *TaskOrchestrationHandler) ListTaskBoards(ctx context.Context, req *pb.L
 		id := req.GetOrganizationId()
 		organizationID = &id
 	}
+	actorUserID := req.GetActorUserId()
 
 	boards, total, err := h.taskRepository.ListTaskBoards(ctx, outbound.TaskBoardFilter{
 		OrganizationID: organizationID,
+		ActorUserID:    &actorUserID,
 		Limit:          &limit,
 		Offset:         &offset,
 	})
@@ -160,12 +217,56 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		return nil, status.Error(codes.InvalidArgument, "assignee_user_id is required")
 	}
 
+	actor, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanCreateTask(actor) {
+		return nil, status.Error(codes.PermissionDenied, "task creation denied")
+	}
+	if req.GetAssigneeUserId() != req.GetActorUserId() {
+		placeholderTask := model.Task{CreatedByUserID: req.GetActorUserId()}
+		if !h.authorization.Capabilities(actor, placeholderTask).CanAssign {
+			return nil, status.Error(codes.PermissionDenied, "task assignment denied")
+		}
+	}
+	assignee, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetAssigneeUserId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !assignee.IsBoardMember {
+		return nil, status.Error(codes.InvalidArgument, "assignee must be a board member")
+	}
+	if strings.TrimSpace(req.GetApproverUserId()) != "" {
+		approver, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetApproverUserId())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !approver.IsBoardMember {
+			return nil, status.Error(codes.InvalidArgument, "approver must be a board member")
+		}
+		if !approver.HasRole("edms.approver") && !approver.HasRole("edms.admin") {
+			return nil, status.Error(codes.InvalidArgument, "approver must hold edms.approver role")
+		}
+	}
+
 	taskType := model.TaskType(req.GetTaskType())
 	if taskType == "" {
 		taskType = model.TaskTypeGeneral
 	}
 	if taskType != model.TaskTypeGeneral && taskType != model.TaskTypeApproval {
 		return nil, status.Error(codes.InvalidArgument, "task_type must be 'general' or 'approval'")
+	}
+	if taskType == model.TaskTypeApproval && strings.TrimSpace(req.GetApproverUserId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "approver_user_id is required for approval tasks")
+	}
+	if taskType == model.TaskTypeApproval &&
+		req.GetAssigneeUserId() == req.GetApproverUserId() &&
+		!actor.HasRole("edms.admin") {
+		return nil, status.Error(codes.FailedPrecondition, "assignee and approver must be different users")
 	}
 
 	var dueDate *time.Time
@@ -190,9 +291,9 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		Status:            model.TaskStatusPending,
 		TaskType:          taskType,
 		CreatedByUserID:   req.GetActorUserId(),
-		CreatedByUserName: req.GetActorUserId(),
+		CreatedByUserName: "",
 		AssignedUserID:    req.GetAssigneeUserId(),
-		AssignedUserName:  req.GetAssigneeUserId(),
+		AssignedUserName:  "",
 		ApproverUserID:    approverUserID,
 		ApproverUserName:  approverUserID,
 		DueDate:           dueDate,
@@ -201,13 +302,19 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		if err == model.ErrAttachmentDocumentForbidden {
 			return nil, status.Error(codes.PermissionDenied, "one or more documents are inaccessible")
 		}
+		if err == model.ErrTaskMemberNotFound {
+			return nil, status.Error(codes.InvalidArgument, "creator, assignee, or approver is not an organization member")
+		}
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	h.syncProjectionAsync(createdTask.ID, "TASK")
 	h.recordTaskActivityAsync(model.ActivityEvent{
-		OrganizationID: "org-main",
+		OrganizationID: actor.OrganizationID,
 		ActorUserID:    req.GetActorUserId(),
-		ActorUserName:  req.GetActorUserId(),
+		ActorUserName:  actor.FullName,
 		EntityType:     model.ActivityEntityTypeTask,
 		EntityID:       createdTask.ID,
 		ActionType:     model.ActivityActionTaskCreated,
@@ -219,7 +326,49 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 	return &pb.CreateTaskResponse{Task: mapTaskToProto(createdTask)}, nil
 }
 
+func (h *TaskOrchestrationHandler) ListTasks(ctx context.Context, req *pb.ListTasksRequest) (*pb.ListTasksResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
+
+	filter := outbound.TaskFilter{ActorUserID: stringPointer(req.GetActorUserId())}
+	if value := strings.TrimSpace(req.GetAssigneeUserId()); value != "" {
+		filter.AssignedUserID = &value
+	}
+	if value := strings.TrimSpace(req.GetStatus()); value != "" {
+		taskStatus, err := parseStatus(value)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		filter.Status = &taskStatus
+	}
+	if value := strings.TrimSpace(req.GetTaskType()); value != "" {
+		taskType := model.TaskType(value)
+		if taskType != model.TaskTypeGeneral && taskType != model.TaskTypeApproval {
+			return nil, status.Error(codes.InvalidArgument, "task_type must be 'general' or 'approval'")
+		}
+		filter.TaskType = &taskType
+	}
+	if req.GetLimit() > 0 {
+		limit := min(int(req.GetLimit()), 200)
+		filter.Limit = &limit
+	}
+
+	tasks, err := h.taskRepository.ListTasks(ctx, filter)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	items := make([]*pb.Task, 0, len(tasks))
+	for _, task := range tasks {
+		items = append(items, mapTaskToProto(task))
+	}
+	return &pb.ListTasksResponse{Tasks: items}, nil
+}
+
 func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb.UpdateTaskStatusRequest) (*pb.UpdateTaskStatusResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetTaskId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "task_id is required")
 	}
@@ -244,13 +393,40 @@ func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb
 		return nil, status.Error(codes.FailedPrecondition, "invalid task status transition")
 	}
 
-	if err := validateStatusUpdateAuthorization(task, req.GetActorUserId(), nextStatus); err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+	statusUpdate, err := buildTaskStatusUpdate(task, nextStatus, req)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if err := h.taskRepository.UpdateTaskStatus(ctx, req.GetTaskId(), nextStatus, req.GetActorUserId(), req.GetActorUserId()); err != nil {
+	actor, err := h.taskRepository.GetBoardActor(ctx, task.BoardID, req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	capabilities := h.authorization.Capabilities(actor, task)
+	allowed := false
+	switch nextStatus {
+	case model.TaskStatusInReview:
+		allowed = capabilities.CanMoveToReview
+	case model.TaskStatusApproved, model.TaskStatusDeclined:
+		allowed = capabilities.CanApprove
+	case model.TaskStatusPending:
+		allowed = h.authorization.CanMoveToPending(actor, task)
+	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, "task status transition denied")
+	}
+
+	statusUpdate.UpdatedByUserID = req.GetActorUserId()
+	statusUpdate.UpdatedByUserName = actor.FullName
+	if err := h.taskRepository.UpdateTaskStatus(ctx, req.GetTaskId(), statusUpdate); err != nil {
 		if err == model.ErrTaskNotFound {
 			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		if err == model.ErrTaskStatusConflict {
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -264,9 +440,9 @@ func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb
 	}
 	h.syncProjectionAsync(task.ID, "TASK")
 	h.recordTaskActivityAsync(model.ActivityEvent{
-		OrganizationID: "org-main",
+		OrganizationID: actor.OrganizationID,
 		ActorUserID:    req.GetActorUserId(),
-		ActorUserName:  req.GetActorUserId(),
+		ActorUserName:  actor.FullName,
 		EntityType:     model.ActivityEntityTypeTask,
 		EntityID:       task.ID,
 		ActionType:     model.ActivityActionTaskStatusUpdated,
@@ -278,12 +454,80 @@ func (h *TaskOrchestrationHandler) UpdateTaskStatus(ctx context.Context, req *pb
 	return &pb.UpdateTaskStatusResponse{Task: mapTaskToProto(task)}, nil
 }
 
+func (h *TaskOrchestrationHandler) UpdateTaskAssignee(ctx context.Context, req *pb.UpdateTaskAssigneeRequest) (*pb.UpdateTaskAssigneeResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
+	if strings.TrimSpace(req.GetTaskId()) == "" || strings.TrimSpace(req.GetAssigneeUserId()) == "" {
+		return nil, status.Error(codes.InvalidArgument, "task_id and assignee_user_id are required")
+	}
+
+	result, err := h.taskRepository.UpdateTaskAssignee(
+		ctx,
+		strings.TrimSpace(req.GetTaskId()),
+		strings.TrimSpace(req.GetActorUserId()),
+		strings.TrimSpace(req.GetAssigneeUserId()),
+		h.authorization,
+	)
+	if err != nil {
+		switch err {
+		case model.ErrTaskNotFound:
+			return nil, status.Error(codes.NotFound, err.Error())
+		case model.ErrTaskAssignmentForbidden:
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		case model.ErrTaskAssigneeNotBoardMember:
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		default:
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	task := result.Task
+	h.syncProjectionAsync(task.ID, "TASK")
+	h.recordTaskActivityAsync(model.ActivityEvent{
+		OrganizationID: result.Actor.OrganizationID,
+		ActorUserID:    result.Actor.UserID,
+		ActorUserName:  result.Actor.FullName,
+		EntityType:     model.ActivityEntityTypeTask,
+		EntityID:       task.ID,
+		ActionType:     model.ActivityActionTaskAssigneeUpdated,
+		Summary:        "Изменен исполнитель задачи: " + task.Title,
+		Metadata: map[string]interface{}{
+			"previousAssigneeId": result.PreviousAssigneeID,
+			"newAssigneeId":      task.AssignedUserID,
+		},
+		TaskID:  &task.ID,
+		BoardID: &task.BoardID,
+	}, task)
+	h.notifyTaskAssignmentAsync(result)
+
+	return &pb.UpdateTaskAssigneeResponse{Task: mapTaskToProto(task)}, nil
+}
+
 func (h *TaskOrchestrationHandler) AddTaskAttachments(ctx context.Context, req *pb.AddTaskAttachmentsRequest) (*pb.AddTaskAttachmentsResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetTaskId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "task_id is required")
 	}
 	if len(req.GetAttachments()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "attachments are required")
+	}
+
+	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
+	if err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	actor, err := h.taskRepository.GetBoardActor(ctx, task.BoardID, req.GetActorUserId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanMutateAttachments(actor, task) {
+		return nil, status.Error(codes.PermissionDenied, "task attachment update denied")
 	}
 
 	attachments := make([]model.TaskAttachment, 0, len(req.GetAttachments()))
@@ -307,9 +551,9 @@ func (h *TaskOrchestrationHandler) AddTaskAttachments(ctx context.Context, req *
 	}
 	if task, err := h.taskRepository.GetTask(ctx, req.GetTaskId()); err == nil {
 		h.recordTaskActivityAsync(model.ActivityEvent{
-			OrganizationID: "org-main",
+			OrganizationID: actor.OrganizationID,
 			ActorUserID:    req.GetActorUserId(),
-			ActorUserName:  req.GetActorUserId(),
+			ActorUserName:  actor.FullName,
 			EntityType:     model.ActivityEntityTypeTask,
 			EntityID:       task.ID,
 			ActionType:     model.ActivityActionTaskAttachmentAdded,
@@ -323,15 +567,11 @@ func (h *TaskOrchestrationHandler) AddTaskAttachments(ctx context.Context, req *
 }
 
 func (h *TaskOrchestrationHandler) RemoveTaskAttachment(ctx context.Context, req *pb.RemoveTaskAttachmentRequest) (*pb.Task, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetTaskId()) == "" || strings.TrimSpace(req.GetDocumentId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "task_id and document_id are required")
-	}
-
-	if err := h.taskRepository.RemoveTaskAttachment(ctx, req.GetTaskId(), req.GetDocumentId()); err != nil {
-		if err == model.ErrTaskNotFound {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	task, err := h.taskRepository.GetTask(ctx, req.GetTaskId())
@@ -341,10 +581,32 @@ func (h *TaskOrchestrationHandler) RemoveTaskAttachment(ctx context.Context, req
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	actor, err := h.taskRepository.GetBoardActor(ctx, task.BoardID, req.GetActorUserId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanMutateAttachments(actor, task) {
+		return nil, status.Error(codes.PermissionDenied, "task attachment update denied")
+	}
+
+	if err := h.taskRepository.RemoveTaskAttachment(ctx, req.GetTaskId(), req.GetDocumentId()); err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	task, err = h.taskRepository.GetTask(ctx, req.GetTaskId())
+	if err != nil {
+		if err == model.ErrTaskNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	h.recordTaskActivityAsync(model.ActivityEvent{
-		OrganizationID: "org-main",
+		OrganizationID: actor.OrganizationID,
 		ActorUserID:    req.GetActorUserId(),
-		ActorUserName:  req.GetActorUserId(),
+		ActorUserName:  actor.FullName,
 		EntityType:     model.ActivityEntityTypeTask,
 		EntityID:       task.ID,
 		ActionType:     model.ActivityActionTaskAttachmentRemoved,
@@ -357,6 +619,9 @@ func (h *TaskOrchestrationHandler) RemoveTaskAttachment(ctx context.Context, req
 }
 
 func (h *TaskOrchestrationHandler) GetTaskDetails(ctx context.Context, req *pb.GetTaskDetailsRequest) (*pb.GetTaskDetailsResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetTaskId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "task_id is required")
 	}
@@ -369,19 +634,57 @@ func (h *TaskOrchestrationHandler) GetTaskDetails(ctx context.Context, req *pb.G
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	actor, err := h.taskRepository.GetBoardActor(ctx, task.BoardID, req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanReadTask(actor, task) {
+		return nil, status.Error(codes.PermissionDenied, "task access denied")
+	}
+	memberItems := make([]*pb.BoardMember, 0)
+	if h.authorization.CanReadBoard(actor) {
+		members, err := h.taskRepository.ListTaskBoardMembers(ctx, task.BoardID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		memberItems = make([]*pb.BoardMember, 0, len(members))
+		for _, member := range members {
+			memberItems = append(memberItems, mapBoardMemberToProto(member))
+		}
+	}
+	capabilities := h.authorization.Capabilities(actor, task)
+
 	return &pb.GetTaskDetailsResponse{
 		Task:            mapTaskToProto(task),
-		Members:         []*pb.BoardMember{},
+		Members:         memberItems,
 		CurrentUserId:   req.GetActorUserId(),
-		CanEdit:         true,
-		CanApprove:      task.TaskType == model.TaskTypeApproval,
-		CanMoveToReview: task.Status == model.TaskStatusPending,
+		CanEdit:         capabilities.CanEdit,
+		CanAssign:       capabilities.CanAssign,
+		CanMoveToReview: capabilities.CanMoveToReview,
+		CanApprove:      capabilities.CanApprove,
+		CanComment:      capabilities.CanComment,
 	}, nil
 }
 
 func (h *TaskOrchestrationHandler) GetAvailableApprovers(ctx context.Context, req *pb.AvailableApproversRequest) (*pb.AvailableApproversResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetBoardId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "board_id is required")
+	}
+	actor, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanReadBoard(actor) {
+		return nil, status.Error(codes.PermissionDenied, "board access denied")
 	}
 
 	limit := int(req.GetLimit())
@@ -404,6 +707,8 @@ func (h *TaskOrchestrationHandler) GetAvailableApprovers(ctx context.Context, re
 			FullName:   item.FullName,
 			Department: item.Department,
 			Email:      item.Email,
+			BoardRole:  string(item.BoardRole),
+			Roles:      item.Roles,
 		})
 	}
 
@@ -411,8 +716,21 @@ func (h *TaskOrchestrationHandler) GetAvailableApprovers(ctx context.Context, re
 }
 
 func (h *TaskOrchestrationHandler) GetAvailableDocuments(ctx context.Context, req *pb.AvailableDocumentsRequest) (*pb.AvailableDocumentsResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetBoardId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "board_id is required")
+	}
+	actor, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanReadBoard(actor) {
+		return nil, status.Error(codes.PermissionDenied, "board access denied")
 	}
 
 	statusFilter := strings.TrimSpace(strings.ToLower(req.GetStatus()))
@@ -449,8 +767,18 @@ func (h *TaskOrchestrationHandler) GetAvailableDocuments(ctx context.Context, re
 }
 
 func (h *TaskOrchestrationHandler) ListOrganizationMembers(ctx context.Context, req *pb.ListOrganizationMembersRequest) (*pb.ListOrganizationMembersResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetOrganizationId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "organization_id is required")
+	}
+	actor, err := h.taskRepository.GetOrganizationActor(ctx, req.GetOrganizationId(), req.GetActorUserId())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !actor.IsOrganizationMember {
+		return nil, status.Error(codes.PermissionDenied, "organization access denied")
 	}
 
 	limit := int(req.GetLimit())
@@ -472,13 +800,16 @@ func (h *TaskOrchestrationHandler) ListOrganizationMembers(ctx context.Context, 
 
 	items := make([]*pb.BoardMember, 0, len(members))
 	for _, member := range members {
-		items = append(items, &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email})
+		items = append(items, mapBoardMemberToProto(member))
 	}
 
 	return &pb.ListOrganizationMembersResponse{Items: items, Total: int32(total)}, nil
 }
 
 func (h *TaskOrchestrationHandler) AddTaskBoardMember(ctx context.Context, req *pb.AddTaskBoardMemberRequest) (*pb.AddTaskBoardMemberResponse, error) {
+	if strings.TrimSpace(req.GetActorUserId()) == "" {
+		return nil, status.Error(codes.Unauthenticated, "actor_user_id is required")
+	}
 	if strings.TrimSpace(req.GetBoardId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "board_id is required")
 	}
@@ -486,16 +817,44 @@ func (h *TaskOrchestrationHandler) AddTaskBoardMember(ctx context.Context, req *
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	member, err := h.taskRepository.AddTaskBoardMember(ctx, req.GetBoardId(), req.GetUserId())
+	actor, err := h.taskRepository.GetBoardActor(ctx, req.GetBoardId(), req.GetActorUserId())
+	if err != nil {
+		if err == model.ErrTaskBoardNotFound {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !h.authorization.CanManageBoardMembers(actor) {
+		return nil, status.Error(codes.PermissionDenied, "board member management denied")
+	}
+
+	boardRole, err := model.ParseTaskBoardRole(strings.ToUpper(strings.TrimSpace(req.GetRole())))
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "role must be OWNER, MANAGER, or MEMBER")
+	}
+	if boardRole == model.TaskBoardRoleOwner &&
+		!actor.HasRole("edms.admin") &&
+		actor.BoardRole != model.TaskBoardRoleOwner {
+		return nil, status.Error(codes.PermissionDenied, "only board owners can grant owner role")
+	}
+
+	member, err := h.taskRepository.AddTaskBoardMember(ctx, req.GetBoardId(), req.GetUserId(), boardRole)
 	if err != nil {
 		if err == model.ErrTaskBoardNotFound || err == model.ErrTaskMemberNotFound {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	h.recordBoardMemberEventAsync(req.GetActorUserId(), req.GetBoardId(), member.UserID, member.FullName)
+	h.recordBoardMemberEventAsync(
+		actor.OrganizationID,
+		req.GetActorUserId(),
+		actor.FullName,
+		req.GetBoardId(),
+		member.UserID,
+		member.FullName,
+	)
 
-	return &pb.AddTaskBoardMemberResponse{Member: &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email}}, nil
+	return &pb.AddTaskBoardMemberResponse{Member: mapBoardMemberToProto(member)}, nil
 }
 
 func (h *TaskOrchestrationHandler) CreateOrganizationMember(ctx context.Context, req *pb.CreateOrganizationMemberRequest) (*pb.CreateOrganizationMemberResponse, error) {
@@ -505,17 +864,33 @@ func (h *TaskOrchestrationHandler) CreateOrganizationMember(ctx context.Context,
 	if strings.TrimSpace(req.GetUserId()) == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
-	if strings.TrimSpace(req.GetDepartment()) == "" {
-		return nil, status.Error(codes.InvalidArgument, "department is required")
+	if req.GetActorUserId() != req.GetUserId() {
+		return nil, status.Error(codes.PermissionDenied, "organization member provisioning must be self-scoped")
 	}
-
-	member := model.TaskBoardMember{UserID: strings.TrimSpace(req.GetUserId()), FullName: strings.TrimSpace(req.GetFullName()), Department: strings.TrimSpace(req.GetDepartment()), Email: strings.TrimSpace(req.GetEmail())}
+	member := model.TaskBoardMember{
+		UserID:     strings.TrimSpace(req.GetUserId()),
+		FullName:   strings.TrimSpace(req.GetFullName()),
+		Department: strings.TrimSpace(req.GetDepartment()),
+		Email:      strings.TrimSpace(req.GetEmail()),
+		Roles:      req.GetRoles(),
+	}
 	created, err := h.taskRepository.CreateOrganizationMember(ctx, strings.TrimSpace(req.GetOrganizationId()), member)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &pb.CreateOrganizationMemberResponse{Member: &pb.BoardMember{Id: member.UserID, FullName: member.FullName, Department: member.Department, Email: member.Email}, Created: created}, nil
+	return &pb.CreateOrganizationMemberResponse{Member: mapBoardMemberToProto(member), Created: created}, nil
+}
+
+func mapBoardMemberToProto(member model.TaskBoardMember) *pb.BoardMember {
+	return &pb.BoardMember{
+		Id:         member.UserID,
+		FullName:   member.FullName,
+		Department: member.Department,
+		Email:      member.Email,
+		BoardRole:  string(member.BoardRole),
+		Roles:      member.Roles,
+	}
 }
 
 func mapTaskToProto(task model.Task) *pb.Task {
@@ -576,14 +951,14 @@ func parseStatus(raw string) (model.TaskStatus, error) {
 	}
 }
 
-func isValidTransition(from model.TaskStatus, to model.TaskStatus) bool {
-	if from == to {
-		return true
-	}
+func stringPointer(value string) *string {
+	return &value
+}
 
+func isValidTransition(from model.TaskStatus, to model.TaskStatus) bool {
 	switch from {
 	case model.TaskStatusPending:
-		return to == model.TaskStatusInReview || to == model.TaskStatusApproved || to == model.TaskStatusDeclined
+		return to == model.TaskStatusInReview
 	case model.TaskStatusInReview:
 		return to == model.TaskStatusPending || to == model.TaskStatusApproved || to == model.TaskStatusDeclined
 	case model.TaskStatusApproved, model.TaskStatusDeclined:
@@ -593,34 +968,51 @@ func isValidTransition(from model.TaskStatus, to model.TaskStatus) bool {
 	}
 }
 
-func validateStatusUpdateAuthorization(task model.Task, actorUserID string, nextStatus model.TaskStatus) error {
-	if strings.TrimSpace(actorUserID) == "" {
-		return fmt.Errorf("actor_user_id is required")
+func buildTaskStatusUpdate(
+	task model.Task,
+	nextStatus model.TaskStatus,
+	req *pb.UpdateTaskStatusRequest,
+) (model.TaskStatusUpdate, error) {
+	update := model.TaskStatusUpdate{
+		ExpectedStatus: task.Status,
+		Status:         nextStatus,
 	}
-
-	isCreator := task.CreatedByUserID == actorUserID
-	isAssignee := task.AssignedUserID == actorUserID
-	isApprover := task.ApproverUserID != nil && *task.ApproverUserID == actorUserID
+	decision := strings.ToLower(strings.TrimSpace(req.GetDecision()))
+	comment := strings.TrimSpace(req.GetDecisionComment())
 
 	switch nextStatus {
-	case model.TaskStatusApproved, model.TaskStatusDeclined:
-		if !isApprover {
-			return fmt.Errorf("only approver can approve or decline task")
+	case model.TaskStatusApproved:
+		if !task.TaskType.IsApproval() || task.Status != model.TaskStatusInReview {
+			return model.TaskStatusUpdate{}, errors.New("only approval tasks in review can be approved")
 		}
-		return nil
-	case model.TaskStatusInReview:
-		if !isAssignee && !isCreator && !isApprover {
-			return fmt.Errorf("only assignee, creator, or approver can move task to review")
+		if decision != string(model.TaskDecisionApproved) {
+			return model.TaskStatusUpdate{}, errors.New("decision must be 'approved'")
 		}
-		return nil
-	case model.TaskStatusPending:
-		if !isCreator && !isAssignee {
-			return fmt.Errorf("only assignee or creator can move task to pending")
+		value := model.TaskDecisionApproved
+		update.Decision = &value
+		if comment != "" {
+			update.DecisionComment = &comment
 		}
-		return nil
+	case model.TaskStatusDeclined:
+		if !task.TaskType.IsApproval() || task.Status != model.TaskStatusInReview {
+			return model.TaskStatusUpdate{}, errors.New("only approval tasks in review can be declined")
+		}
+		if decision != string(model.TaskDecisionDeclined) {
+			return model.TaskStatusUpdate{}, errors.New("decision must be 'declined'")
+		}
+		if comment == "" {
+			return model.TaskStatusUpdate{}, errors.New("decision_comment is required when declining a task")
+		}
+		value := model.TaskDecisionDeclined
+		update.Decision = &value
+		update.DecisionComment = &comment
 	default:
-		return fmt.Errorf("unsupported task status")
+		if decision != "" || comment != "" {
+			return model.TaskStatusUpdate{}, errors.New("decision fields are only allowed for approval or decline")
+		}
 	}
+
+	return update, nil
 }
 
 func (h *TaskOrchestrationHandler) syncProjectionAsync(entityID string, entityType string) {
@@ -658,7 +1050,14 @@ func (h *TaskOrchestrationHandler) recordTaskActivityAsync(event model.ActivityE
 	}()
 }
 
-func (h *TaskOrchestrationHandler) recordBoardMemberEventAsync(actorUserID, boardID, memberUserID, memberName string) {
+func (h *TaskOrchestrationHandler) recordBoardMemberEventAsync(
+	organizationID string,
+	actorUserID string,
+	actorUserName string,
+	boardID string,
+	memberUserID string,
+	memberName string,
+) {
 	if h.activity == nil {
 		return
 	}
@@ -666,9 +1065,9 @@ func (h *TaskOrchestrationHandler) recordBoardMemberEventAsync(actorUserID, boar
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 		_ = h.activity.RecordEvent(ctx, model.ActivityEvent{
-			OrganizationID: "org-main",
+			OrganizationID: organizationID,
 			ActorUserID:    actorUserID,
-			ActorUserName:  actorUserID,
+			ActorUserName:  actorUserName,
 			EntityType:     model.ActivityEntityTypeTask,
 			EntityID:       boardID,
 			ActionType:     model.ActivityActionTaskMemberAdded,
@@ -679,5 +1078,24 @@ func (h *TaskOrchestrationHandler) recordBoardMemberEventAsync(actorUserID, boar
 			{SubjectType: "USER", SubjectID: memberUserID},
 			{SubjectType: "USER", SubjectID: actorUserID},
 		})
+	}()
+}
+
+func (h *TaskOrchestrationHandler) notifyTaskAssignmentAsync(result model.TaskAssignmentResult) {
+	if h.notifier == nil || strings.TrimSpace(result.Task.AssignedUserID) == "" {
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = h.notifier.NotifyTaskAssigned(
+			ctx,
+			result.Actor.UserID,
+			result.Task.AssignedUserID,
+			result.Actor.OrganizationID,
+			result.Task.ID,
+			result.Task.Title,
+		)
 	}()
 }
