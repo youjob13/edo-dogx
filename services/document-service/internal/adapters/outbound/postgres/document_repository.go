@@ -122,6 +122,14 @@ func (r *DocumentRepository) GetByID(ctx context.Context, id string) (model.Docu
 	if err != nil {
 		return model.Document{}, err
 	}
+	
+	// Resolve owner name if empty
+	if strings.TrimSpace(document.OwnerUserName) == "" || document.OwnerUserName == document.OwnerUser {
+		if resolved := resolveNameByUserID(ctx, r.db, document.OrganizationID, document.OwnerUser); resolved != "" {
+			document.OwnerUserName = resolved
+		}
+	}
+	
 	content, err := r.versions.LoadContent(ctx, document.ObjectKey, document.ObjectVersionID)
 	if err != nil {
 		return model.Document{}, err
@@ -347,6 +355,14 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 		); err != nil {
 			return nil, 0, err
 		}
+		
+		// Resolve owner name if empty
+		if strings.TrimSpace(document.OwnerUserName) == "" || document.OwnerUserName == document.OwnerUser {
+			if resolved := resolveNameByUserID(ctx, r.db, document.OrganizationID, document.OwnerUser); resolved != "" {
+				document.OwnerUserName = resolved
+			}
+		}
+		
 		documents = append(documents, document)
 	}
 

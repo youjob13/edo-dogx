@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"edo/services/document-service/internal/domain/model"
 
@@ -109,8 +110,19 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 		return nil, 0, err
 	}
 
+	// Get organization ID first
+	var orgID string
+	if err := r.db.QueryRowContext(ctx, "SELECT organization_id FROM documents WHERE id = $1", documentID).Scan(&orgID); err != nil {
+		if err == sql.ErrNoRows {
+			return []model.DocumentVersion{}, 0, nil
+		}
+		return nil, 0, err
+	}
+
 	const query = `
-		SELECT document_id, version_number, title, category, status, changed_by_user_id, change_summary, created_at, object_key, object_version_id
+		SELECT document_id, version_number, title, category, status, changed_by_user_id, 
+		       COALESCE(changed_by_user_name, changed_by_user_id) AS changed_by_user_name, 
+		       change_summary, created_at, object_key, object_version_id
 		FROM document_versions
 		WHERE document_id = $1
 		ORDER BY version_number DESC
@@ -125,27 +137,54 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 	items := make([]model.DocumentVersion, 0, limit)
 	for rows.Next() {
 		var item model.DocumentVersion
-		if err := rows.Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+		if err := rows.Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangedByUserName, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
 			return nil, 0, err
 		}
+		
+		// Resolve changed by user name if empty
+		if strings.TrimSpace(item.ChangedByUserName) == "" || item.ChangedByUserName == item.ChangedByUserID {
+			if resolved := resolveNameByUserID(ctx, r.db, orgID, item.ChangedByUserID); resolved != "" {
+				item.ChangedByUserName = resolved
+			}
+		}
+		
 		items = append(items, item)
 	}
 	return items, total, rows.Err()
 }
 
 func (r *DocumentVersionRepository) GetVersion(ctx context.Context, documentID string, versionNumber int64) (model.DocumentVersion, error) {
-	const query = `
-		SELECT document_id, version_number, title, category, status, changed_by_user_id, change_summary, created_at, object_key, object_version_id
-		FROM document_versions
-		WHERE document_id = $1 AND version_number = $2
-	`
-	var item model.DocumentVersion
-	if err := r.db.QueryRowContext(ctx, query, documentID, versionNumber).Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+	// Get organization ID first
+	var orgID string
+	if err := r.db.QueryRowContext(ctx, "SELECT organization_id FROM documents WHERE id = $1", documentID).Scan(&orgID); err != nil {
 		if err == sql.ErrNoRows {
 			return model.DocumentVersion{}, model.ErrDocumentNotFound
 		}
 		return model.DocumentVersion{}, err
 	}
+
+	const query = `
+		SELECT document_id, version_number, title, category, status, changed_by_user_id, 
+		       COALESCE(changed_by_user_name, changed_by_user_id) AS changed_by_user_name, 
+		       change_summary, created_at, object_key, object_version_id
+		FROM document_versions
+		WHERE document_id = $1 AND version_number = $2
+	`
+	var item model.DocumentVersion
+	if err := r.db.QueryRowContext(ctx, query, documentID, versionNumber).Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangedByUserName, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+		if err == sql.ErrNoRows {
+			return model.DocumentVersion{}, model.ErrDocumentNotFound
+		}
+		return model.DocumentVersion{}, err
+	}
+	
+	// Resolve changed by user name if empty
+	if strings.TrimSpace(item.ChangedByUserName) == "" || item.ChangedByUserName == item.ChangedByUserID {
+		if resolved := resolveNameByUserID(ctx, r.db, orgID, item.ChangedByUserID); resolved != "" {
+			item.ChangedByUserName = resolved
+		}
+	}
+	
 	content, err := r.LoadContent(ctx, item.ObjectKey, item.ObjectVersionID)
 	if err != nil {
 		return model.DocumentVersion{}, err

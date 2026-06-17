@@ -52,10 +52,10 @@ export class DashboardDocumentsComponent {
   private readonly defaultPageSize = 5;
 
  protected readonly categoryOptions: Array<{ value: DashboardDocumentCategory | 'all'; label: string }> = [
-    { value: 'all', label: 'Р’СЃРµ РєР°С‚РµРіРѕСЂРёРё' },
-    { value: 'HR', label: 'РљР°РґСЂРѕРІС‹Р№' },
-    { value: 'FINANCE', label: 'Р¤РёРЅР°РЅСЃС‹' },
-    { value: 'GENERAL', label: 'РћР±С‰РµРµ' },
+{ value: 'all', label: 'Все категории' },
+{ value: 'HR', label: 'Кадровый' },
+{ value: 'FINANCE', label: 'Финансы' },
+{ value: 'GENERAL', label: 'Общее' },
   ];
 
 
@@ -216,7 +216,7 @@ export class DashboardDocumentsComponent {
         status: base.status,
         version,
         updatedAt: String(payload['created_at'] ?? base.updatedAt),
-        body: contentDocument ? JSON.stringify(contentDocument) : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРѕРґРµСЂР¶РёРјРѕРµ РґРѕРєСѓРјРµРЅС‚Р°.',
+        body: contentDocument ? JSON.stringify(contentDocument) : 'Не удалось загрузить содержимое документа.',
         contentDocument,
         contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
         ownerUserId: base.ownerUserId,
@@ -265,7 +265,7 @@ export class DashboardDocumentsComponent {
       .updateDocument(selectedId, payload)
       .pipe(take(1))
       .subscribe((result) => {
-        this.message.set(`Р”РѕРєСѓРјРµРЅС‚ ${result.title} СЃРѕС…СЂР°РЅРµРЅ.`);
+        this.message.set(`Документ ${result.title} сохранен.`);
         this.editOpen.set(false);
         this.loadDocuments();
       });
@@ -350,9 +350,9 @@ export class DashboardDocumentsComponent {
 
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
     const labels: Record<DashboardDocumentCategory, string> = {
-      HR: 'РљР°РґСЂРѕРІС‹Р№',
-      FINANCE: 'Р¤РёРЅР°РЅСЃС‹',
-      GENERAL: 'РћР±С‰РµРµ',
+     HR: 'Кадровый',
+FINANCE: 'Финансы',
+GENERAL: 'Общее',
     };
 
     return labels[category];
@@ -383,7 +383,7 @@ export class DashboardDocumentsComponent {
   }
 
   private downloadDocumentExport(documentId: string, format: DashboardExportFormat, sourceVersion?: number): void {
-    this.message.set(`Р¤РѕСЂРјР°С‚ ${format}. РџРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ PDF Рё DOCX.`);
+    this.message.set(`Формат ${format}. Поддерживается только PDF и DOCX.`);
 
     this.documentUseCases
       .getDocumentById(documentId)
@@ -401,10 +401,10 @@ export class DashboardDocumentsComponent {
       .subscribe({
         next: (request) => {
           this.startExportDownload(documentId, request.id);
-          this.message.set('Р­РєСЃРїРѕСЂС‚ Р·Р°РїСѓС‰РµРЅ. РћР¶РёРґР°Р№С‚Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ.');
+          this.message.set('Экспорт запущен. Ожидайте завершения.');
         },
         error: (error: unknown) => {
-          const message = error instanceof Error ? error.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ СЌРєСЃРїРѕСЂС‚';
+          const message = error instanceof Error ? error.message : 'Не удалось запустить экспорт';
           this.message.set(message);
         },
       });

@@ -183,6 +183,25 @@ func toNullableString(value *string) any {
 	return strings.TrimSpace(*value)
 }
 
+// resolveNameByUserID resolves user full name from organization_members table.
+// Returns empty string if not found (graceful fallback).
+func resolveNameByUserID(ctx context.Context, db *sql.DB, organizationID string, userID string) string {
+	if organizationID == "" || userID == "" {
+		return ""
+	}
+	var fullName string
+	err := db.QueryRowContext(
+		ctx,
+		`SELECT full_name FROM organization_members WHERE organization_id = $1 AND user_id = $2`,
+		organizationID,
+		userID,
+	).Scan(&fullName)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(fullName)
+}
+
 func (r *ActivityRepository) resolveActorName(ctx context.Context, organizationID string, actorUserID string) (string, error) {
 	var fullName string
 	err := r.db.QueryRowContext(

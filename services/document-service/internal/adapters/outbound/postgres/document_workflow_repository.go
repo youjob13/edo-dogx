@@ -271,6 +271,21 @@ func (r *DocumentWorkflowRepository) GetByDocumentID(ctx context.Context, docume
 	if !allowed && ownerUserID != actorUserID {
 		return model.WorkflowInstance{}, model.ErrDocumentAccessDenied
 	}
+	
+	// Resolve submitted by user name if empty
+	if strings.TrimSpace(workflow.SubmittedByUserName) == "" || workflow.SubmittedByUserName == workflow.SubmittedByUserID {
+		if resolved := resolveNameByUserID(ctx, r.db, workflow.OrganizationID, workflow.SubmittedByUserID); resolved != "" {
+			workflow.SubmittedByUserName = resolved
+		}
+	}
+	
+	// Resolve approver user name if empty
+	if strings.TrimSpace(workflow.ApproverUserName) == "" || workflow.ApproverUserName == workflow.ApproverUserID {
+		if resolved := resolveNameByUserID(ctx, r.db, workflow.OrganizationID, workflow.ApproverUserID); resolved != "" {
+			workflow.ApproverUserName = resolved
+		}
+	}
+	
 	return workflow, nil
 }
 
@@ -336,6 +351,14 @@ func (r *DocumentWorkflowRepository) ListEvents(ctx context.Context, documentID 
 		); err != nil {
 			return nil, 0, err
 		}
+		
+		// Resolve actor user name if empty (use workflow's organization ID)
+		if strings.TrimSpace(item.ActorUserName) == "" || item.ActorUserName == item.ActorUserID {
+			if resolved := resolveNameByUserID(ctx, r.db, workflow.OrganizationID, item.ActorUserID); resolved != "" {
+				item.ActorUserName = resolved
+			}
+		}
+		
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {

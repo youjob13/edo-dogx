@@ -71,31 +71,34 @@ type Document struct {
 }
 
 type DocumentVersion struct {
-	DocumentID      string
-	VersionNumber   int64
-	Title           string
-	Category        string
-	Status          DocumentStatus
-	ChangedByUserID string
-	ChangeSummary   string
-	CreatedAt       string
-	ObjectKey       string
-	ObjectVersionID string
-	ContentDocument map[string]any
+	DocumentID        string
+	VersionNumber     int64
+	Title             string
+	Category          string
+	Status            DocumentStatus
+	ChangedByUserID   string
+	ChangedByUserName string
+	ChangeSummary     string
+	CreatedAt         string
+	ObjectKey         string
+	ObjectVersionID   string
+	ContentDocument   map[string]any
 }
 
 type WorkflowInstance struct {
-	ID                string
-	DocumentID        string
-	OrganizationID    string
-	SubmittedVersion  int64
-	Status            DocumentStatus
-	SubmittedByUserID string
-	ApproverUserID    string
-	DecisionComment   string
-	SubmittedAt       time.Time
-	DecidedAt         *time.Time
-	UpdatedAt         time.Time
+	ID                   string
+	DocumentID           string
+	OrganizationID       string
+	SubmittedVersion     int64
+	Status               DocumentStatus
+	SubmittedByUserID    string
+	SubmittedByUserName  string
+	ApproverUserID       string
+	ApproverUserName     string
+	DecisionComment      string
+	SubmittedAt          time.Time
+	DecidedAt            *time.Time
+	UpdatedAt            time.Time
 }
 
 type WorkflowEvent struct {
@@ -103,6 +106,7 @@ type WorkflowEvent struct {
 	WorkflowID      string
 	DocumentID      string
 	ActorUserID     string
+	ActorUserName   string
 	EventType       string
 	PreviousStatus  DocumentStatus
 	NewStatus       DocumentStatus
