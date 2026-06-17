@@ -15,5 +15,6 @@ FROM alpine:3.20 AS runner
 WORKDIR /app
 RUN apk --no-cache add ca-certificates tzdata
 COPY --from=builder /app/server .
+COPY --from=builder /app/assets ./assets
 EXPOSE 50052
 CMD ["./server"]

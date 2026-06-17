@@ -60,3 +60,49 @@ body.theme-dark {
 		scroll-behavior: auto !important;
 	}
 }
+
+.ProseMirror {
+  padding: 20px;
+  min-height: 500px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  outline: none;
+}/* You can add global styles to this file, and also import other style files */
+
+
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  table-layout: fixed;
+  border: 1px solid #d1d5db;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  border: 1px solid #d1d5db;
+  padding: 10px;
+  vertical-align: top;
+  min-width: 80px;
+}
+
+.ProseMirror th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  margin: 10px 0;
+  border-radius: 6px;
+}
+
+.ProseMirror-selectednode {
+  outline: 2px solid #3b82f6;
+}

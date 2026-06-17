@@ -1,36 +1,73 @@
-<edo-dogx-page-section title="Создание документа" subtitle="Новый черновик для последующего редактирования">
+<edo-dogx-page-section
+  title="Создание документа"
+  subtitle="Новый черновик для последующего редактирования"
+>
   <edo-dogx-card title="Новый документ" subtitle="Заполните обязательные поля">
     <form class="dashboard-document-create" (submit)="$event.preventDefault(); createDocument()">
-      <edo-dogx-input label="Название" [control]="titleControl" [errorText]="'Укажите название (до 300 символов)'" />
+      <div class="dashboard-document-create__fields">
+        <edo-dogx-input
+          label="Название"
+          [control]="titleControl"
+          [errorText]="'Укажите название (до 300 символов)'"
+        />
 
-      <label class="dashboard-document-create__field">
-        <span>Категория</span>
-        <select [formControl]="categoryControl">
-          <option value="GENERAL">Общая</option>
-          <option value="HR">Кадровый</option>
-          <option value="FINANCE">Финансы</option>
-        </select>
-      </label>
+        <label class="dashboard-document-create__field">
+          <span>Категория</span>
+          <select [formControl]="categoryControl">
+            <option value="GENERAL">Общая</option>
+            <option value="HR">Кадровый</option>
+            <option value="FINANCE">Финансы</option>
+          </select>
+        </label>
+
+        <label class="dashboard-document-create__field">
+          <span>Шаблон</span>
+          <select [formControl]="templateControl" (change)="loadTemplate(templateControl.value)">
+            @for (template of templates; track template.id) {
+              <option [value]="template.id">{{ getTemplateName(template) }}</option>
+            }
+          </select>
+        </label>
+      </div>
 
       <section class="editor dashboard-rich-editor" aria-label="Редактор содержимого">
+        <input
+          #imageInput
+          class="dashboard-rich-editor__file-input"
+          type="file"
+          accept="image/png,image/jpeg"
+          (change)="handleImageInput($event)"
+        />
+
         <div class="editor__toolbar">
           @for (group of toolbarGroups; track group.id) {
-          <div class="editor__group">
-            @for (actionId of group.actionIds; track actionId) {
-            @if (shouldShowAction(actionId)) {
-            <button type="button" class="editor__btn" [class.active]="isActive(actionId)" (click)="run(actionId)">
-              {{ getAction(actionId).icon }}
-            </button>
-            }
-            }
-          </div>
+            <div class="editor__group" [attr.aria-label]="group.label">
+              @for (actionId of group.actionIds; track actionId) {
+                @if (shouldShowAction(actionId)) {
+                  <button
+                    type="button"
+                    class="editor__btn"
+                    [class.active]="isActive(actionId)"
+                    [disabled]="isActionDisabled(actionId)"
+                    [title]="getToolbarLabel(actionId)"
+                    [attr.aria-label]="getToolbarLabel(actionId)"
+                    [attr.aria-pressed]="isActive(actionId)"
+                    (click)="run(actionId)"
+                  >
+                    {{ getAction(actionId).icon }}
+                  </button>
+                }
+              }
+            </div>
           }
         </div>
 
         @if (editor; as editorInstance) {
-        <tiptap-editor [editor]="editorInstance" class="editor__content" />
+          <div class="dashboard-rich-editor__page">
+            <tiptap-editor [editor]="editorInstance" class="editor__content" />
+          </div>
         } @else {
-        <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
+          <div class="dashboard-rich-editor__loading">Подготовка текстового редактора...</div>
         }
       </section>
 
@@ -39,12 +76,17 @@
       </p>
 
       <div class="dashboard-document-create__actions">
-        <edo-dogx-button label="Создать черновик" appearance="primary" size="m" [disabled]="loading()"
-          (pressed)="createDocument()" />
+        <edo-dogx-button
+          label="Создать черновик"
+          appearance="primary"
+          size="m"
+          [disabled]="loading()"
+          (pressed)="createDocument()"
+        />
       </div>
 
       @if (message()) {
-      <p class="dashboard-document-create__message" aria-live="polite">{{ message() }}</p>
+        <p class="dashboard-document-create__message" aria-live="polite">{{ message() }}</p>
       }
     </form>
   </edo-dogx-card>

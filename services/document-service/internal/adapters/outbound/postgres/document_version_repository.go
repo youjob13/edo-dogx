@@ -121,7 +121,7 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 
 	const query = `
 		SELECT document_id, version_number, title, category, status, changed_by_user_id, 
-		       COALESCE(changed_by_user_name, changed_by_user_id) AS changed_by_user_name, 
+		       changed_by_user_id AS changed_by_user_name, 
 		       change_summary, created_at, object_key, object_version_id
 		FROM document_versions
 		WHERE document_id = $1
@@ -165,7 +165,7 @@ func (r *DocumentVersionRepository) GetVersion(ctx context.Context, documentID s
 
 	const query = `
 		SELECT document_id, version_number, title, category, status, changed_by_user_id, 
-		       COALESCE(changed_by_user_name, changed_by_user_id) AS changed_by_user_name, 
+		       changed_by_user_id AS changed_by_user_name, 
 		       change_summary, created_at, object_key, object_version_id
 		FROM document_versions
 		WHERE document_id = $1 AND version_number = $2

@@ -27,6 +27,10 @@ export type DashboardEditorToolbarActionId =
   | 'setLink'
   | 'unsetLink'
   | 'insertTable'
+  | 'addRowAfter'
+  | 'deleteRow'
+  | 'addColumnAfter'
+  | 'deleteColumn'
   | 'deleteTable'
   | 'insertImage'
   | 'clearFormatting';
@@ -43,7 +47,10 @@ export interface DashboardEditorToolbarGroup {
   readonly actionIds: Array<DashboardEditorToolbarActionId>;
 }
 
-export const DASHBOARD_EDITOR_TOOLBAR_ACTIONS: Record<DashboardEditorToolbarActionId, DashboardEditorToolbarAction> = {
+export const DASHBOARD_EDITOR_TOOLBAR_ACTIONS: Record<
+  DashboardEditorToolbarActionId,
+  DashboardEditorToolbarAction
+> = {
   undo: { id: 'undo', label: 'Отменить', controlKey: 'history' },
   redo: { id: 'redo', label: 'Повторить', controlKey: 'history' },
   bold: { id: 'bold', label: 'Ж', controlKey: 'textStyle' },
@@ -61,9 +68,17 @@ export const DASHBOARD_EDITOR_TOOLBAR_ACTIONS: Record<DashboardEditorToolbarActi
   setLink: { id: 'setLink', label: 'Ссылка', controlKey: 'link' },
   unsetLink: { id: 'unsetLink', label: 'Убрать ссылку', controlKey: 'link' },
   insertTable: { id: 'insertTable', label: 'Таблица', controlKey: 'table' },
+  addRowAfter: { id: 'addRowAfter', label: 'Добавить строку', controlKey: 'table' },
+  deleteRow: { id: 'deleteRow', label: 'Удалить строку', controlKey: 'table' },
+  addColumnAfter: { id: 'addColumnAfter', label: 'Добавить столбец', controlKey: 'table' },
+  deleteColumn: { id: 'deleteColumn', label: 'Удалить столбец', controlKey: 'table' },
   deleteTable: { id: 'deleteTable', label: 'Удалить таблицу', controlKey: 'table' },
   insertImage: { id: 'insertImage', label: 'Изображение', controlKey: 'image' },
-  clearFormatting: { id: 'clearFormatting', label: 'Очистить формат', controlKey: 'clearFormatting' },
+  clearFormatting: {
+    id: 'clearFormatting',
+    label: 'Очистить формат',
+    controlKey: 'clearFormatting',
+  },
 };
 
 export const DASHBOARD_EDITOR_TOOLBAR_GROUPS: Array<DashboardEditorToolbarGroup> = [
@@ -100,7 +115,14 @@ export const DASHBOARD_EDITOR_TOOLBAR_GROUPS: Array<DashboardEditorToolbarGroup>
   {
     id: 'table',
     label: 'Таблицы',
-    actionIds: ['insertTable', 'deleteTable'],
+    actionIds: [
+      'insertTable',
+      'addRowAfter',
+      'deleteRow',
+      'addColumnAfter',
+      'deleteColumn',
+      'deleteTable',
+    ],
   },
 ];
 
@@ -135,11 +157,17 @@ export const isToolbarControlEnabled = (
 };
 
 export type Action =
-  | 'bold' | 'italic' | 'underline'
-  | 'heading1' | 'heading2'
+  | 'bold'
+  | 'italic'
+  | 'underline'
+  | 'heading1'
+  | 'heading2'
   | 'bulletList'
-  | 'alignLeft' | 'alignCenter'
-  | 'setLink' | 'insertImage'
+  | 'alignLeft'
+  | 'alignCenter'
+  | 'setLink'
+  | 'insertImage'
   | 'insertTable'
-  | 'addRowAfter' | 'addColumnAfter' | 'deleteTable';
-
+  | 'addRowAfter'
+  | 'addColumnAfter'
+  | 'deleteTable';

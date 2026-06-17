@@ -590,7 +590,7 @@ func (r *inMemoryDocumentRepository) GetExportArtifact(_ context.Context, docume
 }
 
 func buildExportArtifact(document model.Document, format model.ExportFormat) (model.ExportArtifact, error) {
-	lines, images := buildExportContent(document)
+	exportDocument := buildExportDocument(document)
 
 	safeTitle := sanitizeFileName(document.Title)
 	if safeTitle == "" {
@@ -599,7 +599,7 @@ func buildExportArtifact(document model.Document, format model.ExportFormat) (mo
 
 	switch format {
 	case model.ExportFormatDOCX:
-		data, err := generateDOCXExport(lines, images)
+		data, err := generateDOCXExport(exportDocument)
 		if err != nil {
 			return model.ExportArtifact{}, err
 		}
@@ -610,7 +610,7 @@ func buildExportArtifact(document model.Document, format model.ExportFormat) (mo
 			DataBase64: base64.StdEncoding.EncodeToString(data),
 		}, nil
 	case model.ExportFormatPDF:
-		data, err := generatePDFExport(lines, images)
+		data, err := generatePDFExport(exportDocument)
 		if err != nil {
 			return model.ExportArtifact{}, err
 		}
