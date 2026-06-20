@@ -20,7 +20,6 @@ export class DashboardProfileComponent {
     nonNullable: true,
   });
   protected readonly notifyEmailControl = new FormControl(true, { nonNullable: true });
-  protected readonly notifyPushControl = new FormControl(true, { nonNullable: true });
   protected readonly notifyInAppControl = new FormControl(true, { nonNullable: true });
   protected readonly phoneControl = new FormControl('+7 (900) 123-45-67', { nonNullable: true });
   protected readonly vkControl = new FormControl('https://vk.com/alexey.petrov', { nonNullable: true });
