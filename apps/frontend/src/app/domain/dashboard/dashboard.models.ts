@@ -55,6 +55,7 @@ export interface StorageUsage {
 export interface DashboardQuery {
   readonly text?: string;
   readonly category?: DashboardDocumentCategory;
+  readonly scope?: 'mine';
   readonly sortBy?: 'title' | 'category' | 'status' | 'updatedAt';
   readonly sortDirection?: 'asc' | 'desc';
   readonly page?: number;
@@ -251,6 +252,8 @@ export interface KanbanBoardMember {
   readonly id: string;
   readonly fullName: string;
   readonly department: string;
+  readonly boardRole?: 'OWNER' | 'MANAGER' | 'MEMBER' | string;
+  readonly roles?: Array<string>;
 }
 
 export interface KanbanTaskComment {
@@ -259,6 +262,14 @@ export interface KanbanTaskComment {
   readonly authorName: string;
   readonly text: string;
   readonly createdAtLabel: string;
+}
+
+export interface KanbanTaskCapabilities {
+  readonly canEdit: boolean;
+  readonly canAssign: boolean;
+  readonly canMoveToReview: boolean;
+  readonly canApprove: boolean;
+  readonly canComment: boolean;
 }
 
 export interface TaskAttachment {
@@ -273,6 +284,7 @@ export type TaskDecision = 'approved' | 'declined';
 
 export interface KanbanTask {
   readonly id: string;
+  readonly boardId?: string;
   readonly title: string;
   readonly description?: string;
   readonly status: KanbanTaskStatus;
@@ -296,6 +308,7 @@ export interface KanbanTask {
   readonly decisionComment?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly capabilities?: KanbanTaskCapabilities;
 }
 
 export interface KanbanBoardSummary {
@@ -362,7 +375,6 @@ export interface KanbanTaskCreatePayload {
   readonly approverName?: string;
   readonly taskType: TaskType;
   readonly dueDate?: string;
-  readonly priority?: number;
   readonly attachmentIds?: string[];
 }
 
@@ -370,6 +382,13 @@ export interface KanbanTaskUpdateStatusPayload {
   readonly status: KanbanTaskStatus;
   readonly decision?: TaskDecision;
   readonly decisionComment?: string;
+}
+
+export interface KanbanTaskListQuery {
+  readonly scope?: 'mine';
+  readonly status?: KanbanTaskStatus | string;
+  readonly taskType?: TaskType;
+  readonly assigneeId?: string;
 }
 
 export interface AvailableApproverItem {
@@ -383,11 +402,17 @@ export interface AvailableDocumentItem {
   readonly category: string;
 }
 
+export interface TaskAttachmentAddPayload {
+  readonly documentIds: string[];
+}
+
 export interface OrganizationMember {
   readonly id: string;
   readonly fullName: string;
   readonly department: string;
   readonly email: string;
+  readonly boardRole?: 'OWNER' | 'MANAGER' | 'MEMBER' | string;
+  readonly roles?: Array<string>;
 }
 
 export type GlobalSearchEntityType = 'DOCUMENT' | 'TASK';

@@ -394,6 +394,9 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     if (query.category) {
       params['category'] = query.category;
     }
+    if (query.scope) {
+      params['scope'] = query.scope;
+    }
 
     return this.http
       .get<GatewaySearchDocumentsResponse>(`/api/documents`, { params })
@@ -447,14 +450,6 @@ export class DashboardHttpAdapter implements DocumentApiPort {
     return this.http
       .get<GatewayDocumentResponse>(`/api/documents/${id}`)
       .pipe(map((response) => normalizePreviewDocument(response)));
-  }
-
-  public downloadDocument(id: string): Observable<void> {
-    return this.http
-      .get(`/api/documents/${id}/download`, { responseType: 'blob' as const })
-      .pipe(
-        map(() => void 0),
-      );
   }
 
   public createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {

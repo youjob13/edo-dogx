@@ -25,14 +25,35 @@ import {
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
   DashboardExportFormat,
+  KanbanTaskStatus,
   KanbanTask,
   DashboardPreviewDocument,
   DocumentItem,
   WeeklyVolumePoint,
 } from '../../../../domain/dashboard/dashboard.models';
-import { filter, forkJoin, map, of, switchMap, take, throwError, timer } from 'rxjs';
+import { filter, forkJoin, switchMap, take, throwError, timer } from 'rxjs';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
 import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
+
+type RecentDashboardItem =
+  | {
+      kind: 'document';
+      id: string;
+      title: string;
+      typeLabel: string;
+      statusLabel: string;
+      updatedAt: string;
+      document: DocumentItem;
+    }
+  | {
+      kind: 'task';
+      id: string;
+      title: string;
+      typeLabel: string;
+      statusLabel: string;
+      updatedAt: string;
+      task: KanbanTask;
+    };
 
 @Component({
   selector: 'edo-dogx-dashboard-home',
@@ -61,16 +82,18 @@ export class DashboardHomeComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
-  private readonly homeOrganizationId = 'org-main';
 
   protected readonly recentDocumentColumns: Array<UiKitTableColumn> = [
-    { key: 'title', label: 'Документ', sortable: true },
-    { key: 'modifiedAtLabel', label: 'Обновлен', sortable: true },
+    { key: 'typeLabel', label: 'Тип', sortable: true },
+    { key: 'title', label: 'Название', sortable: true },
+    { key: 'statusLabel', label: 'Статус', sortable: true },
+    { key: 'modifiedAtLabel', label: 'Обновлено', sortable: true },
   ];
 
   protected readonly documentSort = signal<UiKitSortState>({ key: 'modifiedAtLabel', direction: 'desc' });
   protected readonly globalSearch = signal('');
   protected readonly recentDocuments = signal<Array<DocumentItem>>([]);
+  protected readonly recentItems = signal<Array<RecentDashboardItem>>([]);
   protected readonly selectedDocumentId = signal<string | null>(null);
   protected readonly previewDocument = signal<DashboardPreviewDocument | null>(null);
   protected readonly editableDocument = signal<DashboardEditableDocument | null>(null);
@@ -111,17 +134,20 @@ export class DashboardHomeComponent {
   });
 
   protected readonly recentDocumentRows = computed<Array<Record<string, string>>>(() =>
-    this.filteredRecentDocuments().map((item) => ({
+    this.filteredRecentItems().map((item) => ({
       id: item.id,
+      itemKind: item.kind,
+      typeLabel: item.typeLabel,
       title: item.title,
+      statusLabel: item.statusLabel,
       modifiedAtLabel: item.updatedAt,
     })),
   );
 
-  protected readonly filteredRecentDocuments = computed(() => {
+  protected readonly filteredRecentItems = computed(() => {
     const selectedDay = this.selectedDay();
 
-    return this.recentDocuments().filter((item) => {
+    return this.recentItems().filter((item) => {
       if (!selectedDay) {
         return true;
       }
@@ -176,7 +202,31 @@ export class DashboardHomeComponent {
   }
 
   protected onRecentDocumentAction(row: Record<string, unknown>): void {
-    this.selectedDocumentId.set(String(row['id'] ?? ''));
+    const id = String(row['id'] ?? '');
+    const item = this.recentItems().find((recentItem) => recentItem.id === id);
+    if (!item) {
+      return;
+    }
+
+    if (item.kind === 'task') {
+      const boardId = item.task.boardId;
+      if (!boardId) {
+        this.message.set('Не удалось открыть задачу: не найдена доска.');
+        return;
+      }
+
+      this.router.navigate(['/dashboard/tasks', boardId, 'task', item.task.id]);
+      return;
+    }
+
+    this.selectedDocumentId.set(item.document.id);
+    this.documentUseCases
+      .previewDocument(item.document.id)
+      .pipe(take(1))
+      .subscribe((preview) => {
+        this.previewDocument.set(preview);
+        this.previewOpen.set(true);
+      });
   }
 
   protected onRecentDocumentMenuAction(event: { row: Record<string, unknown>; actionId: string }): void {
@@ -331,19 +381,8 @@ export class DashboardHomeComponent {
 
   private loadTaskMetrics(): void {
     this.taskBoardUseCases
-      .getTaskBoards(this.homeOrganizationId)
-      .pipe(
-        take(1),
-        switchMap((boards) => {
-          if (boards.length === 0) {
-            return of<Array<KanbanTask>>([]);
-          }
-
-          return forkJoin(boards.map((board) => this.taskBoardUseCases.getTaskBoard(board.id))).pipe(
-            map((details) => details.flatMap((item) => item.tasks)),
-          );
-        }),
-      )
+      .listTasks({ scope: 'mine', status: 'pending,in_review' })
+      .pipe(take(1))
       .subscribe((tasks) => this.updateSummaryFromTasks(tasks));
   }
 
@@ -365,16 +404,90 @@ export class DashboardHomeComponent {
   }
 
   private loadRecentDocuments(): void {
-    this.documentUseCases
-      .getDocuments({
+    forkJoin({
+      documents: this.documentUseCases.getDocuments({
         text: this.globalSearch(),
+        scope: 'mine',
         page: 1,
         pageSize: 12,
-      })
+      }),
+      tasks: this.taskBoardUseCases.listTasks({
+        scope: 'mine',
+        status: 'pending,in_review',
+      }),
+    })
       .pipe(take(1))
       .subscribe((result) => {
-        this.recentDocuments.set(result.items);
+        this.recentDocuments.set(result.documents.items);
+        this.recentItems.set(
+          [
+            ...result.documents.items.map((document) => this.createRecentDocumentItem(document)),
+            ...result.tasks.map((task) => this.createRecentTaskItem(task)),
+          ]
+            .sort((left, right) => this.getTime(right.updatedAt) - this.getTime(left.updatedAt))
+            .slice(0, 12),
+        );
       });
+  }
+
+  private createRecentDocumentItem(document: DocumentItem): RecentDashboardItem {
+    return {
+      kind: 'document',
+      id: `document:${document.id}`,
+      title: document.title,
+      typeLabel: 'Документ',
+      statusLabel: this.getDocumentStatusLabel(document.status),
+      updatedAt: document.updatedAt,
+      document,
+    };
+  }
+
+  private createRecentTaskItem(task: KanbanTask): RecentDashboardItem {
+    return {
+      kind: 'task',
+      id: `task:${task.id}`,
+      title: task.title,
+      typeLabel: 'Задача',
+      statusLabel: this.getTaskStatusLabel(task.status),
+      updatedAt: this.toIsoString(task.updatedAt),
+      task,
+    };
+  }
+
+  private getDocumentStatusLabel(status: DocumentItem['status']): string {
+    const labels: Record<DocumentItem['status'], string> = {
+      DRAFT: 'Черновик',
+      IN_REVIEW: 'На согласовании',
+      CHANGES_REQUESTED: 'Нужны изменения',
+      APPROVED: 'Согласован',
+      ARCHIVED: 'В архиве',
+    };
+
+    return labels[status] ?? status;
+  }
+
+  private getTaskStatusLabel(status: KanbanTaskStatus): string {
+    const labels: Record<KanbanTaskStatus, string> = {
+      pending: 'Ожидает',
+      in_review: 'На проверке',
+      approved: 'Одобрена',
+      declined: 'Отклонена',
+    };
+
+    return labels[status] ?? status;
+  }
+
+  private toIsoString(value: Date | string): string {
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    return value;
+  }
+
+  private getTime(value: string): number {
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : 0;
   }
 
   private loadActivity(): void {

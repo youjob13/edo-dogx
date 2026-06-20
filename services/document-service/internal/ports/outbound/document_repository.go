@@ -24,6 +24,7 @@ type SearchDocumentsInput struct {
 	ActorUserID string
 	Query       string
 	Category    string
+	PersonalOnly bool
 	Limit       int
 	Offset      int
 }

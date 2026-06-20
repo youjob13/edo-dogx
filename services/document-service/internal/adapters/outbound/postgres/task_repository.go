@@ -315,6 +315,30 @@ func (r *TaskRepository) CreateTaskWithAttachments(ctx context.Context, task mod
 			return model.Task{}, model.ErrAttachmentDocumentForbidden
 		}
 
+		const existingAttachmentQuery = `
+			SELECT document_id::text
+			FROM task_attachments
+			WHERE document_id = ANY($1::uuid[])
+		`
+		existingRows, err := tx.QueryContext(ctx, existingAttachmentQuery, pq.Array(dedup))
+		if err != nil {
+			return model.Task{}, fmt.Errorf("failed to verify existing task attachments: %w", err)
+		}
+		for existingRows.Next() {
+			var documentID string
+			if err := existingRows.Scan(&documentID); err != nil {
+				existingRows.Close()
+				return model.Task{}, fmt.Errorf("failed to scan existing attachment link: %w", err)
+			}
+			existingRows.Close()
+			return model.Task{}, model.ErrAttachmentAlreadyLinked
+		}
+		if err := existingRows.Err(); err != nil {
+			existingRows.Close()
+			return model.Task{}, fmt.Errorf("failed to iterate existing attachment links: %w", err)
+		}
+		existingRows.Close()
+
 		const insertAttachmentQuery = `
 			INSERT INTO task_attachments (task_id, document_id, title, category, status)
 			VALUES ($1, $2::uuid, $3, $4, $5)
@@ -562,6 +586,11 @@ func (r *TaskRepository) ListTasks(ctx context.Context, filter outbound.TaskFilt
 		query += fmt.Sprintf(" AND assignee_user_id = $%d", argCount)
 		args = append(args, *filter.AssignedUserID)
 	}
+	if filter.ParticipantUserID != nil {
+		argCount++
+		query += fmt.Sprintf(" AND (creator_user_id = $%d OR assignee_user_id = $%d OR approver_user_id = $%d)", argCount, argCount, argCount)
+		args = append(args, *filter.ParticipantUserID)
+	}
 	if filter.Status != nil {
 		argCount++
 		query += fmt.Sprintf(" AND status = $%d", argCount)
@@ -615,6 +644,28 @@ func (r *TaskRepository) AddTaskAttachments(ctx context.Context, taskID string, 
 	if len(attachments) == 0 {
 		return nil
 	}
+
+	documentIDs := make([]string, 0, len(attachments))
+	for _, attachment := range attachments {
+		documentIDs = append(documentIDs, attachment.DocumentID)
+	}
+
+	const existingQuery = `
+		SELECT document_id::text
+		FROM task_attachments
+		WHERE document_id = ANY($1::uuid[])
+		  AND task_id <> $2
+		LIMIT 1
+	`
+	var existingDocumentID string
+	err := r.db.QueryRowContext(ctx, existingQuery, pq.Array(documentIDs), taskID).Scan(&existingDocumentID)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to verify attachment uniqueness: %w", err)
+	}
+	if err == nil && strings.TrimSpace(existingDocumentID) != "" {
+		return model.ErrAttachmentAlreadyLinked
+	}
+
 	const query = `
 		INSERT INTO task_attachments (task_id, document_id, title, category, status)
 		VALUES ($1, $2::uuid, $3, $4, $5)
@@ -1042,6 +1093,11 @@ func (r *TaskRepository) GetAvailableDocuments(ctx context.Context, boardID stri
 			FROM task_boards
 			WHERE id = $1
 		)
+		  AND NOT EXISTS (
+			SELECT 1
+			FROM task_attachments ta
+			WHERE ta.document_id = d.id
+		  )
 	`
 	args := []interface{}{boardID}
 

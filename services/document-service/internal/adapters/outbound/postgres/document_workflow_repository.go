@@ -7,6 +7,8 @@ import (
 
 	"edo/services/document-service/internal/domain/model"
 	"edo/services/document-service/internal/ports/outbound"
+
+	"github.com/lib/pq"
 )
 
 type DocumentWorkflowRepository struct {
@@ -42,6 +44,14 @@ func (r *DocumentWorkflowRepository) Transition(ctx context.Context, input outbo
 		return outbound.WorkflowTransitionResult{}, model.NewInvalidDocumentStatusTransitionError(document.Status, input.TargetStatus)
 	}
 
+	actor, err := getWorkflowActorTx(ctx, tx, document.OrganizationID, input.ActorUserID)
+	if err != nil {
+		return outbound.WorkflowTransitionResult{}, err
+	}
+	if !actor.IsOrganizationMember && document.OwnerUser != input.ActorUserID {
+		return outbound.WorkflowTransitionResult{}, model.ErrDocumentAccessDenied
+	}
+
 	workflow, found, err := lockDocumentWorkflow(ctx, tx, input.DocumentID)
 	if err != nil {
 		return outbound.WorkflowTransitionResult{}, err
@@ -49,16 +59,20 @@ func (r *DocumentWorkflowRepository) Transition(ctx context.Context, input outbo
 	if !found && (!input.AllowCreate || document.Status != model.DocumentStatusDraft) {
 		return outbound.WorkflowTransitionResult{}, model.ErrWorkflowNotFound
 	}
+	if err := authorizeWorkflowTransition(actor, document, workflow, found, input); err != nil {
+		return outbound.WorkflowTransitionResult{}, err
+	}
 
 	previousStatus := document.Status
+	newVersion := document.Version + 1
 	eventType := input.EventType
 	if eventType == "SUBMITTED" && previousStatus == model.DocumentStatusChangesRequested {
 		eventType = "RESUBMITTED"
 	}
 	if !found {
-		workflow, err = createDocumentWorkflow(ctx, tx, input, document.OrganizationID, document.Version)
+		workflow, err = createDocumentWorkflow(ctx, tx, input, document.OrganizationID, newVersion)
 	} else {
-		workflow, err = updateDocumentWorkflow(ctx, tx, workflow.ID, input, document.Version)
+		workflow, err = updateDocumentWorkflow(ctx, tx, workflow.ID, input, newVersion)
 	}
 	if err != nil {
 		return outbound.WorkflowTransitionResult{}, err
@@ -66,13 +80,22 @@ func (r *DocumentWorkflowRepository) Transition(ctx context.Context, input outbo
 
 	if err := tx.QueryRowContext(
 		ctx,
-		`UPDATE documents SET status = $2, updated_at = NOW() WHERE id = $1 RETURNING updated_at`,
+		`UPDATE documents
+		 SET status = $2, current_version_number = $3, updated_at = NOW()
+		 WHERE id = $1
+		 RETURNING updated_at`,
 		document.ID,
 		string(input.TargetStatus),
+		newVersion,
 	).Scan(&document.UpdatedAt); err != nil {
 		return outbound.WorkflowTransitionResult{}, err
 	}
 	document.Status = input.TargetStatus
+	document.Version = newVersion
+
+	if err := appendWorkflowDocumentVersionTx(ctx, tx, document, input.ActorUserID, eventType, strings.TrimSpace(input.Comment)); err != nil {
+		return outbound.WorkflowTransitionResult{}, err
+	}
 
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO document_workflow_events (
@@ -85,7 +108,7 @@ func (r *DocumentWorkflowRepository) Transition(ctx context.Context, input outbo
 		eventType,
 		string(previousStatus),
 		string(input.TargetStatus),
-		document.Version,
+		newVersion,
 		strings.TrimSpace(input.Comment),
 	); err != nil {
 		return outbound.WorkflowTransitionResult{}, err
@@ -98,12 +121,58 @@ func (r *DocumentWorkflowRepository) Transition(ctx context.Context, input outbo
 	return outbound.WorkflowTransitionResult{Document: document, Workflow: workflow}, nil
 }
 
+func authorizeWorkflowTransition(
+	actor model.TaskActor,
+	document model.Document,
+	workflow model.WorkflowInstance,
+	workflowExists bool,
+	input outbound.WorkflowTransitionInput,
+) error {
+	if actor.HasRole("edms.admin") {
+		return nil
+	}
+
+	switch input.EventType {
+	case "SUBMITTED":
+		if !workflowExists {
+			if document.OwnerUser != actor.UserID {
+				return model.ErrDocumentAccessDenied
+			}
+			return nil
+		}
+		if workflow.SubmittedByUserID != actor.UserID {
+			return model.ErrDocumentAccessDenied
+		}
+		return nil
+	case "APPROVED", "CHANGES_REQUESTED":
+		if !workflowExists || strings.TrimSpace(workflow.ApproverUserID) == "" {
+			return model.ErrDocumentAccessDenied
+		}
+		if workflow.ApproverUserID != actor.UserID {
+			return model.ErrDocumentAccessDenied
+		}
+		return nil
+	case "ARCHIVED":
+		if !workflowExists || strings.TrimSpace(workflow.SubmittedByUserID) == "" {
+			return model.ErrDocumentAccessDenied
+		}
+		if workflow.SubmittedByUserID != actor.UserID {
+			return model.ErrDocumentAccessDenied
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
 func lockWorkflowDocument(ctx context.Context, tx *sql.Tx, documentID string) (model.Document, error) {
 	var document model.Document
+	var contentJSON []byte
 	err := tx.QueryRowContext(ctx, `
 		SELECT id, title, category, organization_id, status, owner_user_id,
 		       COALESCE(owner_user_name, owner_user_id),
-		       current_version_number, created_at, updated_at
+		       current_version_number, current_object_key, current_object_version_id,
+		       content_document_json, created_at, updated_at
 		FROM documents
 		WHERE id = $1
 		FOR UPDATE`,
@@ -117,13 +186,93 @@ func lockWorkflowDocument(ctx context.Context, tx *sql.Tx, documentID string) (m
 		&document.OwnerUser,
 		&document.OwnerUserName,
 		&document.Version,
+		&document.ObjectKey,
+		&document.ObjectVersionID,
+		&contentJSON,
 		&document.CreatedAt,
 		&document.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return model.Document{}, model.ErrDocumentNotFound
 	}
-	return document, err
+	if err != nil {
+		return model.Document{}, err
+	}
+	content, err := unmarshalContentDocument(contentJSON)
+	if err != nil {
+		return model.Document{}, err
+	}
+	document.ContentDocument = content
+	return document, nil
+}
+
+func appendWorkflowDocumentVersionTx(
+	ctx context.Context,
+	tx *sql.Tx,
+	document model.Document,
+	actorUserID string,
+	eventType string,
+	comment string,
+) error {
+	summary := workflowVersionSummary(eventType, comment)
+	version := model.DocumentVersion{
+		DocumentID:      document.ID,
+		VersionNumber:   document.Version,
+		Title:           document.Title,
+		Category:        document.Category,
+		Status:          document.Status,
+		ChangedByUserID: actorUserID,
+		ChangeSummary:   summary,
+		ObjectKey:       document.ObjectKey,
+		ObjectVersionID: document.ObjectVersionID,
+		ContentDocument: document.ContentDocument,
+	}
+
+	const query = `
+		INSERT INTO document_versions (
+			document_id, version_number, title, category, status,
+			changed_by_user_id, change_summary, object_key, object_version_id, content_document_json
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`
+	contentJSON, err := marshalContentDocument(version.ContentDocument)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(
+		ctx,
+		query,
+		version.DocumentID,
+		version.VersionNumber,
+		version.Title,
+		version.Category,
+		string(version.Status),
+		version.ChangedByUserID,
+		version.ChangeSummary,
+		version.ObjectKey,
+		version.ObjectVersionID,
+		contentJSON,
+	)
+	return err
+}
+
+func workflowVersionSummary(eventType string, comment string) string {
+	switch eventType {
+	case "SUBMITTED":
+		return "workflow submitted for approval"
+	case "RESUBMITTED":
+		return "workflow resubmitted for approval"
+	case "APPROVED":
+		return "workflow approved"
+	case "CHANGES_REQUESTED":
+		if comment != "" {
+			return "workflow changes requested: " + comment
+		}
+		return "workflow changes requested"
+	case "ARCHIVED":
+		return "workflow archived"
+	default:
+		return "workflow state changed"
+	}
 }
 
 func lockDocumentWorkflow(ctx context.Context, tx *sql.Tx, documentID string) (model.WorkflowInstance, bool, error) {
@@ -423,6 +572,30 @@ func actorCanAccessOrganization(ctx context.Context, db *sql.DB, organizationID 
 		)
 	`, organizationID, actorUserID).Scan(&exists)
 	return exists, err
+}
+
+func getWorkflowActorTx(ctx context.Context, tx *sql.Tx, organizationID string, userID string) (model.TaskActor, error) {
+	const query = `
+		SELECT full_name, roles
+		FROM organization_members
+		WHERE organization_id = $1 AND user_id = $2
+	`
+
+	actor := model.TaskActor{
+		UserID:         userID,
+		OrganizationID: organizationID,
+	}
+	if err := tx.QueryRowContext(ctx, query, organizationID, userID).Scan(
+		&actor.FullName,
+		pq.Array(&actor.Roles),
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return actor, nil
+		}
+		return model.TaskActor{}, err
+	}
+	actor.IsOrganizationMember = true
+	return actor, nil
 }
 
 func workflowStatusAllowed(statuses []model.DocumentStatus, status model.DocumentStatus) bool {

@@ -9,12 +9,14 @@ import {
   KanbanTaskCommentPayload,
   KanbanTaskCreatePayload,
   KanbanTaskDetails,
+  KanbanTaskListQuery,
   KanbanTaskMovePayload,
   KanbanTaskUpdateStatusPayload,
   AvailableApproverItem,
   AvailableDocumentItem,
   DashboardConflictError,
   OrganizationMember,
+  TaskAttachmentAddPayload,
 } from '../../domain/dashboard/dashboard.models';
 import { TaskResponse } from '@edo/types';
 import { TASK_BOARDS_API_PORT, TaskBoardsApiPort } from '../../ports/outbound/task-boards-api.port';
@@ -52,6 +54,10 @@ export class TaskBoardUseCases {
     return this.api.getTaskBoard(boardId);
   }
 
+  public listTasks(query?: KanbanTaskListQuery): Observable<Array<KanbanTask>> {
+    return this.api.listTasks(query);
+  }
+
   public getTaskDetails(boardId: string, taskId: string): Observable<KanbanTaskDetails> {
     return this.api.getTaskDetails(boardId, taskId);
   }
@@ -78,6 +84,22 @@ export class TaskBoardUseCases {
     payload: KanbanTaskCommentPayload,
   ): Observable<KanbanTask> {
     return this.api.addTaskComment(boardId, taskId, payload);
+  }
+
+  public addTaskAttachments(
+    boardId: string,
+    taskId: string,
+    payload: TaskAttachmentAddPayload,
+  ): Observable<KanbanTask> {
+    return this.api.addTaskAttachments(boardId, taskId, payload);
+  }
+
+  public removeTaskAttachment(
+    boardId: string,
+    taskId: string,
+    documentId: string,
+  ): Observable<KanbanTask> {
+    return this.api.removeTaskAttachment(boardId, taskId, documentId);
   }
 
   public createTask(payload: KanbanTaskCreatePayload): Observable<TaskResponse> {

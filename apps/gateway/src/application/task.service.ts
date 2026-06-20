@@ -25,7 +25,17 @@ export interface AvailableDocumentId {
   readonly category: string;
 }
 
+const personalTasksAssigneeMarker = '__mine__';
+
 export interface TaskDetailsView {
+  readonly board?: {
+    readonly id: string;
+    readonly organizationId: string;
+    readonly name: string;
+    readonly description: string;
+    readonly membersCount: number;
+    readonly tasksCount: number;
+  };
   readonly task: TaskResponse;
   readonly members: Array<{
     readonly id: string;
@@ -164,27 +174,112 @@ export class TaskService {
     };
   }
 
+  async addTaskAttachments(
+    taskId: string,
+    boardId: string,
+    documentIds: string[],
+    currentUser: UserProfile,
+  ): Promise<TaskResponse> {
+    if (!taskId.trim()) {
+      throw new Error('Task ID is required');
+    }
+    if (!boardId.trim()) {
+      throw new Error('Board ID is required');
+    }
+
+    const normalizedIds = [...new Set(documentIds.map((id) => id.trim()).filter((id) => id.length > 0))];
+    if (normalizedIds.length === 0) {
+      throw new Error('At least one document ID is required');
+    }
+
+    const availableDocuments = await this.getAvailableDocuments(boardId, currentUser, '', '', 200);
+    const documentsById = new Map(availableDocuments.map((item) => [item.documentId, item]));
+    const attachments = normalizedIds.map((documentId) => {
+      const document = documentsById.get(documentId);
+      if (!document) {
+        throw new Error(`Document ${documentId} is not available for attachment`);
+      }
+
+      return {
+        document_id: document.documentId,
+        title: document.title,
+        category: document.category,
+      };
+    });
+
+    await this.grpcClient.addTaskAttachments({
+      actor_user_id: currentUser.userId,
+      task_id: taskId,
+      attachments,
+    });
+
+    const response = await this.grpcClient.getTaskDetails({
+      actor_user_id: currentUser.userId,
+      task_id: taskId,
+    });
+
+    return this.mapGrpcResponseToTask(response);
+  }
+
+  async removeTaskAttachment(
+    taskId: string,
+    documentId: string,
+    currentUser: UserProfile,
+  ): Promise<TaskResponse> {
+    if (!taskId.trim()) {
+      throw new Error('Task ID is required');
+    }
+    if (!documentId.trim()) {
+      throw new Error('Document ID is required');
+    }
+
+    const response = await this.grpcClient.removeTaskAttachment({
+      actor_user_id: currentUser.userId,
+      task_id: taskId,
+      document_id: documentId,
+    });
+
+    return this.mapGrpcResponseToTask(response);
+  }
+
   async listTasks(
     filters: {
       readonly assigneeId?: string;
       readonly status?: string;
       readonly taskType?: string;
+      readonly scope?: 'mine';
     },
     currentUser: UserProfile,
   ): Promise<TaskResponse[]> {
-    const response = (await this.grpcClient.listTasks({
-      actor_user_id: currentUser.userId,
-      assignee_user_id: filters?.assigneeId || '',
-      status: filters?.status || '',
-      task_type: filters?.taskType || '',
-      limit: 200,
-    })) as { tasks?: unknown[] };
+    const statuses = (filters?.status || '')
+      .split(',')
+      .map((status) => status.trim())
+      .filter((status) => status.length > 0);
+    const normalizedStatuses = statuses.length > 0 ? statuses : [''];
+    const tasksById = new Map<string, TaskResponse>();
 
-    if (Array.isArray(response.tasks)) {
-      return response.tasks.map((task) => this.mapGrpcResponseToTask(task));
+    for (const status of normalizedStatuses) {
+      const response = (await this.grpcClient.listTasks({
+        actor_user_id: currentUser.userId,
+        assignee_user_id: filters?.scope === 'mine' ? personalTasksAssigneeMarker : filters?.assigneeId || '',
+        status,
+        task_type: filters?.taskType || '',
+        limit: 200,
+      })) as { tasks?: unknown[] };
+
+      if (!Array.isArray(response.tasks)) {
+        continue;
+      }
+
+      for (const task of response.tasks) {
+        const mappedTask = this.mapGrpcResponseToTask(task);
+        if (mappedTask.id) {
+          tasksById.set(mappedTask.id, mappedTask);
+        }
+      }
     }
 
-    return [];
+    return [...tasksById.values()];
   }
 
   async getAvailableApprovers(
@@ -245,6 +340,11 @@ export class TaskService {
 
     return {
       id: String(response.id || ''),
+      boardId: response.boardId
+        ? String(response.boardId)
+        : response.board_id
+          ? String(response.board_id)
+          : undefined,
       title: String(response.title || ''),
       description: response.description ? String(response.description) : undefined,
       status: (response.status || 'pending') as 'pending' | 'in_review' | 'approved' | 'declined',
@@ -276,7 +376,19 @@ export class TaskService {
         : response.due_date
           ? new Date(String(response.due_date))
           : undefined,
-      priority: response.priority ? Number(response.priority) : undefined,
+      attachments: Array.isArray(response.attachments)
+        ? response.attachments.map((item) => {
+            const attachment = item as Record<string, unknown>;
+            return {
+              documentId: String(
+                attachment.documentId ?? attachment.document_id ?? attachment.id ?? '',
+              ),
+              title: String(attachment.title ?? ''),
+              category: String(attachment.category ?? ''),
+              status: String(attachment.status ?? 'DRAFT'),
+            };
+          })
+        : [],
       attachmentIds: Array.isArray(response.attachmentIds)
         ? response.attachmentIds.map((id) => String(id))
         : Array.isArray(response.attachment_document_ids)

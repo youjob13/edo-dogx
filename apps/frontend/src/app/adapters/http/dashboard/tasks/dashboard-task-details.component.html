@@ -22,6 +22,11 @@
         'Статус: ' + getStatusLabel(taskModel.status) + ' • Срок: ' + taskModel.dueDateLabel
       "
     >
+      @if (details()?.board?.name) {
+        <p class="dashboard-task-details__board-context">
+          Доска: {{ details()?.board?.name }} · Организация: {{ details()?.board?.organizationId }}
+        </p>
+      }
       <p class="dashboard-task-details__description">{{ taskModel.description }}</p>
 
       @if (!hasAnyCapability()) {
@@ -32,46 +37,62 @@
       }
 
       <div class="dashboard-task-details__controls">
-        <label for="task-assignee">Исполнитель</label>
-        <select
-          id="task-assignee"
-          [formControl]="assigneeControl"
-          [disabled]="!details()?.canAssign"
-        >
-          <option value="" disabled>Выберите исполнителя</option>
-          @for (member of details()?.members ?? []; track member.id) {
-            <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
-          }
-        </select>
+        <section class="dashboard-task-details__control-card">
+          <div class="dashboard-task-details__field">
+            <label for="task-assignee">Исполнитель</label>
+            <select
+              id="task-assignee"
+              [formControl]="assigneeControl"
+              [disabled]="!details()?.canAssign"
+            >
+              <option value="" disabled>Выберите исполнителя</option>
+              @for (member of details()?.members ?? []; track member.id) {
+                <option [value]="member.id">{{ member.fullName }} ({{ member.department }})</option>
+              }
+            </select>
+          </div>
 
-        <edo-dogx-button
-          label="Сохранить исполнителя"
-          appearance="secondary"
-          size="s"
-          [disabled]="!details()?.canAssign || !assigneeControl.value"
-          (pressed)="assignTask()"
-        />
+          <div class="dashboard-task-details__field-actions">
+            <edo-dogx-button
+              label="Сохранить исполнителя"
+              appearance="secondary"
+              size="s"
+              [disabled]="!details()?.canAssign || !assigneeControl.value"
+              (pressed)="assignTask()"
+            />
+          </div>
+        </section>
 
         @if (!isFinalStatus(taskModel.status)) {
-          <label for="task-status">Колонка</label>
-          <select id="task-status" [formControl]="statusControl" [disabled]="!details()?.canMoveToReview">
-            <option value="pending">Ожидает</option>
-            <option value="in_review">На проверке</option>
-          </select>
+          <section class="dashboard-task-details__control-card">
+            <div class="dashboard-task-details__field">
+              <label for="task-status">Колонка</label>
+              <select
+                id="task-status"
+                [formControl]="statusControl"
+                [disabled]="!details()?.canMoveToReview && !details()?.canEdit"
+              >
+                <option value="pending">Ожидает</option>
+                <option value="in_review">На проверке</option>
+              </select>
+            </div>
 
-          <edo-dogx-button
-            label="Переместить задачу"
-            appearance="secondary"
-            size="s"
-            [disabled]="!canUpdateStatus()"
-            (pressed)="moveTask()"
-          />
+            <div class="dashboard-task-details__field-actions">
+              <edo-dogx-button
+                label="Переместить задачу"
+                appearance="secondary"
+                size="s"
+                [disabled]="!canUpdateStatus()"
+                (pressed)="moveTask()"
+              />
+            </div>
 
-          @if (details() && !details()?.canMoveToReview) {
-            <p class="dashboard-task-details__hint">
-              Перемещение задачи ограничено правами доступа.
-            </p>
-          }
+            @if (details() && !canUpdateStatus()) {
+              <p class="dashboard-task-details__hint">
+                Перемещение задачи ограничено текущим статусом или правами доступа.
+              </p>
+            }
+          </section>
         }
       </div>
     </edo-dogx-card>
@@ -108,29 +129,89 @@
     }
 
     <edo-dogx-card
-      title="Комментарии"
-      subtitle="Участники доски могут добавлять комментарии к задаче"
+      title="Вложения"
+      subtitle="Документы, которые прикреплены к задаче"
     >
-      <label for="task-comment">Новый комментарий</label>
-      <textarea
-        id="task-comment"
-        [formControl]="commentControl"
-        rows="4"
-        placeholder="Опишите изменение или задайте вопрос"
-        [disabled]="!details()?.canComment"
-      ></textarea>
+      @if (canManageAttachments()) {
+        <div class="dashboard-task-details__attachment-controls">
+          <div class="dashboard-task-details__field">
+            <label for="task-attachment">Добавить документ</label>
+            <select id="task-attachment" [formControl]="attachmentControl">
+              <option value="">Выберите документ</option>
+              @for (document of availableDocuments(); track document.documentId) {
+                <option [value]="document.documentId">
+                  {{ document.title }} ({{ document.category }})
+                </option>
+              }
+            </select>
+          </div>
 
-      <edo-dogx-button
-        label="Добавить комментарий"
-        appearance="primary"
-        size="s"
-        [disabled]="!details()?.canComment"
-        (pressed)="addComment()"
-      />
+          <div class="dashboard-task-details__field-actions">
+            <edo-dogx-button
+              label="Добавить вложение"
+              appearance="secondary"
+              size="s"
+              [disabled]="!attachmentControl.value"
+              (pressed)="addAttachment()"
+            />
+          </div>
+        </div>
+      }
+
+      <div class="dashboard-task-details__attachments" role="list" aria-label="Список вложений">
+        @if (taskModel.attachments.length === 0) {
+          <p class="dashboard-task-details__empty">Вложений пока нет.</p>
+        }
+
+        @for (attachment of taskModel.attachments; track attachment.documentId) {
+          <article class="dashboard-task-details__attachment" role="listitem">
+            <div>
+              <p class="dashboard-task-details__attachment-title">{{ attachment.title }}</p>
+              <p class="dashboard-task-details__attachment-meta">{{ attachment.category }}</p>
+            </div>
+
+            @if (canManageAttachments()) {
+              <edo-dogx-button
+                label="Удалить"
+                appearance="secondary"
+                size="s"
+                (pressed)="removeAttachment(attachment.documentId)"
+              />
+            }
+          </article>
+        }
+      </div>
+    </edo-dogx-card>
+
+    <edo-dogx-card
+      title="История задачи"
+      subtitle="Изменения и действия по задаче в хронологическом порядке"
+    >
+      @if (details()?.canComment) {
+        <div class="dashboard-task-details__comment-editor">
+          <label for="task-comment">Новый комментарий</label>
+          <textarea
+            id="task-comment"
+            [formControl]="commentControl"
+            rows="4"
+            placeholder="Добавьте комментарий по задаче"
+          ></textarea>
+
+          <div class="dashboard-task-details__field-actions">
+            <edo-dogx-button
+              label="Добавить комментарий"
+              appearance="secondary"
+              size="s"
+              [disabled]="!commentControl.value.trim()"
+              (pressed)="addComment()"
+            />
+          </div>
+        </div>
+      }
 
       <div class="dashboard-task-details__comments" role="list" aria-label="Список комментариев">
         @if (taskModel.comments.length === 0) {
-          <p class="dashboard-task-details__empty">Комментариев пока нет.</p>
+          <p class="dashboard-task-details__empty">История действий по задаче пока пуста.</p>
         }
 
         @for (comment of taskModel.comments; track comment.id) {

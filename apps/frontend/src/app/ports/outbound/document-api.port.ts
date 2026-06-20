@@ -31,7 +31,6 @@ export interface DocumentApiPort {
   getActivity(query: DashboardQuery): Observable<Array<ActivityItem>>;
   getStorageUsage(): Observable<StorageUsage>;
   previewDocument(id: string): Observable<DashboardPreviewDocument>;
-  downloadDocument(id: string): Observable<void>;
   createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument>;
   getDocumentById(id: string): Observable<DashboardEditableDocument>;
   getDocumentVersions(

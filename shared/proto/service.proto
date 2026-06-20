@@ -215,6 +215,7 @@ message ListTasksRequest {
   string status = 3;
   string task_type = 4;
   int32 limit = 5;
+  bool participant_only = 6;
 }
 
 message ListTasksResponse {
@@ -494,6 +495,7 @@ message SearchDocumentsRequest {
   string category = 3;
   int32 limit = 4;
   int32 offset = 5;
+  bool participant_only = 6;
 }
 
 message SearchDocumentsResponse {

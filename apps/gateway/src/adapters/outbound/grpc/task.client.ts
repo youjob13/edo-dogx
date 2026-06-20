@@ -62,6 +62,10 @@ export class TaskOrchestrationServiceClient {
     return this.call('AddTaskAttachments', payload);
   }
 
+  removeTaskAttachment(payload: unknown): Promise<unknown> {
+    return this.call('RemoveTaskAttachment', payload);
+  }
+
   getTaskAttachments(payload: unknown): Promise<unknown> {
     return this.call('GetTaskAttachments', payload);
   }

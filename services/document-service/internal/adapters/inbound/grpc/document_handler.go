@@ -18,6 +18,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const personalDocumentsCategoryMarker = "__mine__"
+
 type DocumentHandler struct {
 	pb.UnimplementedDocumentWorkflowServiceServer
 	lifecycle *appservice.DocumentLifecycleService
@@ -243,12 +245,14 @@ func (h *DocumentHandler) ArchiveDocument(ctx context.Context, req *pb.ArchiveDo
 }
 
 func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDocumentsRequest) (*pb.SearchDocumentsResponse, error) {
+	category, personalOnly := parseSearchDocumentsCategory(req.GetCategory())
 	documents, total, err := h.lifecycle.SearchDocuments(ctx, appservice.SearchDocumentsInput{
-		ActorUserID: req.GetActorUserId(),
-		Query:       req.GetQuery(),
-		Category:    req.GetCategory(),
-		Limit:       int(req.GetLimit()),
-		Offset:      int(req.GetOffset()),
+		ActorUserID:  req.GetActorUserId(),
+		Query:        req.GetQuery(),
+		Category:     category,
+		PersonalOnly: personalOnly,
+		Limit:        int(req.GetLimit()),
+		Offset:       int(req.GetOffset()),
 	})
 	if err != nil {
 		slog.Error("grpc search documents failed",
@@ -291,6 +295,20 @@ func (h *DocumentHandler) SearchDocuments(ctx context.Context, req *pb.SearchDoc
 	}
 
 	return &pb.SearchDocumentsResponse{Items: items, Total: int32(total)}, nil
+}
+
+func parseSearchDocumentsCategory(category string) (string, bool) {
+	value := strings.TrimSpace(category)
+	if value == personalDocumentsCategoryMarker {
+		return "", true
+	}
+
+	const prefix = personalDocumentsCategoryMarker + ":"
+	if strings.HasPrefix(value, prefix) {
+		return strings.TrimSpace(strings.TrimPrefix(value, prefix)), true
+	}
+
+	return value, false
 }
 
 func (h *DocumentHandler) ListDocumentVersions(ctx context.Context, req *pb.ListDocumentVersionsRequest) (*pb.ListDocumentVersionsResponse, error) {

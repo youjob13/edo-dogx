@@ -28,11 +28,29 @@ func buildDocumentContentKey(documentID string) string {
 	return fmt.Sprintf("documents/%s/content.json", documentID)
 }
 
+func marshalContentDocument(content map[string]any) ([]byte, error) {
+	if content == nil {
+		content = map[string]any{}
+	}
+	return json.Marshal(content)
+}
+
+func unmarshalContentDocument(payload []byte) (map[string]any, error) {
+	content := map[string]any{}
+	if len(payload) == 0 {
+		return content, nil
+	}
+	if err := json.Unmarshal(payload, &content); err != nil {
+		return nil, err
+	}
+	return content, nil
+}
+
 func (r *DocumentVersionRepository) StoreContent(ctx context.Context, objectKey string, content map[string]any) (string, error) {
 	if r.objectClient == nil {
 		return "", fmt.Errorf("object storage client is not configured")
 	}
-	payload, err := json.Marshal(content)
+	payload, err := marshalContentDocument(content)
 	if err != nil {
 		return "", err
 	}
@@ -51,6 +69,9 @@ func (r *DocumentVersionRepository) StoreContent(ctx context.Context, objectKey 
 }
 
 func (r *DocumentVersionRepository) LoadContent(ctx context.Context, objectKey string, objectVersionID string) (map[string]any, error) {
+	if strings.TrimSpace(objectKey) == "" || strings.TrimSpace(objectVersionID) == "" {
+		return nil, fmt.Errorf("document content object reference is incomplete")
+	}
 	if r.objectClient == nil {
 		return nil, fmt.Errorf("object storage client is not configured")
 	}
@@ -66,22 +87,19 @@ func (r *DocumentVersionRepository) LoadContent(ctx context.Context, objectKey s
 		return nil, err
 	}
 
-	content := map[string]any{}
-	if len(payload) == 0 {
-		return content, nil
-	}
-	if err := json.Unmarshal(payload, &content); err != nil {
-		return nil, err
-	}
-	return content, nil
+	return unmarshalContentDocument(payload)
 }
 
 func (r *DocumentVersionRepository) AppendVersionTx(ctx context.Context, tx *sql.Tx, version model.DocumentVersion) error {
 	const query = `
-		INSERT INTO document_versions (document_id, version_number, title, category, status, changed_by_user_id, change_summary, object_key, object_version_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO document_versions (document_id, version_number, title, category, status, changed_by_user_id, change_summary, object_key, object_version_id, content_document_json)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
-	_, err := tx.ExecContext(
+	contentJSON, err := marshalContentDocument(version.ContentDocument)
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(
 		ctx,
 		query,
 		version.DocumentID,
@@ -93,6 +111,7 @@ func (r *DocumentVersionRepository) AppendVersionTx(ctx context.Context, tx *sql
 		version.ChangeSummary,
 		version.ObjectKey,
 		version.ObjectVersionID,
+		contentJSON,
 	)
 	return err
 }
@@ -122,7 +141,7 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 	const query = `
 		SELECT document_id, version_number, title, category, status, changed_by_user_id, 
 		       changed_by_user_id AS changed_by_user_name, 
-		       change_summary, created_at, object_key, object_version_id
+		       change_summary, created_at, object_key, object_version_id, content_document_json
 		FROM document_versions
 		WHERE document_id = $1
 		ORDER BY version_number DESC
@@ -137,9 +156,15 @@ func (r *DocumentVersionRepository) ListVersions(ctx context.Context, documentID
 	items := make([]model.DocumentVersion, 0, limit)
 	for rows.Next() {
 		var item model.DocumentVersion
-		if err := rows.Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangedByUserName, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+		var contentJSON []byte
+		if err := rows.Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangedByUserName, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID, &contentJSON); err != nil {
 			return nil, 0, err
 		}
+		content, err := unmarshalContentDocument(contentJSON)
+		if err != nil {
+			return nil, 0, err
+		}
+		item.ContentDocument = content
 		
 		// Resolve changed by user name if empty
 		if strings.TrimSpace(item.ChangedByUserName) == "" || item.ChangedByUserName == item.ChangedByUserID {
@@ -166,15 +191,20 @@ func (r *DocumentVersionRepository) GetVersion(ctx context.Context, documentID s
 	const query = `
 		SELECT document_id, version_number, title, category, status, changed_by_user_id, 
 		       changed_by_user_id AS changed_by_user_name, 
-		       change_summary, created_at, object_key, object_version_id
+		       change_summary, created_at, object_key, object_version_id, content_document_json
 		FROM document_versions
 		WHERE document_id = $1 AND version_number = $2
 	`
 	var item model.DocumentVersion
-	if err := r.db.QueryRowContext(ctx, query, documentID, versionNumber).Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangedByUserName, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID); err != nil {
+	var contentJSON []byte
+	if err := r.db.QueryRowContext(ctx, query, documentID, versionNumber).Scan(&item.DocumentID, &item.VersionNumber, &item.Title, &item.Category, &item.Status, &item.ChangedByUserID, &item.ChangedByUserName, &item.ChangeSummary, &item.CreatedAt, &item.ObjectKey, &item.ObjectVersionID, &contentJSON); err != nil {
 		if err == sql.ErrNoRows {
 			return model.DocumentVersion{}, model.ErrDocumentNotFound
 		}
+		return model.DocumentVersion{}, err
+	}
+	contentFallback, err := unmarshalContentDocument(contentJSON)
+	if err != nil {
 		return model.DocumentVersion{}, err
 	}
 	
@@ -187,7 +217,8 @@ func (r *DocumentVersionRepository) GetVersion(ctx context.Context, documentID s
 	
 	content, err := r.LoadContent(ctx, item.ObjectKey, item.ObjectVersionID)
 	if err != nil {
-		return model.DocumentVersion{}, err
+		item.ContentDocument = contentFallback
+		return item, nil
 	}
 	item.ContentDocument = content
 	return item, nil

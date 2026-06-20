@@ -25,6 +25,7 @@ import {
   PageSectionComponent,
 } from '../../../../design-system/ui-kit';
 import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
+import { AuthSessionStore } from '../../../../application/auth-session.store';
 
 interface TaskGroupView {
   readonly id: string;
@@ -67,6 +68,7 @@ interface TaskColumnView {
 })
 export class DashboardTasksComponent {
   private readonly useCases = inject(TaskBoardUseCases);
+  private readonly authSessionStore = inject(AuthSessionStore);
   private readonly router = inject(Router);
   private readonly statusOrder: Array<KanbanTaskStatus> = [
     'pending',
@@ -113,10 +115,6 @@ export class DashboardTasksComponent {
     approverId: new FormControl('', { nonNullable: true }),
     taskType: new FormControl<TaskType>('general', { nonNullable: true }),
     dueDate: new FormControl('', { nonNullable: true }),
-    priority: new FormControl(1, {
-      nonNullable: true,
-      validators: [Validators.required, Validators.min(1), Validators.max(5)],
-    }),
     attachments: new FormControl<AvailableDocumentItem[]>([], { nonNullable: true }),
   });
   protected readonly createBoardForm = new FormGroup({
@@ -139,6 +137,8 @@ export class DashboardTasksComponent {
   protected readonly loadingApprovers = signal(false);
   protected readonly loadingDocuments = signal(false);
   protected readonly loadingMembers = signal(false);
+  protected readonly declineTaskId = signal<string | null>(null);
+  protected readonly declineCommentControl = new FormControl('', { nonNullable: true });
 
   protected readonly columns = computed<Array<TaskColumnView>>(() => {
     const board = this.selectedBoard();
@@ -175,6 +175,7 @@ export class DashboardTasksComponent {
   });
 
   protected readonly hasBoards = computed(() => this.boards().length > 0);
+  protected readonly currentUser = this.authSessionStore.currentUser;
 
   constructor() {
     this.organizationControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((organizationId) => {
@@ -196,12 +197,22 @@ export class DashboardTasksComponent {
       return;
     }
 
+    const task = this.selectedBoard()?.tasks.find((item) => item.id === taskId);
+    if (!task || !this.canAssignTask(task)) {
+      return;
+    }
+
     this.useCases
       .assignTask(boardId, taskId, { assigneeId: value })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.updateTaskInBoard(task);
-        this.message.set(`Исполнитель задачи «${task.title}» обновлен.`);
+      .subscribe({
+        next: (updatedTask) => {
+          this.updateTaskInBoard(updatedTask);
+          this.message.set(`Исполнитель задачи «${updatedTask.title}» обновлен.`);
+        },
+        error: () => {
+          this.message.set('Не удалось обновить исполнителя задачи.');
+        },
       });
   }
 
@@ -213,6 +224,12 @@ export class DashboardTasksComponent {
 
     const task = board.tasks.find((item) => item.id === taskId);
     if (!task) {
+      return;
+    }
+
+    const canMove =
+      direction === 'next' ? this.canMoveTaskToReview(task) : this.canMoveTaskToPending(task);
+    if (!canMove) {
       return;
     }
 
@@ -229,20 +246,25 @@ export class DashboardTasksComponent {
     this.useCases
       .moveTask(board.id, task.id, { status: nextStatus })
       .pipe(take(1))
-      .subscribe((updatedTask) => {
-        this.updateTaskInBoard(updatedTask);
-        this.message.set(
-          `Задача «${updatedTask.title}» перемещена в колонку «${this.getStatusLabel(nextStatus)}».`,
-        );
+      .subscribe({
+        next: (updatedTask) => {
+          this.updateTaskInBoard(updatedTask);
+          this.message.set(
+            `Задача «${updatedTask.title}» перемещена в колонку «${this.getStatusLabel(nextStatus)}».`,
+          );
+        },
+        error: () => {
+          this.message.set('Не удалось изменить статус задачи.');
+        },
       });
   }
 
   protected canMoveLeft(task: KanbanTask): boolean {
-    return task.status === 'in_review';
+    return task.status === 'in_review' && this.canMoveTaskToPending(task);
   }
 
   protected canMoveRight(task: KanbanTask): boolean {
-    return task.status === 'pending';
+    return task.status === 'pending' && this.canMoveTaskToReview(task);
   }
 
   protected openTaskDetails(boardId: string, taskId: string): void {
@@ -268,7 +290,6 @@ export class DashboardTasksComponent {
     this.showCreateTaskModal.set(false);
     this.createTaskForm.reset({
       taskType: 'general',
-      priority: 1,
       attachments: [],
     });
   }
@@ -323,7 +344,7 @@ export class DashboardTasksComponent {
     const formValue = this.createTaskForm.value;
     const assignee = board.members.find((member) => member.id === formValue.assigneeId);
     const approver = formValue.approverId
-      ? board.members.find((member) => member.id === formValue.approverId)
+      ? this.availableApprovers().find((member) => member.userId === formValue.approverId)
       : undefined;
 
     const payload: KanbanTaskCreatePayload = {
@@ -332,11 +353,10 @@ export class DashboardTasksComponent {
       description: formValue.description || undefined,
       assigneeId: formValue.assigneeId!,
       assigneeName: assignee?.fullName || '',
-      approverId: approver?.id,
-      approverName: approver?.fullName,
+      approverId: approver?.userId,
+      approverName: approver?.userName,
       taskType: formValue.taskType!,
       dueDate: formValue.dueDate || undefined,
-      priority: formValue.priority,
       attachmentIds:
         formValue.attachments && formValue.attachments.length > 0
           ? formValue.attachments.map((item) => item.documentId)
@@ -371,22 +391,48 @@ export class DashboardTasksComponent {
       return;
     }
 
+    const taskToApprove = board.tasks.find((task) => task.id === taskId);
+    if (!taskToApprove || !this.canApproveTask(taskToApprove)) {
+      return;
+    }
+
     this.useCases
       .updateTaskStatus(taskId, { status: 'approved', decision: 'approved' })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.updateTaskInBoard(task);
-        this.message.set(`Задача "${task.title}" одобрена.`);
+      .subscribe({
+        next: (task) => {
+          this.updateTaskInBoard(task);
+          this.message.set(`Задача "${task.title}" одобрена.`);
+        },
+        error: () => {
+          this.message.set('Не удалось одобрить задачу.');
+        },
       });
   }
 
   protected onDeclineTask(taskId: string): void {
+    this.declineTaskId.set(taskId);
+    this.declineCommentControl.setValue('');
+  }
+
+  protected closeDeclineModal(): void {
+    this.declineTaskId.set(null);
+    this.declineCommentControl.setValue('');
+  }
+
+  protected confirmDeclineTask(): void {
     const board = this.selectedBoard();
-    if (!board) {
+    const taskId = this.declineTaskId();
+    if (!board || !taskId) {
       return;
     }
 
-    const comment = prompt('Комментарий к отклонению:')?.trim();
+    const taskToDecline = board.tasks.find((task) => task.id === taskId);
+    if (!taskToDecline || !this.canApproveTask(taskToDecline)) {
+      return;
+    }
+
+    const comment = this.declineCommentControl.value.trim();
     if (!comment) {
       this.message.set('Для отклонения задачи необходимо указать комментарий.');
       return;
@@ -398,14 +444,28 @@ export class DashboardTasksComponent {
         decisionComment: comment,
       })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.updateTaskInBoard(task);
-        this.message.set(`Задача "${task.title}" отклонена.`);
+      .subscribe({
+        next: (task) => {
+          this.updateTaskInBoard(task);
+          this.closeDeclineModal();
+          this.message.set(`Задача "${task.title}" отклонена.`);
+        },
+        error: () => {
+          this.message.set('Не удалось отклонить задачу.');
+        },
       });
   }
 
   protected canApproveTask(task: KanbanTask): boolean {
-    return task.taskType === 'approval' && task.status === 'in_review';
+    if (task.taskType !== 'approval' || task.status !== 'in_review') {
+      return false;
+    }
+
+    return Boolean(task.capabilities?.canApprove);
+  }
+
+  protected canAssignTask(task: KanbanTask): boolean {
+    return task.status !== 'approved' && task.status !== 'declined' && Boolean(task.capabilities?.canAssign);
   }
 
   protected getBoardMembers(): Array<KanbanBoardMember> {
@@ -415,6 +475,23 @@ export class DashboardTasksComponent {
     }]
     */
     return this.selectedBoard()?.members ?? [];
+  }
+
+  private canMoveTaskToReview(task: KanbanTask): boolean {
+    if (task.status !== 'pending') {
+      return false;
+    }
+
+    return Boolean(task.capabilities?.canMoveToReview);
+  }
+
+  private canMoveTaskToPending(task: KanbanTask): boolean {
+    const user = this.currentUser();
+    if (!user || task.status !== 'in_review') {
+      return false;
+    }
+
+    return Boolean(task.capabilities?.canEdit) || task.assigneeId === user.userId;
   }
 
   protected getMembersAvailableToAdd(): Array<OrganizationMember> {

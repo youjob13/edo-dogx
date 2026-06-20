@@ -302,6 +302,9 @@ func (h *TaskOrchestrationHandler) CreateTask(ctx context.Context, req *pb.Creat
 		if err == model.ErrAttachmentDocumentForbidden {
 			return nil, status.Error(codes.PermissionDenied, "one or more documents are inaccessible")
 		}
+		if err == model.ErrAttachmentAlreadyLinked {
+			return nil, status.Error(codes.FailedPrecondition, "one or more documents are already attached to another task")
+		}
 		if err == model.ErrTaskMemberNotFound {
 			return nil, status.Error(codes.InvalidArgument, "creator, assignee, or approver is not an organization member")
 		}
@@ -333,7 +336,12 @@ func (h *TaskOrchestrationHandler) ListTasks(ctx context.Context, req *pb.ListTa
 
 	filter := outbound.TaskFilter{ActorUserID: stringPointer(req.GetActorUserId())}
 	if value := strings.TrimSpace(req.GetAssigneeUserId()); value != "" {
-		filter.AssignedUserID = &value
+		if value == "__mine__" {
+			participantUserID := strings.TrimSpace(req.GetActorUserId())
+			filter.ParticipantUserID = &participantUserID
+		} else {
+			filter.AssignedUserID = &value
+		}
 	}
 	if value := strings.TrimSpace(req.GetStatus()); value != "" {
 		taskStatus, err := parseStatus(value)
@@ -542,6 +550,9 @@ func (h *TaskOrchestrationHandler) AddTaskAttachments(ctx context.Context, req *
 	}
 
 	if err := h.taskRepository.AddTaskAttachments(ctx, req.GetTaskId(), attachments); err != nil {
+		if err == model.ErrAttachmentAlreadyLinked {
+			return nil, status.Error(codes.FailedPrecondition, "one or more documents are already attached to another task")
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

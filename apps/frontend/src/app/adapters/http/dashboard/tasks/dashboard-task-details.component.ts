@@ -30,12 +30,14 @@ export class DashboardTaskDetailsComponent {
   protected readonly statusControl = new FormControl<KanbanTaskStatus>('pending', {
     nonNullable: true,
   });
-  protected readonly commentControl = new FormControl('', { nonNullable: true });
   protected readonly decisionCommentControl = new FormControl('', { nonNullable: true });
+  protected readonly commentControl = new FormControl('', { nonNullable: true });
+  protected readonly attachmentControl = new FormControl('', { nonNullable: true });
 
   protected readonly loading = signal(false);
   protected readonly details = signal<KanbanTaskDetails | null>(null);
   protected readonly message = signal('');
+  protected readonly availableDocuments = signal<Array<{ documentId: string; title: string; category: string }>>([]);
 
   protected readonly task = computed(() => this.details()?.task ?? null);
   protected readonly hasAnyCapability = computed(() => {
@@ -51,15 +53,20 @@ export class DashboardTaskDetailsComponent {
   });
   protected canUpdateStatus(): boolean {
     const details = this.details();
-    if (!details) {
+    const task = details?.task;
+    if (!details || !task) {
       return false;
     }
 
-    if (this.statusControl.value === details.task.status) {
+    if (this.statusControl.value === task.status) {
       return false;
     }
 
-    return details.canMoveToReview;
+    if (this.statusControl.value === 'in_review') {
+      return details.canMoveToReview;
+    }
+
+    return details.canEdit || task.assigneeId === details.currentUserId;
   }
 
   constructor() {
@@ -78,18 +85,25 @@ export class DashboardTaskDetailsComponent {
 
   protected assignTask(): void {
     const details = this.details();
-    if (!details?.canAssign) {
+    const assigneeId = this.assigneeControl.value;
+    if (!details?.canAssign || !assigneeId) {
       return;
     }
 
     this.useCases
       .assignTask(details.board.id, details.task.id, {
-        assigneeId: this.assigneeControl.value,
+        assigneeId,
       })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.applyUpdatedTask(task);
-        this.message.set('Исполнитель задачи обновлен.');
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.message.set('Исполнитель задачи обновлен.');
+        },
+        error: () => {
+          this.message.set('Не удалось обновить исполнителя задачи.');
+        },
       });
   }
 
@@ -104,30 +118,15 @@ export class DashboardTaskDetailsComponent {
         status: this.statusControl.value,
       })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.applyUpdatedTask(task);
-        this.message.set(`Задача перемещена в колонку «${this.getStatusLabel(task.status)}».`);
-      });
-  }
-
-  protected addComment(): void {
-    const details = this.details();
-    if (!details?.canComment) {
-      return;
-    }
-
-    const text = this.commentControl.value.trim();
-    if (!text) {
-      return;
-    }
-
-    this.useCases
-      .addTaskComment(details.board.id, details.task.id, { text })
-      .pipe(take(1))
-      .subscribe((task) => {
-        this.applyUpdatedTask(task);
-        this.commentControl.setValue('');
-        this.message.set('Комментарий добавлен.');
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.message.set(`Задача перемещена в колонку «${this.getStatusLabel(task.status)}».`);
+        },
+        error: () => {
+          this.message.set('Не удалось изменить статус задачи.');
+        },
       });
   }
 
@@ -145,10 +144,16 @@ export class DashboardTaskDetailsComponent {
         decisionComment: decisionComment || undefined,
       })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.applyUpdatedTask(task);
-        this.decisionCommentControl.setValue('');
-        this.message.set('Задача одобрена.');
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.decisionCommentControl.setValue('');
+          this.message.set('Задача одобрена.');
+        },
+        error: () => {
+          this.message.set('Не удалось одобрить задачу.');
+        },
       });
   }
 
@@ -167,15 +172,93 @@ export class DashboardTaskDetailsComponent {
         decisionComment,
       })
       .pipe(take(1))
-      .subscribe((task) => {
-        this.applyUpdatedTask(task);
-        this.decisionCommentControl.setValue('');
-        this.message.set('Задача отклонена.');
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.decisionCommentControl.setValue('');
+          this.message.set('Задача отклонена.');
+        },
+        error: () => {
+          this.message.set('Не удалось отклонить задачу.');
+        },
       });
   }
 
   protected isFinalStatus(status: KanbanTaskStatus): boolean {
     return status === 'approved' || status === 'declined';
+  }
+
+  protected addComment(): void {
+    const details = this.details();
+    const text = this.commentControl.value.trim();
+    if (!details?.canComment || !text) {
+      return;
+    }
+
+    this.useCases
+      .addTaskComment(details.board.id, details.task.id, { text })
+      .pipe(take(1))
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.commentControl.setValue('');
+          this.message.set('Комментарий добавлен.');
+        },
+        error: () => {
+          this.message.set('Не удалось добавить комментарий.');
+        },
+      });
+  }
+
+  protected canManageAttachments(): boolean {
+    const details = this.details();
+    return Boolean(details?.canEdit && details.board.id);
+  }
+
+  protected addAttachment(): void {
+    const details = this.details();
+    const documentId = this.attachmentControl.value;
+    if (!details || !this.canManageAttachments() || !documentId) {
+      return;
+    }
+
+    this.useCases
+      .addTaskAttachments(details.board.id, details.task.id, { documentIds: [documentId] })
+      .pipe(take(1))
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.attachmentControl.setValue('');
+          this.message.set('Вложение добавлено к задаче.');
+        },
+        error: () => {
+          this.message.set('Не удалось добавить вложение.');
+        },
+      });
+  }
+
+  protected removeAttachment(documentId: string): void {
+    const details = this.details();
+    if (!details || !this.canManageAttachments()) {
+      return;
+    }
+
+    this.useCases
+      .removeTaskAttachment(details.board.id, details.task.id, documentId)
+      .pipe(take(1))
+      .subscribe({
+        next: (task) => {
+          this.applyUpdatedTask(task);
+          this.loadTask(details.board.id, task.id);
+          this.message.set('Вложение удалено из задачи.');
+        },
+        error: () => {
+          this.message.set('Не удалось удалить вложение.');
+        },
+      });
   }
 
   protected navigateBackToBoard(): void {
@@ -205,6 +288,7 @@ export class DashboardTaskDetailsComponent {
         this.details.set(details);
         this.assigneeControl.setValue(details.task.assigneeId ?? '');
         this.statusControl.setValue(details.task.status);
+        this.loadAvailableDocuments(details.board.id);
       });
   }
 
@@ -222,5 +306,24 @@ export class DashboardTaskDetailsComponent {
 
     this.assigneeControl.setValue(task.assigneeId ?? '');
     this.statusControl.setValue(task.status);
+  }
+
+  private loadAvailableDocuments(boardId: string): void {
+    if (!boardId) {
+      this.availableDocuments.set([]);
+      return;
+    }
+
+    this.useCases
+      .getAvailableDocuments(boardId, 100, 0)
+      .pipe(take(1))
+      .subscribe({
+        next: (result) => {
+          this.availableDocuments.set(result.documents);
+        },
+        error: () => {
+          this.availableDocuments.set([]);
+        },
+      });
   }
 }

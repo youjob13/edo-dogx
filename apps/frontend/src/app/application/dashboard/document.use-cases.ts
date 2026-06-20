@@ -54,10 +54,6 @@ export class DocumentUseCases {
     return this.api.previewDocument(id);
   }
 
-  public downloadDocument(id: string): Observable<void> {
-    return this.api.downloadDocument(id);
-  }
-
   public createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {
     return this.api.createDocument(payload);
   }

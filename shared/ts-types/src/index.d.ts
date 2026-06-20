@@ -252,11 +252,11 @@ export interface CreateTaskRequest {
     readonly approverName?: string;
     readonly taskType: "approval" | "general";
     readonly dueDate?: Date;
-    readonly priority?: number;
     readonly attachmentIds?: string[];
 }
 export interface TaskResponse {
     readonly id: string;
+    readonly boardId?: string;
     readonly title: string;
     readonly description?: string;
     readonly status: "pending" | "in_review" | "approved" | "declined";
@@ -270,7 +270,7 @@ export interface TaskResponse {
     readonly decision?: "approved" | "declined";
     readonly decisionComment?: string;
     readonly dueDate?: Date;
-    readonly priority?: number;
+    readonly attachments: TaskAttachment[];
     readonly attachmentIds: string[];
     readonly createdAt: Date;
     readonly updatedAt: Date;

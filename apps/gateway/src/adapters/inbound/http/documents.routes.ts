@@ -9,6 +9,7 @@ import { notificationSseHub } from './notifications.sse-hub.js';
 
 const documentClient = new DocumentServiceClient();
 const notificationClient = new NotificationServiceClient();
+const personalDocumentsCategoryMarker = '__mine__';
 
 interface DocumentCapabilities {
   canEdit: boolean;
@@ -380,6 +381,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
     Querystring: {
       q?: string;
       category?: string;
+      scope?: string;
       limit?: number;
       offset?: number;
     };
@@ -393,6 +395,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           properties: {
             q: { type: 'string' },
             category: { type: 'string' },
+            scope: { type: 'string', enum: ['mine'] },
             limit: { type: 'integer', minimum: 1, maximum: 100 },
             offset: { type: 'integer', minimum: 0 },
           },
@@ -403,6 +406,12 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       const q = typeof request.query.q === 'string' ? request.query.q : undefined;
       const category =
         typeof request.query.category === 'string' ? request.query.category : undefined;
+      const personalOnly = request.query.scope === 'mine';
+      const grpcCategory = personalOnly
+        ? category
+          ? `${personalDocumentsCategoryMarker}:${category}`
+          : personalDocumentsCategoryMarker
+        : category;
       const limit =
         typeof request.query.limit === 'number' && request.query.limit > 0
           ? Math.min(request.query.limit, 100)
@@ -416,7 +425,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         const response = await documentClient.searchDocuments({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           query: q,
-          category,
+          category: grpcCategory,
           limit,
           offset,
         });

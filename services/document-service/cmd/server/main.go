@@ -249,6 +249,23 @@ func ensureDocumentSchema(db *sql.DB) error {
 				ADD CONSTRAINT uq_task_attachments_task_document UNIQUE (task_id, document_id);
 			END IF;
 		END $$`,
+		`WITH duplicate_attachments AS (
+			SELECT id
+			FROM (
+				SELECT
+					id,
+					ROW_NUMBER() OVER (
+						PARTITION BY document_id
+						ORDER BY created_at ASC, id ASC
+					) AS row_num
+				FROM task_attachments
+			) ranked
+			WHERE ranked.row_num > 1
+		)
+		DELETE FROM task_attachments
+		WHERE id IN (SELECT id FROM duplicate_attachments)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS uq_task_attachments_document_id
+			ON task_attachments(document_id)`,
 		`CREATE TABLE IF NOT EXISTS activity_events (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			organization_id TEXT NOT NULL,

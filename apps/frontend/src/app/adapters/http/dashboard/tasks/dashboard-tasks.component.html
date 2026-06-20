@@ -115,6 +115,7 @@
                     <select
                       [id]="'assignee-' + task.id"
                       [value]="task.assigneeId ?? ''"
+                      [disabled]="!canAssignTask(task)"
                       (change)="onAssigneeChanged(task.id, $any($event.target).value)"
                     >
                       <option value="" disabled>Выберите исполнителя</option>
@@ -333,6 +334,41 @@
               />
             </div>
           </form>
+        </edo-dogx-card>
+      </div>
+    </div>
+  }
+
+  @if (declineTaskId()) {
+    <div class="modal-overlay" (click)="closeDeclineModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <edo-dogx-card
+          title="Отклонение задачи"
+          subtitle="Укажите понятную причину, чтобы исполнитель мог быстро доработать задачу"
+        >
+          <div class="form-group">
+            <label for="decline-comment">Комментарий к отклонению</label>
+            <textarea
+              id="decline-comment"
+              [formControl]="declineCommentControl"
+              rows="4"
+              placeholder="Что нужно исправить или уточнить"
+            ></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <edo-dogx-button
+              label="Отмена"
+              appearance="secondary"
+              (pressed)="closeDeclineModal()"
+            />
+            <edo-dogx-button
+              label="Отклонить"
+              appearance="primary"
+              [disabled]="!declineCommentControl.value.trim()"
+              (pressed)="confirmDeclineTask()"
+            />
+          </div>
         </edo-dogx-card>
       </div>
     </div>

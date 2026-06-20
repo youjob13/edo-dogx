@@ -156,6 +156,7 @@ var (
 	ErrTaskAssignmentForbidden     = errors.New("task assignment forbidden")
 	ErrTaskStatusConflict          = errors.New("task status changed concurrently")
 	ErrAttachmentDocumentForbidden = errors.New("attachment document access forbidden")
+	ErrAttachmentAlreadyLinked     = errors.New("attachment document is already linked to another task")
 )
 
 func (s TaskStatus) IsFinal() bool {

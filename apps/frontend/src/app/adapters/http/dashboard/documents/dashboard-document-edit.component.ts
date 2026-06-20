@@ -293,7 +293,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
           this.message.set('Изменения сохранены.');
         },
         error: (error: unknown) => {
-          const conflict = this.taskBoardUseCases.parseConflictError(error);
+          const conflict = this.documentUseCases.parseConflictError(error);
           if (conflict) {
             this.message.set(
               'Документ изменился в другой сессии. Обновите страницу и попробуйте снова.',
@@ -332,6 +332,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       .subscribe({
         next: (workflow) => {
           this.applyWorkflowState(workflow);
+          this.loadDocument(this.documentId());
           this.workflowMessage.set('Документ отправлен на согласование.');
           this.loadWorkflowEvents(this.documentId());
         },
@@ -362,6 +363,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       .subscribe({
         next: (workflow) => {
           this.applyWorkflowState(workflow);
+          this.loadDocument(this.documentId());
           this.workflowMessage.set('Документ согласован.');
           this.loadWorkflowEvents(this.documentId());
         },
@@ -399,6 +401,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       .subscribe({
         next: (workflow) => {
           this.applyWorkflowState(workflow);
+          this.loadDocument(this.documentId());
           this.workflowMessage.set('Запрос на изменения отправлен автору.');
           this.loadWorkflowEvents(this.documentId());
         },
@@ -428,28 +431,8 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       )
       .subscribe({
         next: () => {
-          this.documentStatus.set('ARCHIVED');
-          this.documentCapabilities.set({
-            canEdit: false,
-            canSubmit: false,
-            canApprove: false,
-            canRequestChanges: false,
-            canArchive: false,
-          });
-          this.workflow.update((current) =>
-            current
-              ? {
-                  ...current,
-                  status: 'ARCHIVED',
-                  canEdit: false,
-                  canSubmit: false,
-                  canApprove: false,
-                  canRequestChanges: false,
-                  canArchive: false,
-                }
-              : current,
-          );
-          this.editor?.setEditable(false);
+          this.loadDocument(this.documentId());
+          this.loadWorkflow(this.documentId());
           this.workflowMessage.set('Документ перенесен в архив.');
           this.loadWorkflowEvents(this.documentId());
         },

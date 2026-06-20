@@ -56,6 +56,12 @@ paths:
           name: category
           schema:
             type: string
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum: [mine]
+          description: Restrict results to documents where the current user is owner/author or workflow approver.
       responses:
         "200":
           description: Search results
@@ -71,6 +77,43 @@ paths:
                       $ref: "#/components/schemas/DocumentResponse"
 
   /api/tasks:
+    get:
+      tags: [documents]
+      summary: List tasks
+      operationId: listTasks
+      parameters:
+        - in: query
+          name: assigneeId
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Single status or comma-separated statuses, for example pending,in_review.
+        - in: query
+          name: taskType
+          schema:
+            $ref: "#/components/schemas/TaskType"
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum: [mine]
+          description: Restrict results to tasks where the current user is creator, assignee, or approver.
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tasks]
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaskResponse"
     post:
       tags: [documents]
       summary: Create a new task
@@ -92,6 +135,30 @@ paths:
                 properties:
                   task:
                     $ref: "#/components/schemas/TaskResponse"
+
+  /api/tasks/{taskId}:
+    get:
+      tags: [documents]
+      summary: Get task details
+      operationId: getTaskDetails
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: boardId
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task details with board context and capabilities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailsResponse"
 
   /api/tasks/{taskId}/status:
     patch:
@@ -176,11 +243,15 @@ paths:
               $ref: "#/components/schemas/AddTaskAttachmentsRequest"
       responses:
         "200":
-          description: Attachments added
+          description: Task updated with new attachments
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AddTaskAttachmentsResponse"
+                type: object
+                required: [task]
+                properties:
+                  task:
+                    $ref: "#/components/schemas/TaskResponse"
 
   /api/tasks/{taskId}/attachments/{documentId}:
     delete:
@@ -199,8 +270,50 @@ paths:
           schema:
             type: string
       responses:
-        "204":
-          description: Attachment removed
+        "200":
+          description: Task updated after attachment removal
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [task]
+                properties:
+                  task:
+                    $ref: "#/components/schemas/TaskResponse"
+
+  /api/tasks/{taskId}/comments:
+    post:
+      tags: [documents]
+      summary: Add a comment to a task
+      operationId: addTaskComment
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: boardId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTaskCommentRequest"
+      responses:
+        "201":
+          description: Task updated with a new comment
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [task]
+                properties:
+                  task:
+                    $ref: "#/components/schemas/TaskResponse"
 
   /api/tasks/available-approvers:
     get:
@@ -1717,11 +1830,6 @@ components:
           type: string
           format: date
           description: Optional due date for the task
-        priority:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: Task priority (1=lowest, 5=highest)
         attachmentIds:
           type: array
           items:
@@ -1749,6 +1857,16 @@ components:
           type: string
           maxLength: 1000
           description: Approver comment; required when status is declined
+
+    AddTaskCommentRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Comment text
 
     TaskAttachment:
       type: object
@@ -1795,6 +1913,10 @@ components:
         id:
           type: string
           description: Task identifier
+        boardId:
+          type: string
+          nullable: true
+          description: Board identifier for task details navigation
         title:
           type: string
           description: Task title
@@ -1867,6 +1989,31 @@ components:
       required: [id, title, status, assigneeId, assigneeName, department, groupId, groupName, dueDateLabel, comments, creatorId, creatorName, attachments, taskType, createdAt, updatedAt]
       properties:
         $ref: "#/components/schemas/KanbanTask"
+
+    TaskDetailsResponse:
+      type: object
+      required: [board, task, members, currentUserId, canEdit, canAssign, canApprove, canMoveToReview, canComment]
+      properties:
+        board:
+          $ref: "#/components/schemas/KanbanBoardSummary"
+        task:
+          $ref: "#/components/schemas/KanbanTask"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanBoardMember"
+        currentUserId:
+          type: string
+        canEdit:
+          type: boolean
+        canAssign:
+          type: boolean
+        canApprove:
+          type: boolean
+        canMoveToReview:
+          type: boolean
+        canComment:
+          type: boolean
 
     KanbanBoardMember:
       type: object

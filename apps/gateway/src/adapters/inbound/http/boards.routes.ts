@@ -5,119 +5,19 @@ import {
 } from '../../outbound/grpc/task.client.js';
 import { DocumentServiceClient } from '../../outbound/grpc/document.client.js';
 import type { AuthSession } from '../../../domain/auth.js';
+import { edmsRbacGuard } from './middleware/edms-rbac.guard.js';
+import {
+  asNumber,
+  asString,
+  mapBoardMember,
+  mapBoardSummary,
+  mapKanbanTask,
+  mapTaskComment,
+  mapTaskAttachment,
+} from './task-http.mappers.js';
 
 const grpcClient = new TaskOrchestrationServiceClient();
 const documentClient = new DocumentServiceClient();
-
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
-}
-
-function pickString(source: Record<string, unknown>, keys: string[], fallback = ''): string {
-  for (const key of keys) {
-    const value = source[key];
-    if (typeof value === 'string' && value.length > 0) {
-      return value;
-    }
-  }
-  return fallback;
-}
-
-function asNumber(value: unknown, fallback = 0): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    if (!Number.isNaN(parsed)) {
-      return parsed;
-    }
-  }
-  return fallback;
-}
-
-function mapBoardSummary(board: Record<string, unknown>) {
-  return {
-    id: asString(board['id']),
-    organizationId: asString(board['organization_id']),
-    name: asString(board['name']),
-    description: asString(board['description']),
-    membersCount: asNumber(board['members_count']),
-    tasksCount: asNumber(board['tasks_count']),
-  };
-}
-
-function mapBoardMember(member: Record<string, unknown>) {
-  return {
-    id: pickString(member, ['id']),
-    fullName: pickString(member, ['full_name', 'fullName']),
-    department: pickString(member, ['department']),
-    email: pickString(member, ['email']),
-    boardRole: pickString(member, ['board_role', 'boardRole'], 'MEMBER'),
-    roles: Array.isArray(member['roles']) ? member['roles'].map((role) => String(role)) : [],
-  };
-}
-
-function mapTaskAttachment(attachment: Record<string, unknown>) {
-  return {
-    documentId: pickString(attachment, ['document_id', 'documentId', 'id']),
-    title: pickString(attachment, ['title']),
-    category: pickString(attachment, ['category']),
-    status: pickString(attachment, ['status'], 'DRAFT'),
-  };
-}
-
-function mapTask(
-  task: Record<string, unknown>,
-  membersById: Map<string, { fullName: string; department: string }>,
-) {
-  const assigneeId = pickString(task, ['assignee_user_id', 'assigneeUserId']);
-  const assignee = membersById.get(assigneeId);
-  const rawTaskType = pickString(task, ['task_type', 'taskType'], 'general').toLowerCase();
-  const rawStatus = pickString(task, ['status'], 'PENDING').toUpperCase();
-  const statusMap: Record<string, 'pending' | 'in_review' | 'approved' | 'declined'> = {
-    PENDING: 'pending',
-    IN_REVIEW: 'in_review',
-    APPROVED: 'approved',
-    DECLINED: 'declined',
-  };
-  const status = statusMap[rawStatus] ?? 'pending';
-  const dueDate = pickString(task, ['due_date', 'dueDate']);
-
-  return {
-    id: pickString(task, ['id']),
-    title: pickString(task, ['title']),
-    description: pickString(task, ['description']),
-    status,
-    assigneeId: assigneeId || null,
-    assigneeName: pickString(
-      task,
-      ['assignee_user_name', 'assigneeUserName'],
-      assignee?.fullName || 'Не назначен',
-    ),
-    department: assignee?.department || '',
-    groupId: assigneeId || 'unassigned',
-    groupName: assignee?.fullName || 'Не назначен',
-    dueDateLabel: dueDate || 'Без срока',
-    dueDate: dueDate || undefined,
-    comments: [],
-    creatorId: pickString(task, ['creator_user_id', 'creatorUserId']),
-    creatorName: pickString(task, ['creator_user_name', 'creatorUserName']),
-    attachments: Array.isArray(task['attachments'])
-      ? (task['attachments'] as Array<Record<string, unknown>>).map(mapTaskAttachment)
-      : [],
-    approverId: pickString(task, ['approver_user_id', 'approverUserId']) || undefined,
-    approverName: pickString(task, ['approver_user_name', 'approverUserName']) || undefined,
-    taskType: rawTaskType === 'approval' ? 'approval' : 'general',
-    decision:
-      pickString(task, ['decision']) === 'approved' || pickString(task, ['decision']) === 'declined'
-        ? pickString(task, ['decision'])
-        : undefined,
-    decisionComment: pickString(task, ['decision_comment', 'decisionComment']) || undefined,
-    createdAt: pickString(task, ['created_at', 'createdAt']),
-    updatedAt: pickString(task, ['updated_at', 'updatedAt']),
-  };
-}
 
 function mapGrpcError(reply: FastifyReply, error: unknown) {
   if (!(error instanceof GrpcClientError)) {
@@ -145,7 +45,9 @@ function mapGrpcError(reply: FastifyReply, error: unknown) {
 
 const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // POST /api/boards - Create a task board for an organization
-  fastify.post('/boards', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/boards', {
+    preHandler: [fastify.authenticate, edmsRbacGuard('tasks.create')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const authData = request.session?.auth as AuthSession | undefined;
       if (!authData) {
@@ -191,6 +93,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // GET /api/boards/:boardId - Get board details including tasks and available approvers/documents
   fastify.get<{ Params: { boardId: string } }>(
     '/boards/:boardId',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (request: FastifyRequest<{ Params: { boardId: string } }>, reply: FastifyReply) => {
       try {
         const authData = request.session?.auth as AuthSession | undefined;
@@ -265,11 +170,75 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             { fullName: member.fullName, department: member.department },
           ]),
         );
-        const tasks = Array.isArray(boardPayload['tasks'])
-          ? (boardPayload['tasks'] as Array<Record<string, unknown>>).map((task) =>
-              mapTask(task, membersById),
-            )
+        const rawTasks = Array.isArray(boardPayload['tasks'])
+          ? (boardPayload['tasks'] as Array<Record<string, unknown>>)
           : [];
+        const capabilityEntries = await Promise.all(
+          rawTasks.map(async (task) => {
+            const taskId = asString(task['id']);
+            if (!taskId) {
+              return [taskId, null] as const;
+            }
+
+            try {
+              const details = (await grpcClient.getTaskDetails({
+                actor_user_id: authData.userId,
+                task_id: taskId,
+              })) as Record<string, unknown>;
+
+              return [
+                taskId,
+                {
+                  canEdit: Boolean(details['can_edit'] ?? details['canEdit']),
+                  canAssign: Boolean(details['can_assign'] ?? details['canAssign']),
+                  canMoveToReview: Boolean(
+                    details['can_move_to_review'] ?? details['canMoveToReview'],
+                  ),
+                  canApprove: Boolean(details['can_approve'] ?? details['canApprove']),
+                  canComment: Boolean(details['can_comment'] ?? details['canComment']),
+                },
+              ] as const;
+            } catch (error) {
+              request.log.warn({ error, taskId }, 'failed to fetch task capabilities for board');
+              return [taskId, null] as const;
+            }
+          }),
+        );
+        const capabilitiesByTaskId = new Map(capabilityEntries);
+        const commentsByTaskId = new Map<string, Array<Record<string, unknown>>>();
+
+        try {
+          const activities = (await documentClient.listActivityEvents({
+            actor_user_id: authData.userId,
+            organization_id: asString(boardPayload['organization_id']),
+            limit: 500,
+            offset: 0,
+            query: '',
+          })) as Record<string, unknown>;
+
+          const activityItems = Array.isArray(activities['items'])
+            ? (activities['items'] as Array<Record<string, unknown>>)
+            : [];
+
+          for (const item of activityItems) {
+            const taskId = pickTaskId(item);
+            if (!taskId) {
+              continue;
+            }
+
+            const current = commentsByTaskId.get(taskId) ?? [];
+            commentsByTaskId.set(taskId, [...current, mapTaskComment(item)]);
+          }
+        } catch (error) {
+          request.log.warn({ error }, 'failed to fetch task activity history for board');
+        }
+
+        const tasks = rawTasks.map((task) =>
+          mapKanbanTask(task, membersById, {
+            capabilities: capabilitiesByTaskId.get(asString(task['id'])) ?? undefined,
+            comments: commentsByTaskId.get(asString(task['id'])) ?? [],
+          }),
+        );
         const availableApprovers = Array.isArray(boardPayload['available_approvers'])
           ? (boardPayload['available_approvers'] as Array<Record<string, unknown>>).map(
               mapBoardMember,
@@ -306,6 +275,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     Querystring: { limit?: number; offset?: number };
   }>(
     '/organizations/:organizationId/members',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (
       request: FastifyRequest<{
         Params: { organizationId: string };
@@ -354,6 +326,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
     Body: { userId?: string; role?: 'OWNER' | 'MANAGER' | 'MEMBER' };
   }>(
     '/boards/:boardId/members',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.assign')],
+    },
     async (
       request: FastifyRequest<{
         Params: { boardId: string };
@@ -398,6 +373,9 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // GET /api/boards - List all boards for organization
   fastify.get<{ Querystring: { organizationId?: string; limit?: number; offset?: number } }>(
     '/boards',
+    {
+      preHandler: [fastify.authenticate, edmsRbacGuard('tasks.read')],
+    },
     async (
       request: FastifyRequest<{
         Querystring: { organizationId?: string; limit?: number; offset?: number };
@@ -444,3 +422,8 @@ const routes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
 };
 
 export default routes;
+
+function pickTaskId(item: Record<string, unknown>): string {
+  const taskId = item['task_id'] ?? item['taskId'] ?? item['entity_id'] ?? item['entityId'];
+  return typeof taskId === 'string' ? taskId : '';
+}

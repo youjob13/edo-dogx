@@ -39,6 +39,7 @@ type TaskFilter struct {
 	ActorUserID    *string
 	DocumentID     *string
 	AssignedUserID *string
+	ParticipantUserID *string
 	Status         *model.TaskStatus
 	TaskType       *model.TaskType
 	Limit          *int

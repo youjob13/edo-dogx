@@ -100,6 +100,7 @@ type SearchDocumentsInput struct {
 	ActorUserID string
 	Query       string
 	Category    string
+	PersonalOnly bool
 	Limit       int
 	Offset      int
 }
@@ -197,11 +198,12 @@ func (s *DocumentLifecycleService) GetDocumentVersion(ctx context.Context, input
 
 func (s *DocumentLifecycleService) SearchDocuments(ctx context.Context, input SearchDocumentsInput) ([]model.Document, int64, error) {
 	return s.documents.SearchDocuments(ctx, outbound.SearchDocumentsInput{
-		ActorUserID: input.ActorUserID,
-		Query:       input.Query,
-		Category:    input.Category,
-		Limit:       input.Limit,
-		Offset:      input.Offset,
+		ActorUserID:  input.ActorUserID,
+		Query:        input.Query,
+		Category:     input.Category,
+		PersonalOnly: input.PersonalOnly,
+		Limit:        input.Limit,
+		Offset:       input.Offset,
 	})
 }
 
@@ -440,6 +442,9 @@ func (r *inMemoryDocumentRepository) SearchDocuments(_ context.Context, input ou
 
 	for _, item := range r.items {
 		if strings.TrimSpace(input.ActorUserID) == "" {
+			continue
+		}
+		if input.PersonalOnly && item.OwnerUser != input.ActorUserID {
 			continue
 		}
 		if query != "" {

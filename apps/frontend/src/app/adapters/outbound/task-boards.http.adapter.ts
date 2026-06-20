@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { map, Observable, of, switchMap } from 'rxjs';
 import {
   KanbanBoardDetails,
   KanbanBoardSummary,
@@ -9,12 +9,14 @@ import {
   KanbanTaskCommentPayload,
   KanbanTaskCreatePayload,
   KanbanTaskDetails,
+  KanbanTaskListQuery,
   KanbanTaskMovePayload,
   KanbanTaskUpdateStatusPayload,
   AvailableApproverItem,
   AvailableDocumentItem,
   KanbanBoardCreatePayload,
   OrganizationMember,
+  TaskAttachmentAddPayload,
 } from '../../domain/dashboard/dashboard.models';
 import type { CreateTaskRequest, TaskResponse } from '@edo/types';
 import { TaskBoardsApiPort } from '../../ports/outbound/task-boards-api.port';
@@ -55,6 +57,10 @@ interface GatewayTaskResponse {
   task: KanbanTask;
 }
 
+interface GatewayTasksResponse {
+  tasks: Array<KanbanTask>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
   private readonly http = inject(HttpClient);
@@ -78,6 +84,28 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
     return this.http.get<KanbanBoardDetails>(`${this.apiBaseUrl}/boards/${boardId}`);
   }
 
+  public listTasks(query: KanbanTaskListQuery = {}): Observable<Array<KanbanTask>> {
+    const params: Record<string, string> = {};
+    if (query.scope) {
+      params['scope'] = query.scope;
+    }
+    if (query.status) {
+      params['status'] = query.status;
+    }
+    if (query.taskType) {
+      params['taskType'] = query.taskType;
+    }
+    if (query.assigneeId) {
+      params['assigneeId'] = query.assigneeId;
+    }
+
+    return this.http.get<GatewayTasksResponse>(`${this.apiBaseUrl}/tasks`, { params }).pipe(
+      map((response) =>
+        (response.tasks ?? []).map((task) => this.normalizeTaskDetails(task, [])),
+      ),
+    );
+  }
+
   public getTaskDetails(boardId: string, taskId: string): Observable<KanbanTaskDetails> {
     return this.http
       .get<GatewayTaskDetailsResponse>(`${this.apiBaseUrl}/tasks/${taskId}`, {
@@ -89,7 +117,7 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
             ...response.board,
             id: response.board?.id || boardId,
           },
-          task: response.task,
+          task: this.normalizeTaskDetails(response.task, response.members),
           members: response.members,
           currentUserId: response.currentUserId,
           canEdit: response.canEdit,
@@ -102,23 +130,23 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
   }
 
   public assignTask(
-    _boardId: string,
+    boardId: string,
     taskId: string,
     payload: KanbanTaskAssignPayload,
   ): Observable<KanbanTask> {
     return this.http
       .patch<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/assignee`, payload)
-      .pipe(map((response) => response.task));
+      .pipe(switchMap((response) => this.hydrateTask(boardId, taskId, response.task)));
   }
 
   public moveTask(
-    _boardId: string,
+    boardId: string,
     taskId: string,
     payload: KanbanTaskMovePayload,
   ): Observable<KanbanTask> {
     return this.http
       .patch<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/status`, payload)
-      .pipe(map((response) => response.task));
+      .pipe(switchMap((response) => this.hydrateTask(boardId, taskId, response.task)));
   }
 
   public addTaskComment(
@@ -126,7 +154,35 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
     taskId: string,
     payload: KanbanTaskCommentPayload,
   ): Observable<KanbanTask> {
-    return this.http.post<KanbanTask>(`${this.apiBaseUrl}/tasks/${taskId}/comments`, payload);
+    return this.http
+      .post<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/comments`, payload, {
+        params: { boardId },
+      })
+      .pipe(switchMap((response) => this.hydrateTask(boardId, taskId, response.task)));
+  }
+
+  public addTaskAttachments(
+    boardId: string,
+    taskId: string,
+    payload: TaskAttachmentAddPayload,
+  ): Observable<KanbanTask> {
+    return this.http
+      .post<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/attachments`, payload, {
+        params: { boardId },
+      })
+      .pipe(switchMap((response) => this.hydrateTask(boardId, taskId, response.task)));
+  }
+
+  public removeTaskAttachment(
+    boardId: string,
+    taskId: string,
+    documentId: string,
+  ): Observable<KanbanTask> {
+    return this.http
+      .delete<GatewayTaskResponse>(`${this.apiBaseUrl}/tasks/${taskId}/attachments/${documentId}`, {
+        params: { boardId },
+      })
+      .pipe(switchMap((response) => this.hydrateTask(boardId, taskId, response.task)));
   }
 
   public createTask(payload: KanbanTaskCreatePayload): Observable<TaskResponse> {
@@ -140,7 +196,6 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
       approverName: payload.approverName,
       taskType: payload.taskType,
       dueDate: payload.dueDate ? new Date(payload.dueDate) : undefined,
-      priority: payload.priority,
       attachmentIds: payload.attachmentIds,
     };
 
@@ -198,5 +253,74 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
         userId,
       },
     );
+  }
+
+  private normalizeTaskDetails(
+    task: KanbanTask,
+    members: Array<{ id: string; fullName: string; department: string }>,
+  ): KanbanTask {
+    const assigneeId = task.assigneeId ?? null;
+    const assignee = assigneeId ? members.find((member) => member.id === assigneeId) : undefined;
+    const dueDateLabel = task.dueDateLabel || this.formatDueDateLabel(task.dueDate);
+
+    return {
+      ...task,
+      boardId: task.boardId,
+      assigneeId,
+      assigneeName: task.assigneeName || assignee?.fullName || 'Не назначен',
+      department: task.department || assignee?.department || '',
+      groupId: task.groupId || assigneeId || 'unassigned',
+      groupName: task.groupName || assignee?.fullName || 'Не назначен',
+      dueDateLabel,
+      comments: Array.isArray(task.comments) ? task.comments : [],
+      attachments: Array.isArray(task.attachments) ? task.attachments : [],
+    };
+  }
+
+  private formatDueDateLabel(dueDate: KanbanTask['dueDate']): string {
+    if (!dueDate) {
+      return 'Без срока';
+    }
+
+    if (dueDate instanceof Date) {
+      return dueDate.toISOString();
+    }
+
+    return dueDate;
+  }
+
+  private hydrateTask(
+    boardId: string,
+    taskId: string,
+    task: Partial<KanbanTask> | null | undefined,
+  ): Observable<KanbanTask> {
+    if (!boardId || !taskId) {
+      return of(
+        this.normalizeTaskDetails(
+          {
+            ...(task ?? {}),
+            id: task?.id || taskId,
+            title: task?.title || '',
+            status: task?.status || 'pending',
+            assigneeId: task?.assigneeId ?? null,
+            assigneeName: task?.assigneeName || 'Не назначен',
+            department: task?.department || '',
+            groupId: task?.groupId || (task?.assigneeId ?? 'unassigned'),
+            groupName: task?.groupName || task?.assigneeName || 'Не назначен',
+            dueDateLabel: task?.dueDateLabel || this.formatDueDateLabel(task?.dueDate),
+            comments: Array.isArray(task?.comments) ? task.comments : [],
+            creatorId: task?.creatorId || '',
+            creatorName: task?.creatorName || '',
+            attachments: Array.isArray(task?.attachments) ? task.attachments : [],
+            taskType: task?.taskType || 'general',
+            createdAt: task?.createdAt || new Date(),
+            updatedAt: task?.updatedAt || new Date(),
+          } as KanbanTask,
+          [],
+        ),
+      );
+    }
+
+    return this.getTaskDetails(boardId, taskId).pipe(map((details) => details.task));
   }
 }

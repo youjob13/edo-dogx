@@ -131,6 +131,25 @@ CREATE TABLE IF NOT EXISTS task_attachments (
     CONSTRAINT uq_task_attachments_task_document UNIQUE (task_id, document_id)
 );
 
+WITH duplicate_attachments AS (
+    SELECT id
+    FROM (
+        SELECT
+            id,
+            ROW_NUMBER() OVER (
+                PARTITION BY document_id
+                ORDER BY created_at ASC, id ASC
+            ) AS row_num
+        FROM task_attachments
+    ) ranked
+    WHERE ranked.row_num > 1
+)
+DELETE FROM task_attachments
+WHERE id IN (SELECT id FROM duplicate_attachments);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_task_attachments_document_id
+    ON task_attachments(document_id);
+
 CREATE TABLE IF NOT EXISTS organization_members (
     organization_id TEXT NOT NULL,
     user_id TEXT NOT NULL,

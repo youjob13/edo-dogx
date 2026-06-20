@@ -27,17 +27,15 @@
   </div>
 
   <div class="dashboard-home__main">
-    <edo-dogx-card title="Последние документы" subtitle="Действия: предпросмотр, редактирование, скачивание">
+    <edo-dogx-card title="Последние документы и задачи" subtitle="Только связанные с вами документы и активные задачи">
       <edo-dogx-data-table
         [columns]="recentDocumentColumns"
         [rows]="recentDocumentRows()"
         [sort]="documentSort()"
-        [actionMenuItems]="documentMenuItems"
         rowActionLabel="Открыть"
-        emptyText="Документы не найдены"
+        emptyText="Связанные документы и задачи не найдены"
         (sortChanged)="onRecentDocumentSortChanged($event)"
         (rowAction)="onRecentDocumentAction($event)"
-        (rowMenuAction)="onRecentDocumentMenuAction($event)"
       />
     </edo-dogx-card>
 
