@@ -10,6 +10,9 @@ import { notificationSseHub } from './notifications.sse-hub.js';
 const documentClient = new DocumentServiceClient();
 const notificationClient = new NotificationServiceClient();
 const personalDocumentsCategoryMarker = '__mine__';
+export const productCategory = 'PRODUCT';
+export const mvpMetaKey = 'edoMvp';
+export type MvpDocumentType = 'GENERAL' | 'PRODUCT_PASSPORT' | 'CERTIFICATE';
 
 interface DocumentCapabilities {
   canEdit: boolean;
@@ -18,6 +21,27 @@ interface DocumentCapabilities {
   canRequestChanges: boolean;
   canArchive: boolean;
 };
+
+export interface MvpDocumentMetadata {
+  documentType: MvpDocumentType;
+  productId?: string;
+  productName?: string;
+  productModel?: string;
+  certificateNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
+}
+
+interface DocumentPayloadWithMvp {
+  documentType?: MvpDocumentType;
+  productId?: string;
+  productName?: string;
+  productModel?: string;
+  certificateNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  contentDocument?: Record<string, unknown>;
+}
 
 type SessionAuthView = { userId?: string; fullName?: string; roles?: string[] } | undefined;
 
@@ -137,6 +161,131 @@ function enrichSearchOwnerNames(
   };
 }
 
+function parseContentDocument(payload: Record<string, unknown>): Record<string, unknown> | undefined {
+  const raw = payload['content_document_json'] ?? payload['contentDocumentJson'] ?? payload['contentDocument'];
+  if (!raw) {
+    return undefined;
+  }
+  if (typeof raw === 'object') {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw !== 'string') {
+    return undefined;
+  }
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getMvpMetadataFromContent(contentDocument: Record<string, unknown> | undefined): MvpDocumentMetadata {
+  const attrs = contentDocument?.['attrs'];
+  const meta =
+    attrs && typeof attrs === 'object'
+      ? (attrs as Record<string, unknown>)[mvpMetaKey]
+      : undefined;
+  const value = meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {};
+  const rawType = typeof value['documentType'] === 'string' ? value['documentType'] : 'GENERAL';
+  const documentType: MvpDocumentType =
+    rawType === 'PRODUCT_PASSPORT' || rawType === 'CERTIFICATE' ? rawType : 'GENERAL';
+
+  return {
+    documentType,
+    productId: typeof value['productId'] === 'string' ? value['productId'] : undefined,
+    productName: typeof value['productName'] === 'string' ? value['productName'] : undefined,
+    productModel: typeof value['productModel'] === 'string' ? value['productModel'] : undefined,
+    certificateNumber:
+      typeof value['certificateNumber'] === 'string' ? value['certificateNumber'] : undefined,
+    issueDate: typeof value['issueDate'] === 'string' ? value['issueDate'] : undefined,
+    expiryDate: typeof value['expiryDate'] === 'string' ? value['expiryDate'] : undefined,
+  };
+}
+
+export function getCertificateStatus(expiryDate: string | undefined): string | undefined {
+  if (!expiryDate) {
+    return undefined;
+  }
+  const expiry = new Date(`${expiryDate}T00:00:00Z`).getTime();
+  if (!Number.isFinite(expiry)) {
+    return undefined;
+  }
+  const now = Date.now();
+  if (expiry < now) {
+    return 'EXPIRED';
+  }
+  const daysLeft = Math.ceil((expiry - now) / 86_400_000);
+  return daysLeft <= 30 ? 'EXPIRING_SOON' : 'VALID';
+}
+
+export function mergeMvpMetadata(
+  contentDocument: Record<string, unknown> | undefined,
+  metadata: MvpDocumentMetadata,
+): Record<string, unknown> {
+  const base = contentDocument ?? { type: 'doc', content: [{ type: 'paragraph' }] };
+  const attrs = base['attrs'] && typeof base['attrs'] === 'object'
+    ? { ...(base['attrs'] as Record<string, unknown>) }
+    : {};
+  return {
+    ...base,
+    attrs: {
+      ...attrs,
+      [mvpMetaKey]: metadata,
+    },
+  };
+}
+
+function normalizeMvpDocumentPayload(body: DocumentPayloadWithMvp): { contentDocument?: Record<string, unknown>; error?: string } {
+  const documentType = body.documentType ?? getMvpMetadataFromContent(body.contentDocument).documentType;
+  const metadata: MvpDocumentMetadata = {
+    ...getMvpMetadataFromContent(body.contentDocument),
+    documentType,
+    productId: body.productId?.trim() || getMvpMetadataFromContent(body.contentDocument).productId,
+    productName: body.productName?.trim() || getMvpMetadataFromContent(body.contentDocument).productName,
+    productModel: body.productModel?.trim() || getMvpMetadataFromContent(body.contentDocument).productModel,
+    certificateNumber:
+      body.certificateNumber?.trim() || getMvpMetadataFromContent(body.contentDocument).certificateNumber,
+    issueDate: body.issueDate?.trim() || getMvpMetadataFromContent(body.contentDocument).issueDate,
+    expiryDate: body.expiryDate?.trim() || getMvpMetadataFromContent(body.contentDocument).expiryDate,
+  };
+
+  if ((documentType === 'PRODUCT_PASSPORT' || documentType === 'CERTIFICATE') && !metadata.productId) {
+    return { error: 'productId is required for product passports and certificates' };
+  }
+  if (documentType === 'CERTIFICATE') {
+    if (!metadata.certificateNumber) {
+      return { error: 'certificateNumber is required for certificates' };
+    }
+    if (!metadata.issueDate) {
+      return { error: 'issueDate is required for certificates' };
+    }
+    if (!metadata.expiryDate) {
+      return { error: 'expiryDate is required for certificates' };
+    }
+  }
+
+  return { contentDocument: mergeMvpMetadata(body.contentDocument, metadata) };
+}
+
+export function enrichMvpMetadata<T extends Record<string, unknown>>(payload: T): T {
+  const content = parseContentDocument(payload);
+  const metadata = getMvpMetadataFromContent(content);
+  const certificateStatus =
+    metadata.documentType === 'CERTIFICATE' ? getCertificateStatus(metadata.expiryDate) : undefined;
+
+  return {
+    ...payload,
+    documentType: metadata.documentType,
+    productId: metadata.productId,
+    productName: metadata.productName,
+    productModel: metadata.productModel,
+    certificateNumber: metadata.certificateNumber,
+    issueDate: metadata.issueDate,
+    expiryDate: metadata.expiryDate,
+    certificateStatus,
+  };
+}
+
 function pickWorkflowUserId(payload: unknown, keys: string[]): string | undefined {
   if (!payload || typeof payload !== 'object') {
     return undefined;
@@ -225,7 +374,7 @@ function mapGrpcError(reply: { code: (statusCode: number) => { send: (payload: {
 }
 
 const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-  fastify.post<{ Body: { title: string; category: string; contentDocument?: Record<string, unknown> } }>(
+  fastify.post<{ Body: { title: string; category: string } & DocumentPayloadWithMvp }>(
     '/',
     {
       preHandler: [fastify.authenticate, edmsRbacGuard('documents.create')],
@@ -236,6 +385,13 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           properties: {
             title: { type: 'string', minLength: 1 },
             category: { type: 'string', minLength: 1 },
+            documentType: { type: 'string' },
+            productId: { type: 'string' },
+            productName: { type: 'string' },
+            productModel: { type: 'string' },
+            certificateNumber: { type: 'string' },
+            issueDate: { type: 'string' },
+            expiryDate: { type: 'string' },
             contentDocument: { type: 'object', additionalProperties: true },
           },
         },
@@ -251,7 +407,11 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       }
 
       try {
-        const contentDocumentJSON = toContentDocumentJSON(contentDocument);
+        const normalized = normalizeMvpDocumentPayload(request.body);
+        if (normalized.error) {
+          return reply.code(400).send({ error: normalized.error });
+        }
+        const contentDocumentJSON = toContentDocumentJSON(normalized.contentDocument ?? contentDocument);
         const response = await documentClient.createDraft({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           title: title.trim(),
@@ -261,7 +421,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.code(201).send(
           response && typeof response === 'object'
             ? enrichDocumentCapabilities(
-                enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth),
+                enrichMvpMetadata(enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)),
                 request.session.auth,
               )
             : response,
@@ -275,7 +435,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
   fastify.patch<{
     Params: { documentId: string };
-    Body: { title: string; expectedVersion: number; contentDocument?: Record<string, unknown> };
+    Body: { title: string; expectedVersion: number } & DocumentPayloadWithMvp;
   }>(
     '/:documentId',
     {
@@ -294,6 +454,13 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           properties: {
             title: { type: 'string', minLength: 1 },
             expectedVersion: { type: 'integer', minimum: 1 },
+            documentType: { type: 'string' },
+            productId: { type: 'string' },
+            productName: { type: 'string' },
+            productModel: { type: 'string' },
+            certificateNumber: { type: 'string' },
+            issueDate: { type: 'string' },
+            expiryDate: { type: 'string' },
             contentDocument: { type: 'object', additionalProperties: true },
           },
         },
@@ -314,7 +481,11 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       }
 
       try {
-        const contentDocumentJSON = toContentDocumentJSON(contentDocument);
+        const normalized = normalizeMvpDocumentPayload(request.body);
+        if (normalized.error) {
+          return reply.code(400).send({ error: normalized.error });
+        }
+        const contentDocumentJSON = toContentDocumentJSON(normalized.contentDocument ?? contentDocument);
         const response = await documentClient.updateDraft({
           actor_user_id: request.session.auth?.userId ?? 'gateway-user',
           document_id: documentId,
@@ -325,7 +496,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.send(
           response && typeof response === 'object'
             ? enrichDocumentCapabilities(
-                enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth),
+                enrichMvpMetadata(enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)),
                 request.session.auth,
               )
             : response,
@@ -365,7 +536,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         return reply.send(
           response && typeof response === 'object'
             ? enrichDocumentCapabilities(
-                enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth),
+                enrichMvpMetadata(enrichOwnerNameWithSession(response as Record<string, unknown>, request.session.auth)),
                 request.session.auth,
               )
             : response,
@@ -381,6 +552,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
     Querystring: {
       q?: string;
       category?: string;
+      documentType?: string;
       scope?: string;
       limit?: number;
       offset?: number;
@@ -395,6 +567,7 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           properties: {
             q: { type: 'string' },
             category: { type: 'string' },
+            documentType: { type: 'string' },
             scope: { type: 'string', enum: ['mine'] },
             limit: { type: 'integer', minimum: 1, maximum: 100 },
             offset: { type: 'integer', minimum: 0 },
@@ -407,6 +580,8 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       const category =
         typeof request.query.category === 'string' ? request.query.category : undefined;
       const personalOnly = request.query.scope === 'mine';
+      const documentType =
+        typeof request.query.documentType === 'string' ? request.query.documentType : undefined;
       const grpcCategory = personalOnly
         ? category
           ? `${personalDocumentsCategoryMarker}:${category}`
@@ -435,11 +610,25 @@ const documentsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
         const payload = enrichSearchOwnerNames(response as Record<string, unknown>, request.session.auth);
         const items = Array.isArray(payload['items'])
-          ? payload['items'].map((item) =>
-              item && typeof item === 'object'
-                ? enrichDocumentCapabilities(item as Record<string, unknown>, request.session.auth)
-                : item,
-            )
+          ? payload['items']
+              .map((item) =>
+                item && typeof item === 'object'
+                  ? enrichDocumentCapabilities(
+                      enrichMvpMetadata(item as Record<string, unknown>),
+                      request.session.auth,
+                    )
+                  : item,
+              )
+              .filter((item) =>
+                documentType && item && typeof item === 'object'
+                  ? (item as Record<string, unknown>)['documentType'] === documentType
+                  : true,
+              )
+              .filter((item) =>
+                category === productCategory || !item || typeof item !== 'object'
+                  ? true
+                  : (item as Record<string, unknown>)['category'] !== productCategory,
+              )
           : payload['items'];
 
         return reply.send({

@@ -32,7 +32,9 @@ import {
 } from '../../../../design-system/ui-kit';
 import {
   DashboardDocumentCategory,
+  DashboardDocumentType,
   DashboardEditorControlProfile,
+  DashboardProduct,
   DashboardRichContentDocument,
 } from '../../../../domain/dashboard/dashboard.models';
 import {
@@ -89,6 +91,13 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
   protected readonly categoryControl = new FormControl<DashboardDocumentCategory>('GENERAL', {
     nonNullable: true,
   });
+  protected readonly documentTypeControl = new FormControl<DashboardDocumentType>('GENERAL', {
+    nonNullable: true,
+  });
+  protected readonly productIdControl = new FormControl('', { nonNullable: true });
+  protected readonly certificateNumberControl = new FormControl('', { nonNullable: true });
+  protected readonly issueDateControl = new FormControl('', { nonNullable: true });
+  protected readonly expiryDateControl = new FormControl('', { nonNullable: true });
 
   protected readonly templateControl = new FormControl('blank_ru', {
     nonNullable: true,
@@ -100,6 +109,7 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
   protected readonly disabledControls = signal<Array<string>>([]);
   protected readonly toolbarState = signal(0);
   protected readonly templates = DASHBOARD_DOCUMENT_TEMPLATES;
+  protected readonly products = signal<Array<DashboardProduct>>([]);
   protected readonly toolbarGroups = DASHBOARD_EDITOR_TOOLBAR_GROUPS;
 
   protected readonly actions: Record<DashboardEditorToolbarActionId, { icon: string }> = {
@@ -140,6 +150,19 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
     }
 
     const contentDocument = this.editor?.getJSON() as DashboardRichContentDocument | undefined;
+    const documentType = this.documentTypeControl.value;
+    const selectedProduct = this.products().find((product) => product.id === this.productIdControl.value);
+    if ((documentType === 'PRODUCT_PASSPORT' || documentType === 'CERTIFICATE') && !this.productIdControl.value) {
+      this.message.set('Выберите изделие для паспорта или сертификата.');
+      return;
+    }
+    if (
+      documentType === 'CERTIFICATE' &&
+      (!this.certificateNumberControl.value || !this.issueDateControl.value || !this.expiryDateControl.value)
+    ) {
+      this.message.set('Для сертификата укажите номер, дату выдачи и срок действия.');
+      return;
+    }
     const hasContent = Boolean(this.editor && !this.editor.isEmpty);
     if (!hasContent) {
       this.message.set('Добавьте содержимое документа перед сохранением.');
@@ -153,6 +176,13 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
       .createDocument({
         title: this.titleControl.value.trim(),
         category: this.categoryControl.value,
+        documentType,
+        productId: this.productIdControl.value || undefined,
+        productName: selectedProduct?.name,
+        productModel: selectedProduct?.model,
+        certificateNumber: this.certificateNumberControl.value || undefined,
+        issueDate: this.issueDateControl.value || undefined,
+        expiryDate: this.expiryDateControl.value || undefined,
         contentDocument,
       })
       .pipe(
@@ -274,6 +304,10 @@ export class DashboardDocumentCreateComponent implements AfterViewInit, OnDestro
     });
 
     this.loadTemplate(this.templateControl.value);
+    this.documentUseCases
+      .getProducts()
+      .pipe(take(1))
+      .subscribe({ next: (items) => this.products.set(items), error: () => this.products.set([]) });
     this.loadEditorControlProfile(this.categoryControl.value);
     this.categoryControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))

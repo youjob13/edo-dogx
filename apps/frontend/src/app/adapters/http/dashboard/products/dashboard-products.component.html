@@ -1,0 +1,115 @@
+<edo-dogx-page-section
+  title="Изделия"
+  subtitle="Связь изделий с паспортами и сертификатами"
+>
+  <div class="dashboard-products">
+    <edo-dogx-card title="Новое изделие" subtitle="Минимальная карточка продукции Guar-S">
+      <form class="dashboard-products__form" (submit)="$event.preventDefault(); createProduct()">
+        <edo-dogx-input label="Наименование" [control]="nameControl" [errorText]="'Укажите изделие'" />
+        <edo-dogx-input label="Модель" [control]="modelControl" [errorText]="'Укажите модель'" />
+        <edo-dogx-input label="Тип" [control]="typeControl" [errorText]="'Укажите тип'" />
+        <label>
+          <span>Описание</span>
+          <textarea rows="3" [formControl]="descriptionControl"></textarea>
+        </label>
+        <edo-dogx-button
+          label="Создать изделие"
+          appearance="primary"
+          size="m"
+          [disabled]="loading()"
+          (pressed)="createProduct()"
+        />
+      </form>
+    </edo-dogx-card>
+
+    <edo-dogx-card title="Список изделий" subtitle="Выберите изделие, чтобы увидеть документы">
+      <div class="dashboard-products__list">
+        @for (product of products(); track product.id) {
+          <a [routerLink]="['/dashboard/products', product.id]" class="dashboard-products__item">
+            <strong>{{ product.name }}</strong>
+            <span>{{ product.model }} · {{ product.type }}</span>
+          </a>
+        } @empty {
+          <p>Изделия пока не созданы.</p>
+        }
+      </div>
+    </edo-dogx-card>
+
+    @if (selectedProduct(); as product) {
+      <edo-dogx-card
+        class="dashboard-products__details-card"
+        title="Документы изделия"
+        subtitle="Паспорта и сертификаты выбранного изделия"
+      >
+        <div class="dashboard-products__details">
+          <header class="dashboard-products__hero">
+            <div class="dashboard-products__hero-copy">
+              <p class="dashboard-products__eyebrow">Карточка изделия</p>
+              <h2>{{ product.name }}</h2>
+              <p class="dashboard-products__hero-meta">{{ product.model }} · {{ product.type }}</p>
+              <p class="dashboard-products__hero-description">
+                {{ product.description || 'Описание пока не добавлено. Заполните карточку изделия, чтобы команда быстрее понимала контекст и назначение документации.' }}
+              </p>
+            </div>
+
+            <div class="dashboard-products__stats" aria-label="Сводка по документам">
+              <article class="dashboard-products__stat">
+                <span class="dashboard-products__stat-value">{{ selectedDocuments().length }}</span>
+                <span class="dashboard-products__stat-label">Всего документов</span>
+              </article>
+              <article class="dashboard-products__stat">
+                <span class="dashboard-products__stat-value">{{ certificateDocuments().length }}</span>
+                <span class="dashboard-products__stat-label">Сертификатов</span>
+              </article>
+              <article class="dashboard-products__stat">
+                <span class="dashboard-products__stat-value">{{ validCertificateCount() }}</span>
+                <span class="dashboard-products__stat-label">Действующих</span>
+              </article>
+            </div>
+          </header>
+
+          <div class="dashboard-products__table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Документ</th>
+                  <th>Тип</th>
+                  <th>Сертификат</th>
+                  <th>Срок</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (document of selectedDocuments(); track document.id) {
+                  <tr>
+                    <td>
+                      <a [routerLink]="['/dashboard/documents', document.id, 'edit']">{{ document.title }}</a>
+                    </td>
+                    <td>{{ document.documentType === 'CERTIFICATE' ? 'Сертификат' : 'Паспорт изделия' }}</td>
+                    <td>{{ document.certificateNumber || '—' }}</td>
+                    <td>{{ document.expiryDate || '—' }}</td>
+                    <td>
+                      @if (document.documentType === 'CERTIFICATE') {
+                        <edo-dogx-status-chip [label]="certificateLabel(document)" [tone]="document.certificateStatus === 'EXPIRED' ? 'error' : document.certificateStatus === 'EXPIRING_SOON' ? 'warning' : 'success'" />
+                      } @else {
+                        —
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5">Связанные документы пока не созданы.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </edo-dogx-card>
+    }
+  </div>
+
+  @if (message()) {
+    <p class="dashboard-products__message" aria-live="polite">{{ message() }}</p>
+  }
+</edo-dogx-page-section>

@@ -2,7 +2,7 @@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ButtonComponent,
   CardComponent,
@@ -18,11 +18,13 @@ import {
   DashboardEditDocumentPayload,
   DashboardExportFormat,
   DashboardPreviewDocument,
+  DashboardRichContentDocument,
   DashboardDocumentCategory,
   DocumentItem,
 } from '../../../../domain/dashboard/dashboard.models';
 import { debounceTime, filter, finalize, forkJoin, map, merge, switchMap, take, throwError, timer } from 'rxjs';
 import { DocumentUseCases } from '../../../../application/dashboard/document.use-cases';
+import { buildDocumentPreviewBlocks } from '../dashboard-document-preview';
 
 @Component({
   selector: 'edo-dogx-dashboard-documents',
@@ -35,6 +37,7 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
     DrawerComponent,
     ModalComponent,
     ButtonComponent,
+    RouterLink,
     DatePipe
   ],
   templateUrl: './dashboard-documents.component.html',
@@ -118,6 +121,12 @@ export class DashboardDocumentsComponent {
     return this.documents().find((item) => item.id === selectedId) ?? null;
   });
 
+  protected readonly previewBlocks = computed(() => {
+    const preview = this.previewDocument();
+
+    return buildDocumentPreviewBlocks(preview?.contentDocument, preview?.body ?? '');
+  });
+
   protected openCreatePage(): void {
     this.router.navigate(['/dashboard/documents/new']);
   }
@@ -196,19 +205,14 @@ export class DashboardDocumentsComponent {
   protected previewVersion(documentId: string): void {
     const version = this.selectedVersion(documentId);
     this.documentUseCases.getDocumentVersion(documentId, version).pipe(take(1)).subscribe((payload) => {
-      const raw = String(payload['content_document_json'] ?? payload['contentDocumentJson'] ?? '{}');
-      let contentDocument: DashboardPreviewDocument['contentDocument'] | undefined;
-      try {
-        contentDocument = JSON.parse(raw) as DashboardPreviewDocument['contentDocument'];
-      } catch {
-        contentDocument = undefined;
-      }
+      const contentDocument = this.parseVersionContentDocument(payload);
 
       const base = this.documents().find((item) => item.id === documentId);
       if (!base) {
         return;
       }
 
+      this.selectedDocumentId.set(documentId);
       this.previewDocument.set({
         id: documentId,
         title: String(payload['title'] ?? base.title),
@@ -216,7 +220,7 @@ export class DashboardDocumentsComponent {
         status: base.status,
         version,
         updatedAt: String(payload['created_at'] ?? base.updatedAt),
-        body: contentDocument ? JSON.stringify(contentDocument) : 'Не удалось загрузить содержимое документа.',
+        body: contentDocument ? '' : 'Не удалось загрузить содержимое документа.',
         contentDocument,
         contentDocumentJson: contentDocument ? JSON.stringify(contentDocument, null, 2) : undefined,
         ownerUserId: base.ownerUserId,
@@ -348,11 +352,30 @@ export class DashboardDocumentsComponent {
     return 'updatedAt';
   }
 
+  private parseVersionContentDocument(payload: Record<string, unknown>): DashboardRichContentDocument | undefined {
+    const candidate = payload['content_document_json'] ?? payload['contentDocumentJson'] ?? payload['contentDocument'];
+
+    if (typeof candidate === 'object' && candidate !== null) {
+      return candidate as DashboardRichContentDocument;
+    }
+
+    if (typeof candidate !== 'string') {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(candidate) as DashboardRichContentDocument;
+    } catch {
+      return undefined;
+    }
+  }
+
   protected getCategoryLabel(category: DashboardDocumentCategory): string {
     const labels: Record<DashboardDocumentCategory, string> = {
      HR: 'Кадровый',
 FINANCE: 'Финансы',
 GENERAL: 'Общее',
+PRODUCT: 'Изделие',
     };
 
     return labels[category];
@@ -379,7 +402,7 @@ GENERAL: 'Общее',
   }
 
   private isCategory(value: string | null): value is DashboardDocumentCategory {
-    return value === 'HR' || value === 'FINANCE' || value === 'GENERAL';
+    return value === 'HR' || value === 'FINANCE' || value === 'GENERAL' || value === 'PRODUCT';
   }
 
   private downloadDocumentExport(documentId: string, format: DashboardExportFormat, sourceVersion?: number): void {
@@ -441,4 +464,3 @@ GENERAL: 'Общее',
     return value === 'title' || value === 'categoryLabel' || value === 'modifiedAtLabel';
   }
 }
-

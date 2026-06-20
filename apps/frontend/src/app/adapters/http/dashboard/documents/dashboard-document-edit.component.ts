@@ -28,11 +28,14 @@ import { DocumentUseCases } from '../../../../application/dashboard/document.use
 import { TaskBoardUseCases } from '../../../../application/dashboard/task-board.use-cases';
 import {
   DashboardDocumentCapabilities,
+  DashboardDocumentCategory,
+  DashboardDocumentType,
   DashboardDocumentStatus,
   DashboardEditorControlProfile,
   DashboardExportFormat,
   DashboardExportStatus,
   DashboardRichContentDocument,
+  DashboardProduct,
   DashboardWorkflowEvent,
   DashboardWorkflowInstance,
   OrganizationMember,
@@ -91,6 +94,13 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     nonNullable: true,
     validators: [Validators.maxLength(1000)],
   });
+  protected readonly documentTypeControl = new FormControl<DashboardDocumentType>('GENERAL', {
+    nonNullable: true,
+  });
+  protected readonly productIdControl = new FormControl('', { nonNullable: true });
+  protected readonly certificateNumberControl = new FormControl('', { nonNullable: true });
+  protected readonly issueDateControl = new FormControl('', { nonNullable: true });
+  protected readonly expiryDateControl = new FormControl('', { nonNullable: true });
 
   protected readonly loading = signal(false);
   protected readonly workflowActionLoading = signal(false);
@@ -109,10 +119,11 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     nonNullable: true,
   });
   protected readonly exportMessage = signal('');
-  protected readonly category = signal<'HR' | 'FINANCE' | 'GENERAL'>('GENERAL');
+  protected readonly category = signal<DashboardDocumentCategory>('GENERAL');
   protected readonly workflow = signal<DashboardWorkflowInstance | null>(null);
   protected readonly workflowEvents = signal<Array<DashboardWorkflowEvent>>([]);
   protected readonly approvers = signal<Array<OrganizationMember>>([]);
+  protected readonly products = signal<Array<DashboardProduct>>([]);
   protected readonly documentCapabilities = signal<DashboardDocumentCapabilities>({
     canEdit: false,
     canSubmit: false,
@@ -195,6 +206,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
       this.loadWorkflow(documentId);
       this.loadWorkflowEvents(documentId);
       this.loadApprovers();
+      this.loadProducts();
     }
 
     if (autoOpenExport) {
@@ -272,6 +284,13 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
         title: this.titleControl.value.trim(),
         contentDocument: this.editor?.getJSON() as DashboardRichContentDocument,
         expectedVersion: this.version(),
+        documentType: this.documentTypeControl.value,
+        productId: this.productIdControl.value || undefined,
+        productName: this.products().find((product) => product.id === this.productIdControl.value)?.name,
+        productModel: this.products().find((product) => product.id === this.productIdControl.value)?.model,
+        certificateNumber: this.certificateNumberControl.value || undefined,
+        issueDate: this.issueDateControl.value || undefined,
+        expiryDate: this.expiryDateControl.value || undefined,
       })
       .pipe(
         take(1),
@@ -718,6 +737,11 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
         next: (document) => {
           this.titleControl.setValue(document.title, { emitEvent: false });
           this.category.set(document.category);
+          this.documentTypeControl.setValue(document.documentType ?? 'GENERAL', { emitEvent: false });
+          this.productIdControl.setValue(document.productId ?? '', { emitEvent: false });
+          this.certificateNumberControl.setValue(document.certificateNumber ?? '', { emitEvent: false });
+          this.issueDateControl.setValue(document.issueDate ?? '', { emitEvent: false });
+          this.expiryDateControl.setValue(document.expiryDate ?? '', { emitEvent: false });
           this.documentStatus.set(document.status);
           this.documentCapabilities.set(this.extractCapabilities(document));
           this.version.set(document.version);
@@ -728,6 +752,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
           this.initialEditorSnapshot = JSON.stringify(this.initialContent);
           this.editor?.commands.setContent(this.initialContent);
           this.editor?.setEditable(document.canEdit);
+          this.syncDocumentFormEditability(document.canEdit);
           this.loadEditorControlProfile(document.category);
           this.titleControl.markAsPristine();
         },
@@ -736,6 +761,13 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
           this.message.set(message);
         },
       });
+  }
+
+  private loadProducts(): void {
+    this.documentUseCases
+      .getProducts()
+      .pipe(take(1))
+      .subscribe({ next: (items) => this.products.set(items), error: () => this.products.set([]) });
   }
 
   private loadWorkflow(documentId: string): void {
@@ -811,6 +843,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     this.workflow.set(workflow);
     this.documentStatus.set(workflow.status);
     this.editor?.setEditable(workflow.canEdit);
+    this.syncDocumentFormEditability(workflow.canEdit);
     if (workflow.approverUserId && this.approverControl.value !== workflow.approverUserId) {
       this.approverControl.setValue(workflow.approverUserId);
     }
@@ -819,7 +852,7 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
     }
   }
 
-  private loadEditorControlProfile(category: 'HR' | 'FINANCE' | 'GENERAL'): void {
+  private loadEditorControlProfile(category: DashboardDocumentCategory): void {
     this.documentUseCases
       .getEditorControlProfile('CATEGORY', category)
       .pipe(take(1))
@@ -854,6 +887,25 @@ export class DashboardDocumentEditComponent implements UnsavedChangesAware, Afte
   private applyControlProfile(profile: DashboardEditorControlProfile): void {
     this.activeControls.set(Array.isArray(profile.enabledControls) ? profile.enabledControls : []);
     this.disabledControls.set(Array.isArray(profile.disabledControls) ? profile.disabledControls : []);
+  }
+
+  private syncDocumentFormEditability(canEdit: boolean): void {
+    const controls = [
+      this.titleControl,
+      this.documentTypeControl,
+      this.productIdControl,
+      this.certificateNumberControl,
+      this.issueDateControl,
+      this.expiryDateControl,
+    ];
+
+    for (const control of controls) {
+      if (canEdit) {
+        control.enable({ emitEvent: false });
+      } else {
+        control.disable({ emitEvent: false });
+      }
+    }
   }
 
   private promptForUrl(message: string): string | null {

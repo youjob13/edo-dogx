@@ -24,6 +24,10 @@
   outline: none;
 }
 
+.edo-ui-kit-drawer--wide {
+  width: min(100%, 64rem);
+}
+
 header {
   min-height: 3rem;
   border-bottom: 1px solid var(--edo-ui-outline);

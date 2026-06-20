@@ -6,6 +6,7 @@ import {
   DashboardArchiveDocumentPayload,
   DashboardArchiveDocumentResult,
   DashboardCreateDocumentPayload,
+  DashboardCreateProductPayload,
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
   DashboardEditorControlProfile,
@@ -16,6 +17,7 @@ import {
   DashboardRequestWorkflowChangesPayload,
   DashboardSubmitWorkflowPayload,
   DashboardPreviewDocument,
+  DashboardProduct,
   DashboardQuery,
   DashboardWorkflowEvent,
   DashboardWorkflowInstance,
@@ -32,6 +34,9 @@ export interface DocumentApiPort {
   getStorageUsage(): Observable<StorageUsage>;
   previewDocument(id: string): Observable<DashboardPreviewDocument>;
   createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument>;
+  createProduct(payload: DashboardCreateProductPayload): Observable<DashboardProduct>;
+  getProducts(): Observable<Array<DashboardProduct>>;
+  getProductById(id: string): Observable<DashboardProduct>;
   getDocumentById(id: string): Observable<DashboardEditableDocument>;
   getDocumentVersions(
     id: string,

@@ -56,16 +56,20 @@
     <edo-dogx-drawer
       [open]="previewOpen()"
       [title]="'Архивный документ: ' + (previewDocument()?.title ?? '')"
+      [size]="'wide'"
       ariaLabel="Предпросмотр архивного документа"
       (closed)="closePreview()"
     >
       @if (previewDocument(); as preview) {
         <div class="dashboard-archive__preview">
-          <dl class="dashboard-archive__preview-meta">
+          <header class="dashboard-archive__preview-head">
             <div>
-              <dt>Название</dt>
-              <dd>{{ preview.title }}</dd>
+              <span>Архивный документ</span>
+              <h2>{{ preview.title }}</h2>
             </div>
+          </header>
+
+          <dl class="dashboard-archive__preview-meta">
             <div>
               <dt>Категория</dt>
               <dd>{{ getCategoryLabel(preview.category) }}</dd>
@@ -82,7 +86,28 @@
 
           <section class="dashboard-archive__preview-section">
             <h3>Содержимое</h3>
-            <p>{{ preview.body }}</p>
+            <article class="dashboard-archive__preview-paper">
+              @for (block of previewBlocks(); track $index) {
+                @switch (block.kind) {
+                  @case ('heading') {
+                    <h4 [class.dashboard-archive__preview-heading--large]="(block.level ?? 2) <= 1">
+                      {{ block.text }}
+                    </h4>
+                  }
+                  @case ('listItem') {
+                    <p class="dashboard-archive__preview-list-item">
+                      <span>{{ block.ordered ? block.index + '.' : '•' }}</span>
+                      {{ block.text }}
+                    </p>
+                  }
+                  @default {
+                    <p>{{ block.text }}</p>
+                  }
+                }
+              } @empty {
+                <p class="dashboard-archive__preview-empty">В документе пока нет содержимого.</p>
+              }
+            </article>
           </section>
         </div>
       }

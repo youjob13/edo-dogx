@@ -33,6 +33,20 @@ export const DASHBOARD_ROUTES: Routes = [
           ),
       },
       {
+        path: 'products',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/products/dashboard-products.component').then(
+            (m) => m.DashboardProductsComponent,
+          ),
+      },
+      {
+        path: 'products/:productId',
+        loadComponent: () =>
+          import('../../adapters/http/dashboard/products/dashboard-products.component').then(
+            (m) => m.DashboardProductsComponent,
+          ),
+      },
+      {
         path: 'documents/:id/edit',
         canDeactivate: [unsavedChangesGuard],
         loadComponent: () =>

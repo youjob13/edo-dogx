@@ -350,6 +350,7 @@ export class DashboardHomeComponent {
       HR: 'Кадровый',
       FINANCE: 'Финансы',
       GENERAL: 'Общее',
+      PRODUCT: 'Изделие',
     };
 
     return labels[category];

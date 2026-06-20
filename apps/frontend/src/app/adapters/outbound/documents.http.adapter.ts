@@ -8,6 +8,7 @@ import {
   DashboardArchiveDocumentResult,
   DashboardDocumentCapabilities,
   DashboardCreateDocumentPayload,
+  DashboardCreateProductPayload,
   DashboardCreateExportPayload,
   DashboardDocumentStatus,
   DashboardEditableDocument,
@@ -15,8 +16,11 @@ import {
   DashboardEditorControlProfile,
   DashboardExportRequest,
   DashboardDocumentCategory,
+  DashboardDocumentType,
+  DashboardCertificateStatus,
   DashboardEditDocumentPayload,
   DashboardPreviewDocument,
+  DashboardProduct,
   DashboardQuery,
   DashboardRequestWorkflowChangesPayload,
   DashboardRichContentDocument,
@@ -42,6 +46,14 @@ interface GatewayDocumentResponse {
   id: string;
   title: string;
   category: DashboardDocumentCategory;
+  documentType?: DashboardDocumentType;
+  productId?: string;
+  productName?: string;
+  productModel?: string;
+  certificateNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  certificateStatus?: DashboardCertificateStatus;
   ownerUserId?: string;
   owner_user_id?: string;
   owner_user_name?: string;
@@ -68,6 +80,10 @@ interface GatewaySearchDocumentsResponse {
   items: Array<GatewayDocumentResponse>;
   total: number;
 }
+
+type GatewayProductResponse = Omit<DashboardProduct, 'documents'> & {
+  documents?: Array<GatewayDocumentResponse>;
+};
 
 interface GatewayActivityResponse {
   items: Array<{
@@ -198,6 +214,14 @@ const normalizeGatewayDocument = (
   id: response.id,
   title: response.title,
   category: response.category,
+  documentType: response.documentType,
+  productId: response.productId,
+  productName: response.productName,
+  productModel: response.productModel,
+  certificateNumber: response.certificateNumber,
+  issueDate: response.issueDate,
+  expiryDate: response.expiryDate,
+  certificateStatus: response.certificateStatus,
   status: (response.status as DashboardDocumentStatus | undefined) ?? 'DRAFT',
   version: typeof response.version === 'string' ? Number(response.version) : response.version ?? 1,
   contentDocument:
@@ -212,6 +236,14 @@ const normalizeDocumentItem = (response: GatewayDocumentResponse): DocumentItem 
   id: response.id,
   title: response.title,
   category: response.category,
+  documentType: response.documentType,
+  productId: response.productId,
+  productName: response.productName,
+  productModel: response.productModel,
+  certificateNumber: response.certificateNumber,
+  issueDate: response.issueDate,
+  expiryDate: response.expiryDate,
+  certificateStatus: response.certificateStatus,
   status: (response.status as DashboardDocumentStatus | undefined) ?? 'DRAFT',
   updatedAt: response.updatedAt ?? response.updated_at ?? '',
   sizeKb: 0,
@@ -219,6 +251,15 @@ const normalizeDocumentItem = (response: GatewayDocumentResponse): DocumentItem 
   ownerUserId: response.ownerUserId ?? response.owner_user_id,
   ownerUserName: response.owner_user_name,
   ...normalizeCapabilities(response),
+});
+
+const normalizeProduct = (response: GatewayProductResponse): DashboardProduct => ({
+  id: response.id,
+  name: response.name,
+  model: response.model,
+  type: response.type,
+  description: response.description,
+  documents: response.documents?.map(normalizeDocumentItem),
 });
 
 const extractRichContentText = (document: DashboardRichContentDocument | undefined): string => {
@@ -252,6 +293,14 @@ const normalizePreviewDocument = (response: GatewayDocumentResponse): DashboardP
     id: response.id,
     title: response.title,
     category: response.category,
+    documentType: response.documentType,
+    productId: response.productId,
+    productName: response.productName,
+    productModel: response.productModel,
+    certificateNumber: response.certificateNumber,
+    issueDate: response.issueDate,
+    expiryDate: response.expiryDate,
+    certificateStatus: response.certificateStatus,
     status: (response.status as DashboardDocumentStatus | undefined) ?? 'DRAFT',
     version: typeof response.version === 'string' ? Number(response.version) : response.version ?? 1,
     updatedAt: response.updatedAt ?? response.updated_at ?? '',
@@ -469,6 +518,20 @@ export class DashboardHttpAdapter implements DocumentApiPort {
       );
   }
 
+  public createProduct(payload: DashboardCreateProductPayload): Observable<DashboardProduct> {
+    return this.http.post<GatewayProductResponse>('/api/products', payload).pipe(map(normalizeProduct));
+  }
+
+  public getProducts(): Observable<Array<DashboardProduct>> {
+    return this.http
+      .get<{ items: Array<GatewayProductResponse> }>('/api/products')
+      .pipe(map((response) => (response.items ?? []).map(normalizeProduct)));
+  }
+
+  public getProductById(id: string): Observable<DashboardProduct> {
+    return this.http.get<GatewayProductResponse>(`/api/products/${id}`).pipe(map(normalizeProduct));
+  }
+
   public getDocumentById(id: string): Observable<DashboardEditableDocument> {
     return this.http.get<GatewayDocumentResponse>(`/api/documents/${id}`).pipe(
       map((response) => normalizeGatewayDocument(response)),
@@ -501,6 +564,13 @@ export class DashboardHttpAdapter implements DocumentApiPort {
       .patch<GatewayDocumentResponse>(`/api/documents/${id}`, {
         title: payload.title,
         expectedVersion: payload.expectedVersion ?? 1,
+        documentType: payload.documentType,
+        productId: payload.productId,
+        productName: payload.productName,
+        productModel: payload.productModel,
+        certificateNumber: payload.certificateNumber,
+        issueDate: payload.issueDate,
+        expiryDate: payload.expiryDate,
         contentDocument: payload.contentDocument,
       })
       .pipe(
@@ -508,6 +578,14 @@ export class DashboardHttpAdapter implements DocumentApiPort {
           id: response.id,
           title: response.title,
           category: response.category,
+          documentType: response.documentType,
+          productId: response.productId,
+          productName: response.productName,
+          productModel: response.productModel,
+          certificateNumber: response.certificateNumber,
+          issueDate: response.issueDate,
+          expiryDate: response.expiryDate,
+          certificateStatus: response.certificateStatus,
           status: (response.status as DashboardDocumentStatus | undefined) ?? 'DRAFT',
           updatedAt: response.updatedAt ?? response.updated_at ?? '',
           sizeKb: 0,

@@ -14,7 +14,9 @@ export interface UserProfile {
   roles: string[];
 }
 
-export type DocumentCategory = "HR" | "FINANCE" | "GENERAL";
+export type DocumentCategory = "HR" | "FINANCE" | "GENERAL" | "PRODUCT";
+export type DocumentType = "GENERAL" | "PRODUCT_PASSPORT" | "CERTIFICATE";
+export type CertificateStatus = "VALID" | "EXPIRING_SOON" | "EXPIRED";
 export type DocumentStatus =
   | "DRAFT"
   | "IN_REVIEW"
@@ -25,12 +27,26 @@ export type DocumentStatus =
 export interface CreateDocumentRequest {
   title: string;
   category: DocumentCategory;
+  documentType?: DocumentType;
+  productId?: string;
+  productName?: string;
+  productModel?: string;
+  certificateNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
   contentDocument?: Record<string, unknown>;
 }
 
 export interface UpdateDocumentRequest {
   title: string;
   expectedVersion: number;
+  documentType?: DocumentType;
+  productId?: string;
+  productName?: string;
+  productModel?: string;
+  certificateNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
   contentDocument?: Record<string, unknown>;
 }
 
@@ -46,6 +62,14 @@ export interface DocumentResponse {
   id: string;
   title: string;
   category: DocumentCategory;
+  documentType?: DocumentType;
+  productId?: string;
+  productName?: string;
+  productModel?: string;
+  certificateNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  certificateStatus?: CertificateStatus;
   status: DocumentStatus;
   contentDocument?: Record<string, unknown>;
   version?: number;
@@ -55,6 +79,22 @@ export interface DocumentResponse {
   canApprove: boolean;
   canRequestChanges: boolean;
   canArchive: boolean;
+}
+
+export interface ProductResponse {
+  id: string;
+  name: string;
+  model: string;
+  type: string;
+  description?: string;
+  documents?: DocumentResponse[];
+}
+
+export interface CreateProductRequest {
+  name: string;
+  model: string;
+  type: string;
+  description?: string;
 }
 
 export interface SubmitWorkflowRequest {

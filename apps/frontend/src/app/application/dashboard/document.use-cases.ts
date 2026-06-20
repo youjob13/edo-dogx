@@ -7,6 +7,7 @@ import {
   DashboardArchiveDocumentResult,
   DashboardConflictError,
   DashboardCreateDocumentPayload,
+  DashboardCreateProductPayload,
   DashboardCreateExportPayload,
   DashboardEditableDocument,
   DashboardEditDocumentPayload,
@@ -17,6 +18,7 @@ import {
   DashboardSubmitWorkflowPayload,
   DashboardUpdateEditorControlProfilePayload,
   DashboardPreviewDocument,
+  DashboardProduct,
   DashboardQuery,
   DashboardWorkflowEvent,
   DashboardWorkflowInstance,
@@ -56,6 +58,18 @@ export class DocumentUseCases {
 
   public createDocument(payload: DashboardCreateDocumentPayload): Observable<DashboardEditableDocument> {
     return this.api.createDocument(payload);
+  }
+
+  public createProduct(payload: DashboardCreateProductPayload): Observable<DashboardProduct> {
+    return this.api.createProduct(payload);
+  }
+
+  public getProducts(): Observable<Array<DashboardProduct>> {
+    return this.api.getProducts();
+  }
+
+  public getProductById(id: string): Observable<DashboardProduct> {
+    return this.api.getProductById(id);
   }
 
   public getDocumentById(id: string): Observable<DashboardEditableDocument> {

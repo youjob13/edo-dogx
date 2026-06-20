@@ -15,6 +15,7 @@ import {
   PageSectionComponent,
   StatusChipComponent,
 } from '../../../../design-system/ui-kit';
+import { buildDocumentPreviewBlocks } from '../dashboard-document-preview';
 
 @Component({
   selector: 'edo-dogx-dashboard-archive',
@@ -40,6 +41,11 @@ export class DashboardArchiveComponent {
   protected readonly archivedDocuments = signal<Array<DocumentItem>>([]);
   protected readonly previewDocument = signal<DashboardPreviewDocument | null>(null);
   protected readonly previewOpen = signal(false);
+  protected readonly previewBlocks = computed(() => {
+    const preview = this.previewDocument();
+
+    return buildDocumentPreviewBlocks(preview?.contentDocument, preview?.body ?? '');
+  });
 
   protected readonly filteredDocuments = computed(() => {
     const query = this.searchControl.value.trim().toLowerCase();
@@ -96,6 +102,7 @@ export class DashboardArchiveComponent {
       HR: 'Кадровый',
       FINANCE: 'Финансы',
       GENERAL: 'Общее',
+      PRODUCT: 'Изделие',
     };
 
     return labels[category];

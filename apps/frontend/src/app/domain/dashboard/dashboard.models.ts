@@ -1,4 +1,6 @@
-export type DashboardDocumentCategory = 'HR' | 'FINANCE' | 'GENERAL';
+export type DashboardDocumentCategory = 'HR' | 'FINANCE' | 'GENERAL' | 'PRODUCT';
+export type DashboardDocumentType = 'GENERAL' | 'PRODUCT_PASSPORT' | 'CERTIFICATE';
+export type DashboardCertificateStatus = 'VALID' | 'EXPIRING_SOON' | 'EXPIRED';
 export type DashboardDocumentStatus =
   | 'DRAFT'
   | 'IN_REVIEW'
@@ -23,6 +25,14 @@ export interface DocumentItem {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly documentType?: DashboardDocumentType;
+  readonly productId?: string;
+  readonly productName?: string;
+  readonly productModel?: string;
+  readonly certificateNumber?: string;
+  readonly issueDate?: string;
+  readonly expiryDate?: string;
+  readonly certificateStatus?: DashboardCertificateStatus;
   readonly status: DashboardDocumentStatus;
   readonly updatedAt: string;
   readonly sizeKb: number;
@@ -73,11 +83,25 @@ export interface DashboardEditDocumentPayload {
   readonly title: string;
   readonly contentDocument?: DashboardRichContentDocument;
   readonly expectedVersion?: number;
+  readonly documentType?: DashboardDocumentType;
+  readonly productId?: string;
+  readonly productName?: string;
+  readonly productModel?: string;
+  readonly certificateNumber?: string;
+  readonly issueDate?: string;
+  readonly expiryDate?: string;
 }
 
 export interface DashboardCreateDocumentPayload {
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly documentType?: DashboardDocumentType;
+  readonly productId?: string;
+  readonly productName?: string;
+  readonly productModel?: string;
+  readonly certificateNumber?: string;
+  readonly issueDate?: string;
+  readonly expiryDate?: string;
   readonly contentDocument?: DashboardRichContentDocument;
 }
 
@@ -102,6 +126,14 @@ export interface DashboardEditableDocument {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly documentType?: DashboardDocumentType;
+  readonly productId?: string;
+  readonly productName?: string;
+  readonly productModel?: string;
+  readonly certificateNumber?: string;
+  readonly issueDate?: string;
+  readonly expiryDate?: string;
+  readonly certificateStatus?: DashboardCertificateStatus;
   readonly status: DashboardDocumentStatus;
   readonly version: number;
   readonly contentDocument?: DashboardRichContentDocument;
@@ -229,6 +261,14 @@ export interface DashboardPreviewDocument {
   readonly id: string;
   readonly title: string;
   readonly category: DashboardDocumentCategory;
+  readonly documentType?: DashboardDocumentType;
+  readonly productId?: string;
+  readonly productName?: string;
+  readonly productModel?: string;
+  readonly certificateNumber?: string;
+  readonly issueDate?: string;
+  readonly expiryDate?: string;
+  readonly certificateStatus?: DashboardCertificateStatus;
   readonly status: DashboardDocumentStatus;
   readonly version: number;
   readonly updatedAt: string;
@@ -242,6 +282,22 @@ export interface DashboardPreviewDocument {
   readonly canApprove: boolean;
   readonly canRequestChanges: boolean;
   readonly canArchive: boolean;
+}
+
+export interface DashboardProduct {
+  readonly id: string;
+  readonly name: string;
+  readonly model: string;
+  readonly type: string;
+  readonly description?: string;
+  readonly documents?: Array<DocumentItem>;
+}
+
+export interface DashboardCreateProductPayload {
+  readonly name: string;
+  readonly model: string;
+  readonly type: string;
+  readonly description?: string;
 }
 
 export type KanbanTaskStatus = 'pending' | 'in_review' | 'approved' | 'declined';

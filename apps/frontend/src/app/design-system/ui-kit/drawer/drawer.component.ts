@@ -22,6 +22,7 @@ import { isPlatformBrowser } from '@angular/common';
       <section
         #drawerPanel
         class="edo-ui-kit-drawer"
+        [class.edo-ui-kit-drawer--wide]="size() === 'wide'"
         role="dialog"
         aria-modal="true"
         [attr.aria-label]="ariaLabel()"
@@ -53,6 +54,7 @@ export class DrawerComponent {
   public readonly open = input(false);
   public readonly title = input('Панель');
   public readonly ariaLabel = input('Панель предпросмотра');
+  public readonly size = input<'default' | 'wide'>('default');
 
   public readonly closed = output<void>();
 

@@ -21,6 +21,45 @@
         </label>
 
         <label class="dashboard-document-create__field">
+          <span>Тип документа</span>
+          <select [formControl]="documentTypeControl">
+            <option value="GENERAL">Обычный документ</option>
+            <option value="PRODUCT_PASSPORT">Паспорт изделия</option>
+            <option value="CERTIFICATE">Сертификат</option>
+          </select>
+        </label>
+
+        @if (documentTypeControl.value === 'PRODUCT_PASSPORT' || documentTypeControl.value === 'CERTIFICATE') {
+          <label class="dashboard-document-create__field">
+            <span>Изделие</span>
+            <select [formControl]="productIdControl">
+              <option value="">Выберите изделие</option>
+              @for (product of products(); track product.id) {
+                <option [value]="product.id">{{ product.name }} · {{ product.model }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (documentTypeControl.value === 'CERTIFICATE') {
+          <edo-dogx-input
+            label="Номер сертификата"
+            [control]="certificateNumberControl"
+            [errorText]="'Укажите номер сертификата'"
+          />
+
+          <label class="dashboard-document-create__field">
+            <span>Дата выдачи</span>
+            <input type="date" [formControl]="issueDateControl" />
+          </label>
+
+          <label class="dashboard-document-create__field">
+            <span>Действует до</span>
+            <input type="date" [formControl]="expiryDateControl" />
+          </label>
+        }
+
+        <label class="dashboard-document-create__field">
           <span>Шаблон</span>
           <select [formControl]="templateControl" (change)="loadTemplate(templateControl.value)">
             @for (template of templates; track template.id) {

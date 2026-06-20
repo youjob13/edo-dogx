@@ -17,6 +17,8 @@ const actionRoleMap: Record<string, string[]> = {
   'category.assign': ['edms.approver', 'edms.admin'],
   'search.read': ['edms.user', 'edms.admin'],
   'notifications.read': ['edms.user', 'edms.admin'],
+  'products.read': ['edms.user', 'edms.admin'],
+  'products.manage': ['edms.user', 'edms.admin'],
   'tasks.create': ['edms.user', 'edms.admin'],
   'tasks.read': ['edms.user', 'edms.admin'],
   'tasks.assign': ['edms.user', 'edms.admin'],

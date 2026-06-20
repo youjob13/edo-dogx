@@ -84,32 +84,35 @@
 
     <edo-dogx-drawer
       [open]="previewOpen()"
-      [title]="'Предпросмотр: ' + (selectedDocument()?.title ?? '')"
+      [title]="'Предпросмотр: ' + (previewDocument()?.title ?? '')"
+      [size]="'wide'"
       ariaLabel="Панель предпросмотра документа"
       (closed)="closePreview()"
     >
       @if (previewDocument(); as preview) {
         <div class="dashboard-documents__preview">
-          <dl class="dashboard-documents__preview-fields">
+          <header class="dashboard-documents__preview-head">
             <div>
-              <dt>ID</dt>
-              <dd>{{ preview.id }}</dd>
+              <span>Документ</span>
+              <h2>{{ preview.title }}</h2>
             </div>
-            <div>
-              <dt>Название</dt>
-              <dd>{{ preview.title }}</dd>
-            </div>
+            <a class="dashboard-documents__preview-edit" [routerLink]="['/dashboard/documents', preview.id, 'edit']">
+              Открыть карточку
+            </a>
+          </header>
+
+          <dl class="dashboard-documents__preview-fields" aria-label="Сведения о документе">
             <div>
               <dt>Категория</dt>
               <dd>{{ getCategoryLabel(preview.category) }}</dd>
             </div>
             <div>
               <dt>Версия</dt>
-              <dd>{{ preview.version }}</dd>
+              <dd>v{{ preview.version }}</dd>
             </div>
             <div>
               <dt>Изменен</dt>
-              <dd>{{ preview.updatedAt }}</dd>
+              <dd>{{ preview.updatedAt | date: 'dd.MM.yyyy, HH:mm' }}</dd>
             </div>
             @if (preview.ownerUserName) {
               <div>
@@ -119,16 +122,37 @@
             }
           </dl>
 
-          <section class="dashboard-documents__preview-section">
+          <section class="dashboard-documents__preview-section" aria-label="Содержимое документа">
             <h3>Содержимое</h3>
-            <p>{{ preview.body }}</p>
+            <article class="dashboard-documents__preview-paper">
+              @for (block of previewBlocks(); track $index) {
+                @switch (block.kind) {
+                  @case ('heading') {
+                    <h4 [class.dashboard-documents__preview-heading--large]="(block.level ?? 2) <= 1">
+                      {{ block.text }}
+                    </h4>
+                  }
+                  @case ('listItem') {
+                    <p class="dashboard-documents__preview-list-item">
+                      <span>{{ block.ordered ? block.index + '.' : '•' }}</span>
+                      {{ block.text }}
+                    </p>
+                  }
+                  @default {
+                    <p>{{ block.text }}</p>
+                  }
+                }
+              } @empty {
+                <p class="dashboard-documents__preview-empty">В документе пока нет содержимого.</p>
+              }
+            </article>
           </section>
 
           @if (preview.contentDocumentJson) {
-            <section class="dashboard-documents__preview-section">
-              <h3>contentDocument</h3>
+            <details class="dashboard-documents__preview-json">
+              <summary>Показать исходный JSON</summary>
               <pre>{{ preview.contentDocumentJson }}</pre>
-            </section>
+            </details>
           }
         </div>
       }

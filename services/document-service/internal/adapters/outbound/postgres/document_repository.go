@@ -367,7 +367,7 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, title, category, organization_id, status, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, created_at, updated_at
+		SELECT id, title, category, organization_id, status, owner_user_id, COALESCE(owner_user_name, owner_user_id) AS owner_user_name, current_version_number, current_object_key, current_object_version_id, content_document_json, created_at, updated_at
 		FROM documents
 		%s
 		ORDER BY updated_at DESC
@@ -384,6 +384,7 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 	documents := make([]model.Document, 0)
 	for rows.Next() {
 		var document model.Document
+		var contentJSON []byte
 		if err := rows.Scan(
 			&document.ID,
 			&document.Title,
@@ -395,11 +396,17 @@ func (r *DocumentRepository) SearchDocuments(ctx context.Context, input outbound
 			&document.Version,
 			&document.ObjectKey,
 			&document.ObjectVersionID,
+			&contentJSON,
 			&document.CreatedAt,
 			&document.UpdatedAt,
 		); err != nil {
 			return nil, 0, err
 		}
+		content, err := unmarshalContentDocument(contentJSON)
+		if err != nil {
+			return nil, 0, err
+		}
+		document.ContentDocument = content
 		
 		// Resolve owner name if empty
 		if strings.TrimSpace(document.OwnerUserName) == "" || document.OwnerUserName == document.OwnerUser {
