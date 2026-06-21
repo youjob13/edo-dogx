@@ -477,6 +477,27 @@ export class DashboardTasksComponent {
     return this.selectedBoard()?.members ?? [];
   }
 
+  protected getTaskAssigneeOptions(task: KanbanTask): Array<KanbanBoardMember> {
+    const members = this.getBoardMembers();
+    if (!task.assigneeId) {
+      return members;
+    }
+
+    const currentAssignee: KanbanBoardMember = {
+      id: task.assigneeId,
+      fullName: task.assigneeName || 'Не назначен',
+      department:
+        members.find((member) => member.id === task.assigneeId)?.department ||
+        task.department ||
+        '',
+    };
+
+    return [
+      currentAssignee,
+      ...members.filter((member) => member.id !== task.assigneeId),
+    ];
+  }
+
   private canMoveTaskToReview(task: KanbanTask): boolean {
     if (task.status !== 'pending') {
       return false;

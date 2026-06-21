@@ -226,6 +226,45 @@
   min-height: 180px;
 }
 
+.attachments-field {
+  width: 100%;
+}
+
+:host ::ng-deep .attachments-field {
+  --t-height: auto;
+
+  tui-primitive-textfield {
+    min-height: 3.5rem;
+    padding: 0.35rem 2.75rem 0.45rem 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--edo-ui-border), #ffffff 20%);
+    border-radius: 0.75rem;
+    background: var(--edo-ui-surface);
+    box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.08);
+  }
+
+  [tuiLabel] {
+    margin: 0;
+    color: var(--edo-ui-ink-muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
+  input[tuiInputChip] {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--edo-ui-ink);
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+}
+
 .attachments-hint {
   margin: 0.5rem 0 0;
   color: var(--edo-ui-ink-muted);

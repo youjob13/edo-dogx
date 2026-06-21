@@ -36,6 +36,14 @@ func main() {
 		slog.Error("failed to ensure document schema", "err", err)
 		os.Exit(1)
 	}
+	if err := seedExampleProducts(db); err != nil {
+		slog.Error("failed to seed example products", "err", err)
+		os.Exit(1)
+	}
+	if err := seedExampleDocumentsAndTasks(db); err != nil {
+		slog.Error("failed to seed example documents and tasks", "err", err)
+		os.Exit(1)
+	}
 
 	minioClient, bucketName, err := connectMinIO()
 	if err != nil {
@@ -300,6 +308,506 @@ func ensureDocumentSchema(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+func seedExampleProducts(db *sql.DB) error {
+	const seedSQL = `
+		INSERT INTO organization_members (organization_id, user_id, full_name, department, email, roles)
+		VALUES (
+			'org-main',
+			'gateway-user',
+			'Системный пользователь',
+			'ЭДО',
+			'gateway-user@localhost',
+			ARRAY['edms.user', 'edms.admin']
+		)
+		ON CONFLICT (organization_id, user_id) DO NOTHING;
+
+		WITH seed_documents (
+			id,
+			title,
+			category,
+			status,
+			owner_user_id,
+			owner_user_name,
+			content_document_json
+		) AS (
+			VALUES
+			(
+				'11111111-1111-4111-8111-111111111111'::uuid,
+				'Дверь противопожарная ДПМ-01',
+				'PRODUCT',
+				'DRAFT',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'product', jsonb_build_object(
+							'name', 'Дверь противопожарная ДПМ-01',
+							'model', 'ДПМ-01',
+							'type', 'Противопожарная дверь',
+							'description', 'Металлическая дверь для эвакуационных выходов и технических помещений. Пример карточки изделия с паспортом и действующим сертификатом.'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph'))
+				)
+			),
+			(
+				'22222222-2222-4222-8222-222222222222'::uuid,
+				'Люк противопожарный ЛПМ-60',
+				'PRODUCT',
+				'DRAFT',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'product', jsonb_build_object(
+							'name', 'Люк противопожарный ЛПМ-60',
+							'model', 'ЛПМ-60',
+							'type', 'Противопожарный люк',
+							'description', 'Люк для инженерных шахт с пределом огнестойкости EI 60. Пример изделия с сертификатом, срок которого скоро истекает.'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph'))
+				)
+			),
+			(
+				'33333333-3333-4333-8333-333333333333'::uuid,
+				'Ворота секционные ВС-EI60',
+				'PRODUCT',
+				'DRAFT',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'product', jsonb_build_object(
+							'name', 'Ворота секционные ВС-EI60',
+							'model', 'ВС-EI60',
+							'type', 'Противопожарные ворота',
+							'description', 'Секционные ворота для складских и производственных зон. Пример изделия с просроченным сертификатом для проверки предупреждений.'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph'))
+				)
+			),
+			(
+				'44444444-4444-4444-8444-444444444444'::uuid,
+				'Паспорт изделия ДПМ-01',
+				'GENERAL',
+				'APPROVED',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'edoMvp', jsonb_build_object(
+							'documentType', 'PRODUCT_PASSPORT',
+							'productId', '11111111-1111-4111-8111-111111111111',
+							'productName', 'Дверь противопожарная ДПМ-01',
+							'productModel', 'ДПМ-01'
+						)
+					),
+					'content', jsonb_build_array(
+						jsonb_build_object('type', 'heading', 'attrs', jsonb_build_object('level', 1), 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Паспорт изделия ДПМ-01'))),
+						jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Назначение: установка в противопожарных преградах эвакуационных и технических помещений.')))
+					)
+				)
+			),
+			(
+				'55555555-5555-4555-8555-555555555555'::uuid,
+				'Сертификат соответствия ДПМ-01',
+				'GENERAL',
+				'APPROVED',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'edoMvp', jsonb_build_object(
+							'documentType', 'CERTIFICATE',
+							'productId', '11111111-1111-4111-8111-111111111111',
+							'productName', 'Дверь противопожарная ДПМ-01',
+							'productModel', 'ДПМ-01',
+							'certificateNumber', 'RU-C-DEMO-001',
+							'issueDate', '2026-01-15',
+							'expiryDate', '2027-01-15'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Сертификат подтверждает соответствие требованиям пожарной безопасности.'))))
+				)
+			),
+			(
+				'66666666-6666-4666-8666-666666666666'::uuid,
+				'Паспорт изделия ЛПМ-60',
+				'GENERAL',
+				'APPROVED',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'edoMvp', jsonb_build_object(
+							'documentType', 'PRODUCT_PASSPORT',
+							'productId', '22222222-2222-4222-8222-222222222222',
+							'productName', 'Люк противопожарный ЛПМ-60',
+							'productModel', 'ЛПМ-60'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Паспорт содержит сведения о комплектации, монтаже и обслуживании люка.'))))
+				)
+			),
+			(
+				'77777777-7777-4777-8777-777777777777'::uuid,
+				'Сертификат соответствия ЛПМ-60',
+				'GENERAL',
+				'APPROVED',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'edoMvp', jsonb_build_object(
+							'documentType', 'CERTIFICATE',
+							'productId', '22222222-2222-4222-8222-222222222222',
+							'productName', 'Люк противопожарный ЛПМ-60',
+							'productModel', 'ЛПМ-60',
+							'certificateNumber', 'RU-C-DEMO-002',
+							'issueDate', '2025-07-20',
+							'expiryDate', '2026-07-10'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Сертификат скоро истекает и должен попасть в зону внимания ответственных сотрудников.'))))
+				)
+			),
+			(
+				'88888888-8888-4888-8888-888888888888'::uuid,
+				'Сертификат соответствия ВС-EI60',
+				'GENERAL',
+				'APPROVED',
+				'gateway-user',
+				'Системный пользователь',
+				jsonb_build_object(
+					'type', 'doc',
+					'attrs', jsonb_build_object(
+						'edoMvp', jsonb_build_object(
+							'documentType', 'CERTIFICATE',
+							'productId', '33333333-3333-4333-8333-333333333333',
+							'productName', 'Ворота секционные ВС-EI60',
+							'productModel', 'ВС-EI60',
+							'certificateNumber', 'RU-C-DEMO-003',
+							'issueDate', '2024-03-01',
+							'expiryDate', '2026-05-30'
+						)
+					),
+					'content', jsonb_build_array(jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Просроченный сертификат добавлен как демонстрационный пример контроля рисков.'))))
+				)
+			)
+		),
+		inserted AS (
+			INSERT INTO documents (
+				id,
+				title,
+				category,
+				organization_id,
+				status,
+				owner_user_id,
+				owner_user_name,
+				version,
+				current_version_number,
+				current_object_key,
+				current_object_version_id,
+				content_document_json
+			)
+			SELECT
+				id,
+				title,
+				category,
+				'org-main',
+				status,
+				owner_user_id,
+				owner_user_name,
+				1,
+				1,
+				'seed/documents/' || id::text || '.json',
+				'seed-v1',
+				content_document_json
+			FROM seed_documents
+			ON CONFLICT (id) DO NOTHING
+			RETURNING id
+		)
+		INSERT INTO document_versions (
+			document_id,
+			version_number,
+			title,
+			category,
+			status,
+			changed_by_user_id,
+			change_summary,
+			object_key,
+			object_version_id,
+			content_document_json
+		)
+		SELECT
+			seed_documents.id,
+			1,
+			seed_documents.title,
+			seed_documents.category,
+			seed_documents.status,
+			seed_documents.owner_user_id,
+			'example product seed',
+			'seed/documents/' || seed_documents.id::text || '.json',
+			'seed-v1',
+			seed_documents.content_document_json
+		FROM seed_documents
+		INNER JOIN inserted ON inserted.id = seed_documents.id
+		ON CONFLICT (document_id, version_number) DO NOTHING;
+	`
+
+	_, err := db.Exec(seedSQL)
+	return err
+}
+
+func seedExampleDocumentsAndTasks(db *sql.DB) error {
+	const seedSQL = `
+		INSERT INTO organization_members (organization_id, user_id, full_name, department, email, roles)
+		VALUES
+			('org-main', 'danil.rodionov', 'Данил Родионов', 'Разработки', 'danil.rodionov@localhost', ARRAY['edms.user', 'edms.admin']),
+			('org-main', 'viktor.shemetov', 'Виктор Шеметов', 'Разработки', 'viktor.shemetov@localhost', ARRAY['edms.user', 'edms.approver']),
+			('org-main', 'vasiliy.parushev', 'Василий Порышев', 'Разработки', 'vasiliy.parushev@localhost', ARRAY['edms.user']),
+			('org-main', 'ekaterina.smirnova', 'Екатерина Смирнова', 'Финансы', 'ekaterina.smirnova@localhost', ARRAY['edms.user', 'edms.finance', 'edms.approver'])
+		ON CONFLICT (organization_id, user_id) DO NOTHING;
+
+		INSERT INTO task_boards (id, organization_id, name, description)
+		VALUES (
+			'99999999-9999-4999-8999-999999999999'::uuid,
+			'org-main',
+			'Демо-доска ЭДО',
+			'Пример задач по согласованию и обработке документов'
+		)
+		ON CONFLICT (id) DO NOTHING;
+
+		INSERT INTO task_board_members (board_id, user_id, full_name, department, email, role)
+		VALUES
+			('99999999-9999-4999-8999-999999999999'::uuid, 'danil.rodionov', 'Данил Родионов', 'Разработки', 'danil.rodionov@localhost', 'OWNER'),
+			('99999999-9999-4999-8999-999999999999'::uuid, 'viktor.shemetov', 'Виктор Шеметов', 'Разработки', 'viktor.shemetov@localhost', 'MEMBER'),
+			('99999999-9999-4999-8999-999999999999'::uuid, 'vasiliy.parushev', 'Василий Порышев', 'Разработки', 'vasiliy.parushev@localhost', 'MEMBER'),
+			('99999999-9999-4999-8999-999999999999'::uuid, 'ekaterina.smirnova', 'Екатерина Смирнова', 'Финансы', 'ekaterina.smirnova@localhost', 'MANAGER')
+		ON CONFLICT (board_id, user_id) DO NOTHING;
+
+		WITH seed_documents (
+			id,
+			title,
+			category,
+			status,
+			owner_user_id,
+			owner_user_name,
+			content_document_json
+		) AS (
+			VALUES
+			(
+				'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid,
+				'Договор поставки противопожарных дверей',
+				'GENERAL',
+				'DRAFT',
+				'danil.rodionov',
+				'Данил Родионов',
+				jsonb_build_object(
+					'type', 'doc',
+					'content', jsonb_build_array(
+						jsonb_build_object('type', 'heading', 'attrs', jsonb_build_object('level', 1), 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Договор поставки'))),
+						jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Поставка противопожарных дверей ДПМ-01 для объекта заказчика.')))
+					)
+				)
+			),
+			(
+				'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid,
+				'Счет на оплату партии ЛПМ-60',
+				'FINANCE',
+				'IN_REVIEW',
+				'ekaterina.smirnova',
+				'Екатерина Смирнова',
+				jsonb_build_object(
+					'type', 'doc',
+					'content', jsonb_build_array(
+						jsonb_build_object('type', 'heading', 'attrs', jsonb_build_object('level', 1), 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Счет на оплату'))),
+						jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Оплата партии противопожарных люков ЛПМ-60 по спецификации.')))
+					)
+				)
+			),
+			(
+				'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid,
+				'Акт приемки ворот ВС-EI60',
+				'GENERAL',
+				'APPROVED',
+				'viktor.shemetov',
+				'Виктор Шеметов',
+				jsonb_build_object(
+					'type', 'doc',
+					'content', jsonb_build_array(
+						jsonb_build_object('type', 'heading', 'attrs', jsonb_build_object('level', 1), 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Акт приемки'))),
+						jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Приемка секционных противопожарных ворот после монтажа.')))
+					)
+				)
+			),
+			(
+				'dddddddd-dddd-4ddd-8ddd-dddddddddddd'::uuid,
+				'Приказ о назначении ответственного за сертификаты',
+				'HR',
+				'DRAFT',
+				'vasiliy.parushev',
+				'Василий Порышев',
+				jsonb_build_object(
+					'type', 'doc',
+					'content', jsonb_build_array(
+						jsonb_build_object('type', 'heading', 'attrs', jsonb_build_object('level', 1), 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Приказ'))),
+						jsonb_build_object('type', 'paragraph', 'content', jsonb_build_array(jsonb_build_object('type', 'text', 'text', 'Назначить ответственного за контроль сроков действия сертификатов продукции.')))
+					)
+				)
+			)
+		),
+		inserted AS (
+			INSERT INTO documents (
+				id,
+				title,
+				category,
+				organization_id,
+				status,
+				owner_user_id,
+				owner_user_name,
+				version,
+				current_version_number,
+				current_object_key,
+				current_object_version_id,
+				content_document_json
+			)
+			SELECT
+				id,
+				title,
+				category,
+				'org-main',
+				status,
+				owner_user_id,
+				owner_user_name,
+				1,
+				1,
+				'seed/documents/' || id::text || '.json',
+				'seed-v1',
+				content_document_json
+			FROM seed_documents
+			ON CONFLICT (id) DO NOTHING
+			RETURNING id
+		)
+		INSERT INTO document_versions (
+			document_id,
+			version_number,
+			title,
+			category,
+			status,
+			changed_by_user_id,
+			change_summary,
+			object_key,
+			object_version_id,
+			content_document_json
+		)
+		SELECT
+			seed_documents.id,
+			1,
+			seed_documents.title,
+			seed_documents.category,
+			seed_documents.status,
+			seed_documents.owner_user_id,
+			'example document seed',
+			'seed/documents/' || seed_documents.id::text || '.json',
+			'seed-v1',
+			seed_documents.content_document_json
+		FROM seed_documents
+		INNER JOIN inserted ON inserted.id = seed_documents.id
+		ON CONFLICT (document_id, version_number) DO NOTHING;
+
+		INSERT INTO tasks (
+			id,
+			board_id,
+			title,
+			description,
+			status,
+			task_type,
+			creator_user_id,
+			creator_user_name,
+			assignee_user_id,
+			assignee_user_name,
+			approver_user_id,
+			approver_user_name,
+			decision,
+			decision_comment,
+			due_date
+		)
+		VALUES
+			(
+				'aaaaaaaa-1111-4111-8111-aaaaaaaa1111'::uuid,
+				'99999999-9999-4999-8999-999999999999'::uuid,
+				'Проверить договор поставки',
+				'Проверить реквизиты, сроки поставки и перечень изделий перед отправкой на согласование.',
+				'PENDING',
+				'approval',
+				'danil.rodionov',
+				'Данил Родионов',
+				'viktor.shemetov',
+				'Виктор Шеметов',
+				'ekaterina.smirnova',
+				'Екатерина Смирнова',
+				NULL,
+				NULL,
+				CURRENT_DATE + 5
+			),
+			(
+				'bbbbbbbb-2222-4222-8222-bbbbbbbb2222'::uuid,
+				'99999999-9999-4999-8999-999999999999'::uuid,
+				'Согласовать счет на оплату',
+				'Проверить сумму, НДС и соответствие счета спецификации.',
+				'IN_REVIEW',
+				'approval',
+				'danil.rodionov',
+				'Данил Родионов',
+				'ekaterina.smirnova',
+				'Екатерина Смирнова',
+				'viktor.shemetov',
+				'Виктор Шеметов',
+				NULL,
+				NULL,
+				CURRENT_DATE + 2
+			),
+			(
+				'cccccccc-3333-4333-8333-cccccccc3333'::uuid,
+				'99999999-9999-4999-8999-999999999999'::uuid,
+				'Подготовить комплект документов для архива',
+				'Собрать акт приемки и действующие сертификаты по воротам ВС-EI60.',
+				'APPROVED',
+				'general',
+				'viktor.shemetov',
+				'Виктор Шеметов',
+				'vasiliy.parushev',
+				'Василий Порышев',
+				NULL,
+				NULL,
+				'approved',
+				'Комплект подготовлен.',
+				CURRENT_DATE - 1
+			)
+		ON CONFLICT (id) DO NOTHING;
+
+		INSERT INTO task_attachments (task_id, document_id, title, category, status)
+		VALUES
+			('aaaaaaaa-1111-4111-8111-aaaaaaaa1111'::uuid, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid, 'Договор поставки противопожарных дверей', 'GENERAL', 'DRAFT'),
+			('bbbbbbbb-2222-4222-8222-bbbbbbbb2222'::uuid, 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'::uuid, 'Счет на оплату партии ЛПМ-60', 'FINANCE', 'IN_REVIEW'),
+			('cccccccc-3333-4333-8333-cccccccc3333'::uuid, 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid, 'Акт приемки ворот ВС-EI60', 'GENERAL', 'APPROVED')
+		ON CONFLICT DO NOTHING;
+	`
+
+	_, err := db.Exec(seedSQL)
+	return err
 }
 
 func connectMinIO() (*minio.Client, string, error) {

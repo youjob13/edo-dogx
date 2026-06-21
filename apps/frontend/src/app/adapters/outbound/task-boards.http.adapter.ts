@@ -81,7 +81,14 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
   }
 
   public getTaskBoard(boardId: string): Observable<KanbanBoardDetails> {
-    return this.http.get<KanbanBoardDetails>(`${this.apiBaseUrl}/boards/${boardId}`);
+    return this.http.get<KanbanBoardDetails>(`${this.apiBaseUrl}/boards/${boardId}`).pipe(
+      map((board) => ({
+        ...board,
+        tasks: (board.tasks ?? []).map((task) =>
+          this.normalizeTaskDetails(task, board.members ?? []),
+        ),
+      })),
+    );
   }
 
   public listTasks(query: KanbanTaskListQuery = {}): Observable<Array<KanbanTask>> {
@@ -267,10 +274,10 @@ export class TaskBoardsHttpAdapter implements TaskBoardsApiPort {
       ...task,
       boardId: task.boardId,
       assigneeId,
-      assigneeName: task.assigneeName || assignee?.fullName || 'Не назначен',
+      assigneeName: assignee?.fullName || task.assigneeName || 'Не назначен',
       department: task.department || assignee?.department || '',
       groupId: task.groupId || assigneeId || 'unassigned',
-      groupName: task.groupName || assignee?.fullName || 'Не назначен',
+      groupName: assignee?.fullName || task.groupName || task.assigneeName || 'Не назначен',
       dueDateLabel,
       comments: Array.isArray(task.comments) ? task.comments : [],
       attachments: Array.isArray(task.attachments) ? task.attachments : [],

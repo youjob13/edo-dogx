@@ -1,23 +1,23 @@
 ﻿<edo-dogx-page-section
   title="Задачи"
-  subtitle="Канбан-доски организации с группировкой по исполнителю, отделу и логическим группам"
+  subtitle="Доски организации с группировкой по исполнителю, отделу и логическим группам"
 >
   <edo-dogx-card
     title="Фильтры доски"
     subtitle="Выберите организацию, доску и способ группировки задач"
   >
     <div class="dashboard-tasks__filters">
-      <div class="filter">
+      <!-- <div class="filter">
         <label for="tasks-organization">Департамент</label>
         <select id="tasks-organization" [formControl]="organizationControl">
           @for (option of organizationOptions; track option.value) {
             <option [value]="option.value">{{ option.label }}</option>
           }
         </select>
-      </div>
+      </div> -->
 
       <div class="filter">
-        <label for="tasks-board">Канбан-доска</label>
+        <label for="tasks-board">Доска</label>
         <select id="tasks-board" [formControl]="boardControl" [disabled]="!hasBoards()">
           @for (board of boards(); track board.id) {
             <option [value]="board.id">{{ board.name }}</option>
@@ -86,7 +86,7 @@
         />
       </div>
 
-      <div class="dashboard-tasks__board" role="list" aria-label="Канбан-колонки задачи">
+      <div class="dashboard-tasks__board" role="list" aria-label="Колонки задачи">
         @for (column of columns(); track column.status) {
           <section class="dashboard-tasks__column" role="listitem" [attr.aria-label]="column.label">
             <header class="dashboard-tasks__column-header">
@@ -119,7 +119,7 @@
                       (change)="onAssigneeChanged(task.id, $any($event.target).value)"
                     >
                       <option value="" disabled>Выберите исполнителя</option>
-                      @for (member of getBoardMembers(); track member.id) {
+                      @for (member of getTaskAssigneeOptions(task); track member.id) {
                         <option [value]="member.id">
                           {{ member.fullName }} ({{ member.department }})
                         </option>
@@ -303,7 +303,12 @@
               } @else if (availableDocuments().length === 0) {
                 <p class="attachments-hint">Нет доступных документов для прикрепления.</p>
               } @else {
-                <tui-textfield multi tuiChevron [tuiTextfieldCleaner]="false">
+                <tui-textfield
+                  class="attachments-field"
+                  multi
+                  tuiChevron
+                  [tuiTextfieldCleaner]="false"
+                >
                   <label tuiLabel>Выберите документы для прикрепления</label>
                   <input
                     placeholder="Выберите документы"
