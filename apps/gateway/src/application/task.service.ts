@@ -41,6 +41,7 @@ export interface TaskDetailsView {
     readonly id: string;
     readonly fullName: string;
     readonly department: string;
+    readonly email: string;
   }>;
   readonly currentUserId: string;
   readonly canEdit: boolean;
@@ -160,9 +161,33 @@ export class TaskService {
       id: String(member.id || ''),
       fullName: String(member.full_name || member.fullName || ''),
       department: String(member.department || ''),
+      email: String(member.email || ''),
     }));
 
     return {
+      board:
+        response.board && typeof response.board === 'object'
+          ? {
+              id: String((response.board as Record<string, unknown>).id || ''),
+              organizationId: String(
+                (response.board as Record<string, unknown>).organization_id ||
+                  (response.board as Record<string, unknown>).organizationId ||
+                  '',
+              ),
+              name: String((response.board as Record<string, unknown>).name || ''),
+              description: String((response.board as Record<string, unknown>).description || ''),
+              membersCount: Number(
+                (response.board as Record<string, unknown>).members_count ||
+                  (response.board as Record<string, unknown>).membersCount ||
+                  0,
+              ),
+              tasksCount: Number(
+                (response.board as Record<string, unknown>).tasks_count ||
+                  (response.board as Record<string, unknown>).tasksCount ||
+                  0,
+              ),
+            }
+          : undefined,
       task,
       members,
       currentUserId: currentUser.userId,

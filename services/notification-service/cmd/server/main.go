@@ -12,6 +12,7 @@ import (
 
 	grpcadapter "edo/services/notification-service/internal/adapters/inbound/grpc"
 	pg "edo/services/notification-service/internal/adapters/outbound/postgres"
+	smtpadapter "edo/services/notification-service/internal/adapters/outbound/smtp"
 	app "edo/services/notification-service/internal/application/service"
 
 	_ "github.com/lib/pq"
@@ -35,7 +36,12 @@ func main() {
 	cancel()
 
 	store := pg.NewStore(db)
-	service := app.NewNotificationService(store)
+	emailSender, err := connectEmailSender()
+	if err != nil {
+		slog.Error("failed to configure email sender", "err", err)
+		os.Exit(1)
+	}
+	service := app.NewNotificationService(store, emailSender)
 	go runCleanup(service)
 
 	lis, err := net.Listen("tcp", addr)
@@ -88,6 +94,26 @@ func connectPostgres() (*sql.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func connectEmailSender() (app.EmailSender, error) {
+	if getenv("NOTIFICATION_EMAIL_ENABLED", "false") != "true" {
+		return nil, nil
+	}
+
+	sender, err := smtpadapter.NewEmailSender(smtpadapter.Config{
+		Host:     getenv("SMTP_HOST", "smtp.gmail.com"),
+		Port:     getenv("SMTP_PORT", "587"),
+		Username: getenv("SMTP_USERNAME", ""),
+		Password: getenv("SMTP_PASSWORD", ""),
+		From:     getenv("SMTP_FROM", ""),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("email notifications enabled", "smtp_host", getenv("SMTP_HOST", "smtp.gmail.com"), "smtp_port", getenv("SMTP_PORT", "587"))
+	return sender, nil
 }
 
 func getenv(key, fallback string) string {

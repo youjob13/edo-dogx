@@ -658,6 +658,7 @@ message CreateNotificationRequest {
   string body = 6;
   string entity_type = 7;
   string entity_id = 8;
+  string recipient_email = 9;
 }
 
 message CreateNotificationResponse {

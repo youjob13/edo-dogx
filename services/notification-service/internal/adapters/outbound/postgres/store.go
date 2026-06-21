@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	app "edo/services/notification-service/internal/application/service"
@@ -83,6 +84,46 @@ func (s *Store) Cleanup(ctx context.Context, retentionDays int) (int64, error) {
 		return 0, err
 	}
 	return res.RowsAffected()
+}
+
+func (s *Store) RecordDelivery(ctx context.Context, notificationID string, channel string, status string, errorText string) error {
+	attempt := 1
+	if err := s.db.QueryRowContext(
+		ctx,
+		`SELECT COALESCE(MAX(attempt), 0) + 1 FROM notification_deliveries WHERE notification_id = $1::uuid AND channel = $2`,
+		notificationID,
+		channel,
+	).Scan(&attempt); err != nil {
+		return err
+	}
+
+	_, err := s.db.ExecContext(
+		ctx,
+		`INSERT INTO notification_deliveries (notification_id, channel, attempt, status, error, created_at) VALUES ($1::uuid, $2, $3, $4, $5, NOW())`,
+		notificationID,
+		channel,
+		attempt,
+		status,
+		errorText,
+	)
+	return err
+}
+
+func (s *Store) ResolveRecipientEmail(ctx context.Context, organizationID string, recipientUserID string) (string, error) {
+	var email string
+	err := s.db.QueryRowContext(
+		ctx,
+		`SELECT email FROM organization_members WHERE organization_id = $1 AND user_id = $2 LIMIT 1`,
+		organizationID,
+		recipientUserID,
+	).Scan(&email)
+	if err == nil {
+		return email, nil
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return "", err
 }
 
 func EnsureSchema(ctx context.Context, db *sql.DB) error {
